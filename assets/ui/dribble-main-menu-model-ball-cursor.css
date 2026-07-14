@@ -37,8 +37,49 @@
   user-select: none;
 }
 
+.dribble-menu-ball {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, grab !important;
+  touch-action: none;
+  transform: translate3d(0, 0, 0);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.dribble-menu-ball canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+}
+
+.dribble-menu-ball[data-grabbed='true'] {
+  z-index: 5;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, grabbing !important;
+  box-shadow: none;
+}
+
+.dribble-main-menu:not([data-panel='home']) .dribble-menu-ball {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .dribble-main-menu-content {
   position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   width: min(500px, calc(52vw - 64px));
@@ -65,18 +106,17 @@
 
 .dribble-main-menu-logo {
   position: relative;
-  width: min(320px, 100%);
-  height: clamp(205px, 34vh, 280px);
-  overflow: hidden;
+  width: min(390px, 100%);
+  height: clamp(220px, 35vh, 300px);
+  overflow: visible;
 }
 
 .dribble-main-menu-logo img {
   position: absolute;
-  top: clamp(-62px, -7vh, -34px);
-  left: 50%;
-  width: clamp(500px, 46vw, 680px);
-  max-width: none;
-  transform: translateX(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   user-select: none;
 }
 
@@ -128,6 +168,10 @@
   animation: dribble-main-menu-enter 220ms ease-out both;
 }
 
+.dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
+  display: grid;
+}
+
 .dribble-main-menu-action {
   width: 100%;
   margin-bottom: 10px;
@@ -150,33 +194,70 @@
 }
 
 .dribble-main-menu-home {
-  width: min(320px, 100%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(390px, 100%);
 }
 
 .dribble-main-menu-home .dribble-main-menu-action {
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 .dribble-main-menu-home .ui-button {
-  min-height: 68px;
+  min-height: 118px;
   justify-content: center;
-  padding: 0 24px;
+  padding: 0;
   border: 0;
   background-color: transparent;
   background-image: none;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  color: #ffffff;
-  font-size: 21px;
+  color: transparent;
+  font-size: 0;
   font-weight: 400;
-  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.9);
+  text-shadow: none;
   filter: none;
+  transition: filter 150ms ease, transform 150ms ease;
+}
+
+.dribble-main-menu-play {
+  grid-column: 1 / -1;
 }
 
 .dribble-main-menu-play .ui-button,
+.dribble-main-menu-play .ui-button.size-large {
+  min-height: 106px;
+  background: transparent url('@project/assets/textures/play_button_background.png') center / 92% 155% no-repeat !important;
+  color: #ffffff;
+  font-size: 66px !important;
+  line-height: 1 !important;
+  text-shadow: 0 3px 0 #0b43a5, 0 0 12px rgba(255, 255, 255, 0.7);
+  filter: drop-shadow(0 10px 16px rgba(0, 42, 126, 0.4));
+}
+
+.dribble-main-menu-play .ui-button-label {
+  display: block;
+  font-size: 66px !important;
+  line-height: 1 !important;
+  letter-spacing: 0;
+  -webkit-text-stroke: 1px rgba(5, 39, 112, 0.72);
+}
+
 .dribble-main-menu-tutorial .ui-button {
-  font-size: 28px;
+  background-image: url('@project/assets/textures/Tutorial.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: none;
+}
+
+.dribble-main-menu-settings-action .ui-button {
+  background-image: url('@project/assets/textures/Settings.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: none;
 }
 
 .dribble-main-menu-action .ui-button:hover,
@@ -189,15 +270,30 @@
 .dribble-main-menu .dribble-main-menu-home .ui-button:hover,
 .dribble-main-menu .dribble-main-menu-home .ui-button:focus-visible {
   border: 0;
-  background-color: transparent;
-  background-image: url('@project/assets/textures/menu-button-background.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  color: #512b00;
-  text-shadow: 0 1px 0 rgba(255, 244, 172, 0.85);
-  filter: brightness(1.1) saturate(1.08) drop-shadow(0 10px 14px rgba(62, 26, 0, 0.36));
-  transform: translateX(5px) scale(1.02);
+  background: transparent;
+  box-shadow: none;
+  filter: brightness(1.14) saturate(1.12);
+  transform: translateY(-3px) scale(1.025);
+}
+
+.dribble-main-menu .dribble-main-menu-play .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-play .ui-button:focus-visible {
+  background: transparent url('@project/assets/textures/play_button_background.png') center / 92% 155% no-repeat !important;
+  color: #ffffff;
+  text-shadow: 0 3px 0 #0b43a5, 0 0 16px #ffffff;
+  filter: brightness(1.12) saturate(1.08) drop-shadow(0 12px 17px rgba(0, 64, 174, 0.44));
+}
+
+.dribble-main-menu .dribble-main-menu-tutorial .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-tutorial .ui-button:focus-visible {
+  background: transparent url('@project/assets/textures/Tutorial.png') center / contain no-repeat !important;
+  filter: brightness(1.12) saturate(1.08);
+}
+
+.dribble-main-menu .dribble-main-menu-settings-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-settings-action .ui-button:focus-visible {
+  background: transparent url('@project/assets/textures/Settings.png') center / contain no-repeat !important;
+  filter: brightness(1.12) saturate(1.08);
 }
 
 .dribble-main-menu-panel-heading h2 {
@@ -382,24 +478,39 @@
     padding: 34px 0 20px;
   }
 
-  .dribble-main-menu-logo {
-    width: min(320px, 100%);
-    height: 190px;
+  .dribble-menu-ball {
+    width: 70px;
+    height: 70px;
   }
 
-  .dribble-main-menu-logo img {
-    top: -36px;
-    width: 470px;
+  .dribble-main-menu-logo {
+    width: min(360px, 100%);
+    height: 210px;
   }
 
   .dribble-main-menu-panel {
     width: min(360px, 100%);
-    margin-top: 26px;
+    margin-top: 10px;
+  }
+
+  .dribble-main-menu-home .ui-button {
+    min-height: 104px;
+  }
+
+  .dribble-main-menu-play .ui-button,
+  .dribble-main-menu-play .ui-button.size-large {
+    min-height: 92px;
+    font-size: 54px !important;
+  }
+
+  .dribble-main-menu-play .ui-button-label {
+    font-size: 54px !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dribble-main-menu-panel,
+  .dribble-menu-ball,
   .dribble-logo-sparkle,
   .dribble-main-menu-logo::after,
   .dribble-main-menu-action .ui-button,

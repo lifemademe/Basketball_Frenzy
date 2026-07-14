@@ -1,0 +1,58 @@
+.dribble-pause-button {
+  position: fixed;
+  top: 28px;
+  left: 28px;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: none;
+  pointer-events: auto;
+  transition: filter 130ms ease, transform 130ms ease;
+}
+
+.dribble-pause-button img {
+  display: block;
+  width: 44px;
+  height: 38px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dribble-pause-button:hover,
+.dribble-pause-button:focus-visible {
+  outline: none;
+  filter: brightness(1.13) saturate(1.08);
+  transform: translateY(-2px) scale(1.06);
+}
+
+.dribble-pause-button:active {
+  filter: brightness(0.96);
+  transform: translateY(1px) scale(0.98);
+}
+
+@media (max-width: 720px) {
+  .dribble-pause-button {
+    top: 18px;
+    left: 18px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .dribble-pause-button img {
+    width: 40px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dribble-pause-button {
+    transition: none;
+  }
+}

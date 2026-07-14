@@ -1,0 +1,268 @@
+@font-face {
+  font-family: 'Boogaloo';
+  src: url('@project/assets/fonts/Boogaloo-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.dribble-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  color: #f4f7f8;
+  pointer-events: auto;
+}
+
+.dribble-overlay,
+.dribble-overlay * {
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+}
+
+.dribble-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 12, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dribble-overlay-panel {
+  position: relative;
+  width: min(420px, calc(100vw - 48px));
+  padding: 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: #171c21;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-panel,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: min(430px, calc(100vw - 32px));
+  min-height: min(645px, calc(100vh - 32px));
+  padding: 92px 52px 70px;
+  border: 0;
+  border-radius: 0;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  box-shadow: none;
+}
+
+.dribble-overlay-close {
+  position: absolute;
+  z-index: 3;
+  top: 48px;
+  right: 44px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: filter 130ms ease, transform 130ms ease;
+}
+
+.dribble-overlay-close img {
+  display: block;
+  width: 38px;
+  height: 34px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dribble-overlay-close:hover,
+.dribble-overlay-close:focus-visible {
+  outline: none;
+  filter: brightness(1.15) saturate(1.1);
+  transform: scale(1.1) rotate(3deg);
+}
+
+.dribble-overlay-close:active {
+  filter: brightness(0.94);
+  transform: scale(0.96);
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-close {
+  display: none;
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-accent,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-accent {
+  display: none;
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-eyebrow,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-eyebrow {
+  color: #d9f5ff;
+  text-shadow: 0 2px 8px rgba(0, 34, 112, 0.7);
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-title,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-title {
+  font-size: 46px;
+  line-height: 50px;
+  text-shadow: 0 3px 0 #0b43a5, 0 0 12px rgba(255, 255, 255, 0.42);
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-subtitle,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-subtitle {
+  color: #e6f8ff;
+  text-shadow: 0 2px 7px rgba(0, 34, 112, 0.7);
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-score,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-score {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(7, 56, 158, 0.34);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.08);
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-score span,
+.dribble-overlay[data-mode='pause'] .dribble-overlay-score strong,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-score span,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-score strong {
+  color: #ffffff;
+}
+
+.dribble-overlay-accent {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: #59df86;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-accent {
+  background: #ff5d57;
+}
+
+.dribble-overlay-eyebrow {
+  margin: 0 0 8px;
+  color: #59df86;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-eyebrow {
+  color: #ffd3d0;
+}
+
+.dribble-overlay-title {
+  margin: 0;
+  color: #f4f7f8;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 44px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-subtitle {
+  margin: 8px 0 24px;
+  color: #aeb8bf;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #0f1317;
+}
+
+.dribble-overlay-score span {
+  color: #8f9ba3;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-score strong {
+  color: #ffffff;
+  font-size: 30px;
+  line-height: 34px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+[data-overlay-resume-slot] {
+  grid-column: 1 / -1;
+}
+
+.dribble-overlay-action,
+.dribble-overlay-action .ui-button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dribble-overlay-action .ui-button {
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  font-weight: 400;
+}
+
+@media (max-width: 520px) {
+  .dribble-overlay {
+    padding: 16px;
+  }
+
+  .dribble-overlay-panel {
+    width: min(420px, calc(100vw - 32px));
+    padding: 22px;
+  }
+
+  .dribble-overlay[data-mode='pause'] .dribble-overlay-panel,
+  .dribble-overlay[data-mode='game-over'] .dribble-overlay-panel {
+    min-height: min(600px, calc(100vh - 24px));
+    padding: 82px 40px 58px;
+  }
+
+  .dribble-overlay-close {
+    top: 42px;
+    right: 34px;
+  }
+
+  .dribble-overlay-title {
+    font-size: 32px;
+    line-height: 38px;
+  }
+
+  .dribble-overlay-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dribble-overlay-close {
+    transition: none;
+  }
+}

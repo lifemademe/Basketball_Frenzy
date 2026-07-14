@@ -16,7 +16,7 @@
 .dribble-lives {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 0;
   min-width: 132px;
   padding: 0;
   box-sizing: border-box;
@@ -28,13 +28,12 @@
   pointer-events: none;
 }
 
-.dribble-lives.top-right {
+.dribble-lives.top-left {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: 40px;
+  left: 88px;
 }
 
-.dribble-lives-label,
 .dribble-timing-header {
   color: #a8adb8;
   font-size: 11px;
@@ -67,7 +66,7 @@
 
 .dribble-life-heart[data-active='true'] {
   transform: scale(1);
-  filter: drop-shadow(0 0 7px rgba(255, 49, 84, 0.58));
+  filter: none;
 }
 
 .dribble-life-heart[data-active='false'] {
@@ -84,7 +83,7 @@
 }
 
 .dribble-lives[data-healed='true'] .dribble-life-heart[data-active='true'] {
-  filter: hue-rotate(92deg) saturate(1.25) drop-shadow(0 0 12px rgba(77, 230, 184, 0.9));
+  filter: hue-rotate(92deg) saturate(1.25);
 }
 
 .dribble-timing {
@@ -405,9 +404,9 @@
 }
 
 @media (max-width: 720px) {
-  .dribble-lives.top-right {
-    top: 14px;
-    right: 14px;
+  .dribble-lives.top-left {
+    top: 28px;
+    left: 72px;
   }
 
   .dribble-timing {

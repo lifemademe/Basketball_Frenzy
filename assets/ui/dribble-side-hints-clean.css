@@ -38,7 +38,7 @@
 .dribble-side-hints[data-transferring='true'] .dribble-side-hint {
   opacity: 1;
   transform: translateY(-50%) scale(1.08);
-  filter: brightness(1.16) saturate(1.15) drop-shadow(0 0 12px rgba(55, 216, 255, 0.88));
+  filter: brightness(1.16) saturate(1.15);
 }
 
 @media (max-width: 720px) {

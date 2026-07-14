@@ -2,6 +2,82 @@ import * as ENGINE from '@gnsx/genesys.js';
 
 import type { DribbleSide } from './dribble-ball.js';
 
+export interface DribblePauseButtonOptions extends ENGINE.BaseUIComponentOptions {
+  onPause?: () => void;
+}
+
+export class DribblePauseButton extends ENGINE.BaseUIComponent<DribblePauseButtonOptions> {
+  public static metadata: ENGINE.UIComponentMetadata = {
+    displayName: 'Dribble Pause Button',
+    category: 'control',
+    summary: 'Clickable pause control for the gameplay HUD.',
+    useCases: ['pause', 'hud button', 'game controls'],
+    optionsType: 'DribblePauseButtonOptions',
+    assetPaths: {
+      template: '@project/assets/ui/dribble-pause-button-fixed.html',
+      styles: '@project/assets/ui/dribble-pause-button-no-cursor.css',
+    },
+  };
+
+  private buttonElement: HTMLButtonElement | null = null;
+
+  private readonly stopPointerEvent = (event: Event): void => {
+    event.stopPropagation();
+  };
+
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.button === 0) this.options.onPause();
+  };
+
+  private readonly handleClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    this.options.onPause();
+  };
+
+  protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
+    return {
+      templatePath: DribblePauseButton.metadata.assetPaths.template,
+      stylesPath: DribblePauseButton.metadata.assetPaths.styles,
+    };
+  }
+
+  protected override getDefaultOptions(): Required<DribblePauseButtonOptions> {
+    return {
+      position: 'top-left',
+      visible: false,
+      customClasses: [],
+      customStyles: {},
+      onPause: () => {},
+    };
+  }
+
+  protected override getInitialData(): Record<string, string> {
+    return {};
+  }
+
+  protected override cacheElements(): void {
+    this.buttonElement = this.layout?.querySelector('[data-pause-button]') as HTMLButtonElement | null;
+  }
+
+  protected override async onInitialize(): Promise<void> {
+    this.buttonElement?.addEventListener('pointerdown', this.handlePointerDown);
+    this.buttonElement?.addEventListener('mousedown', this.stopPointerEvent);
+    this.buttonElement?.addEventListener('contextmenu', this.stopPointerEvent);
+    this.buttonElement?.addEventListener('click', this.handleClick);
+  }
+
+  protected override onDestroy(): void {
+    this.buttonElement?.removeEventListener('pointerdown', this.handlePointerDown);
+    this.buttonElement?.removeEventListener('mousedown', this.stopPointerEvent);
+    this.buttonElement?.removeEventListener('contextmenu', this.stopPointerEvent);
+    this.buttonElement?.removeEventListener('click', this.handleClick);
+    this.buttonElement = null;
+  }
+}
+
 export interface DribbleSideHintsOptions extends ENGINE.BaseUIComponentOptions {}
 
 export class DribbleSideHints extends ENGINE.BaseUIComponent<DribbleSideHintsOptions> {
@@ -13,7 +89,7 @@ export class DribbleSideHints extends ENGINE.BaseUIComponent<DribbleSideHintsOpt
     optionsType: 'DribbleSideHintsOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-side-hints.html',
-      styles: '@project/assets/ui/dribble-side-hints.css',
+      styles: '@project/assets/ui/dribble-side-hints-clean.css',
     },
   };
 
@@ -67,8 +143,8 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
     useCases: ['lives', 'health icons', 'hearts'],
     optionsType: 'DribbleLivesDisplayOptions',
     assetPaths: {
-      template: '@project/assets/ui/dribble-lives.html',
-      styles: '@project/assets/ui/dribble-status-hud-boogaloo.css',
+      template: '@project/assets/ui/dribble-lives-icons-only.html',
+      styles: '@project/assets/ui/dribble-status-hud-layout.css',
     },
   };
 
@@ -102,7 +178,7 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
   }
 
   protected override getInitialData(): Record<string, string> {
-    return { label: 'LIVES' };
+    return {};
   }
 
   protected override cacheElements(): void {
@@ -174,7 +250,7 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
     optionsType: 'DribbleTimingMeterOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-timing-meter.html',
-      styles: '@project/assets/ui/dribble-status-hud-boogaloo.css',
+      styles: '@project/assets/ui/dribble-status-hud-layout.css',
     },
   };
 
@@ -237,7 +313,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     optionsType: 'DribbleJuiceHudOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-juice-hud.html',
-      styles: '@project/assets/ui/dribble-status-hud-boogaloo.css',
+      styles: '@project/assets/ui/dribble-status-hud-layout.css',
     },
   };
 

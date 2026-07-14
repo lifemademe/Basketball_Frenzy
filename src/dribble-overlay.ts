@@ -14,8 +14,8 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     useCases: ['pause menu', 'game over', 'final score'],
     optionsType: 'DribbleOverlayOptions',
     assetPaths: {
-      template: '@project/assets/ui/dribble-overlay.html',
-      styles: '@project/assets/ui/dribble-overlay-boogaloo.css',
+      template: '@project/assets/ui/dribble-overlay-pause-art.html',
+      styles: '@project/assets/ui/dribble-overlay-glass.css',
     },
   };
 
@@ -26,6 +26,17 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   private scoreLabelElement: HTMLElement | null = null;
   private scoreElement: HTMLElement | null = null;
   private resumeSlot: HTMLElement | null = null;
+  private closeButton: HTMLButtonElement | null = null;
+
+  private readonly stopPointerEvent = (event: Event): void => {
+    event.stopPropagation();
+  };
+
+  private readonly handleClose = (event: MouseEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    this.options.onResume();
+  };
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -65,6 +76,7 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.scoreLabelElement = this.layout.querySelector('[data-overlay-score-label]') as HTMLElement | null;
     this.scoreElement = this.layout.querySelector('[data-overlay-score]') as HTMLElement | null;
     this.resumeSlot = this.layout.querySelector('[data-overlay-resume-slot]') as HTMLElement | null;
+    this.closeButton = this.layout.querySelector('[data-overlay-close]') as HTMLButtonElement | null;
   }
 
   protected override async onInitialize(): Promise<void> {
@@ -91,6 +103,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
         onClick: () => this.options.onMainMenu(),
       }, mainMenuSlot),
     ]);
+
+    this.closeButton?.addEventListener('pointerdown', this.stopPointerEvent);
+    this.closeButton?.addEventListener('mousedown', this.stopPointerEvent);
+    this.closeButton?.addEventListener('click', this.handleClose);
   }
 
   public showPause(score: number): void {
@@ -138,6 +154,9 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   }
 
   protected override onDestroy(): void {
+    this.closeButton?.removeEventListener('pointerdown', this.stopPointerEvent);
+    this.closeButton?.removeEventListener('mousedown', this.stopPointerEvent);
+    this.closeButton?.removeEventListener('click', this.handleClose);
     this.rootElement = null;
     this.eyebrowElement = null;
     this.titleElement = null;
@@ -145,5 +164,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.scoreLabelElement = null;
     this.scoreElement = null;
     this.resumeSlot = null;
+    this.closeButton = null;
   }
 }

@@ -81,6 +81,7 @@ export class DribbleBall extends ENGINE.Actor {
     center: new THREE.Vector3(0, 0, -1.85),
     right: new THREE.Vector3(0.95, 0, -1.2),
   };
+  private readonly scratchPosition = new THREE.Vector3();
 
   public override initialize(options?: ENGINE.ActorOptions): void {
     const ballModel = ENGINE.ModelMeshComponent.create({
@@ -328,7 +329,8 @@ export class DribbleBall extends ENGINE.Actor {
 
     if (progress < 0.5) {
       const t = THREE.MathUtils.smootherstep(progress / 0.5, 0, 1);
-      this.rootComponent.position.lerpVectors(this.transferStart, new THREE.Vector3(center.x, this.floorY, center.z), t);
+      this.scratchPosition.set(center.x, this.floorY, center.z);
+      this.rootComponent.position.lerpVectors(this.transferStart, this.scratchPosition, t);
       const impact = Math.pow(t, 6);
       this.rootComponent.scale.set(1 + impact * 0.16, 1 - impact * 0.24, 1 + impact * 0.16);
     } else {
@@ -354,7 +356,7 @@ export class DribbleBall extends ENGINE.Actor {
       const impactProgress = THREE.MathUtils.smootherstep(progress / 0.18, 0, 1);
       this.rootComponent.position.lerpVectors(
         this.boostStart,
-        new THREE.Vector3(lane.x, this.floorY, this.laneZ),
+        this.scratchPosition.set(lane.x, this.floorY, this.laneZ),
         impactProgress,
       );
       const squash = Math.pow(impactProgress, 5);

@@ -13,7 +13,9 @@ export class DribbleComboPopup extends ENGINE.Actor {
   private elapsed = 0;
   private driftX = 0;
   private gameplayActive = true;
+  private active = false;
   private spriteMaterial: THREE.SpriteMaterial | null = null;
+  private textComponent: ENGINE.TextComponent | null = null;
 
   public override initialize(options?: DribbleComboPopupOptions): void {
     const text = ENGINE.TextComponent.create({
@@ -37,6 +39,7 @@ export class DribbleComboPopup extends ENGINE.Actor {
       actorTags: [...(options?.actorTags ?? []), 'combo-popup-vfx'],
     });
 
+    this.textComponent = text;
     this.startPosition.copy(this.rootComponent.position);
     this.driftX = THREE.MathUtils.randFloatSpread(0.18);
     this.rootComponent.scale.setScalar(0.1);
@@ -46,15 +49,38 @@ export class DribbleComboPopup extends ENGINE.Actor {
         object.renderOrder = 20;
       }
     });
+    this.rootComponent.visible = false;
   }
 
   public setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
   }
 
+  public play(position: THREE.Vector3, label: string, color: string): void {
+    this.elapsed = 0;
+    this.active = true;
+    this.startPosition.copy(position);
+    this.driftX = THREE.MathUtils.randFloatSpread(0.18);
+    this.rootComponent.visible = true;
+    this.rootComponent.position.copy(position);
+    this.rootComponent.scale.setScalar(0.1);
+    if (this.textComponent) {
+      this.textComponent.textColor = color;
+      this.textComponent.updateText(label);
+    }
+    if (this.spriteMaterial) {
+      this.spriteMaterial.opacity = 1;
+    }
+  }
+
+  public deactivate(): void {
+    this.active = false;
+    this.rootComponent.visible = false;
+  }
+
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
-    if (!this.gameplayActive) {
+    if (!this.gameplayActive || !this.active) {
       return;
     }
 
@@ -76,7 +102,7 @@ export class DribbleComboPopup extends ENGINE.Actor {
     }
 
     if (progress >= 1) {
-      this.destroy();
+      this.deactivate();
     }
   }
 }
