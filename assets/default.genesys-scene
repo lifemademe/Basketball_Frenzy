@@ -9,11 +9,11 @@
             "$bc": "c",
             "_": [
               1,
-              0.930111,
-              0.83077
+              0.296138,
+              0.088656
             ]
           },
-          8
+          5.5
         ]
       }
     },
@@ -25,20 +25,20 @@
           {
             "$bc": "c",
             "_": [
-              0.64448,
-              0.62396,
-              0.887923
+              0.155926,
+              0.168269,
+              0.584078
             ]
           },
           {
             "$bc": "c",
             "_": [
-              0.947307,
-              0.838799,
-              0.83077
+              0.799103,
+              0.099899,
+              0.084376
             ]
           },
-          1
+          1.6
         ]
       }
     },
@@ -50,12 +50,12 @@
           {
             "$bc": "c",
             "_": [
-              1,
-              0.730461,
-              0.003035
+              0.040915,
+              0.024158,
+              0.109462
             ]
           },
-          0
+          0.35
         ]
       }
     },
@@ -73,12 +73,12 @@
           "$bc": "THREE.SphereGeometry",
           "_": [
             0.18,
-            24,
-            16
+            20,
+            14
           ]
         },
         "material": {
-          "$bc": "THREE.MeshStandardMaterial",
+          "$bc": "THREE.MeshBasicMaterial",
           "color": {
             "$bc": "c",
             "_": [
@@ -87,10 +87,16 @@
               0.760525
             ]
           },
-          "roughness": 0.65,
-          "uuid": "34bd40bc-ec63-4a5e-abc2-f1702899e613"
+          "depthWrite": false,
+          "opacity": 0.34,
+          "transparent": true,
+          "uuid": "d91e83e6-4335-4104-8532-d6b07af6bd72",
+          "wireframe": true
         },
-        "name": "Palm Mesh",
+        "name": "Placeholder Palm",
+        "physicsOptions": {
+          "enabled": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -102,7 +108,7 @@
         "userData": {
           "objectFlags": 1
         },
-        "uuid": "104a65aa-5c61-4141-834a-73b842094bd5"
+        "uuid": "36b4c582-800d-4035-b714-0f67662e797b"
       }
     },
     {
@@ -118,11 +124,11 @@
             0.08,
             0.42,
             8,
-            16
+            14
           ]
         },
         "material": {
-          "$bc": "THREE.MeshStandardMaterial",
+          "$bc": "THREE.MeshBasicMaterial",
           "color": {
             "$bc": "c",
             "_": [
@@ -131,10 +137,16 @@
               0.760525
             ]
           },
-          "roughness": 0.65,
-          "uuid": "2e4f90f6-2b62-4369-a4ce-aba1a58d72a7"
+          "depthWrite": false,
+          "opacity": 0.34,
+          "transparent": true,
+          "uuid": "656a9bbf-c8eb-46ea-b2c0-10fda814c0c5",
+          "wireframe": true
         },
-        "name": "Wrist Mesh",
+        "name": "Placeholder Wrist",
+        "physicsOptions": {
+          "enabled": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -154,7 +166,7 @@
         "userData": {
           "objectFlags": 1
         },
-        "uuid": "d8865192-d2e7-4ce4-aaeb-4db8b8d90578"
+        "uuid": "ff7e6a49-17e6-4070-9576-aa3c65b3f39a"
       }
     },
     {
@@ -171,12 +183,12 @@
           "$bc": "THREE.SphereGeometry",
           "_": [
             0.18,
-            24,
-            16
+            20,
+            14
           ]
         },
         "material": {
-          "$bc": "THREE.MeshStandardMaterial",
+          "$bc": "THREE.MeshBasicMaterial",
           "color": {
             "$bc": "c",
             "_": [
@@ -185,10 +197,16 @@
               0.003035
             ]
           },
-          "roughness": 0.65,
-          "uuid": "e1c92b66-b9a8-440b-a1bf-2036de257f1b"
+          "depthWrite": false,
+          "opacity": 0.34,
+          "transparent": true,
+          "uuid": "f8a967d1-45a0-4292-9d0c-8b1208995004",
+          "wireframe": true
         },
-        "name": "Palm Mesh",
+        "name": "Placeholder Palm",
+        "physicsOptions": {
+          "enabled": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -200,7 +218,7 @@
         "userData": {
           "objectFlags": 1
         },
-        "uuid": "84f8c99f-8720-4e40-88ac-e83777529b98"
+        "uuid": "1ef91ffd-6a8b-472a-ae2a-a7a5612a0fc9"
       }
     },
     {
@@ -216,11 +234,11 @@
             0.08,
             0.42,
             8,
-            16
+            14
           ]
         },
         "material": {
-          "$bc": "THREE.MeshStandardMaterial",
+          "$bc": "THREE.MeshBasicMaterial",
           "color": {
             "$bc": "c",
             "_": [
@@ -229,10 +247,16 @@
               0.003035
             ]
           },
-          "roughness": 0.65,
-          "uuid": "efdea740-3a2f-4adb-a76f-c44e40759853"
+          "depthWrite": false,
+          "opacity": 0.34,
+          "transparent": true,
+          "uuid": "59aebe7e-2aa9-4a26-9ccc-2cf88f6ca299",
+          "wireframe": true
         },
-        "name": "Wrist Mesh",
+        "name": "Placeholder Wrist",
+        "physicsOptions": {
+          "enabled": false
+        },
         "position": {
           "$bc": "v3",
           "_": [
@@ -252,7 +276,7 @@
         "userData": {
           "objectFlags": 1
         },
-        "uuid": "f17eca9d-551b-4793-a8db-fc09f987d675"
+        "uuid": "657c2f34-ad8d-4db3-8ffa-1db739877d60"
       }
     }
   ],
@@ -290,17 +314,16 @@
           "rotation": {
             "$bc": "e",
             "_": [
-              1.919862,
-              0,
+              0.22,
+              -0.35,
               0
             ]
           },
           "shadowBias": -0.001,
-          "shadowCameraBottom": -200,
-          "shadowCameraLeft": -200,
-          "shadowCameraRight": 200,
-          "shadowCameraTop": 200,
-          "shadowFar": 500,
+          "shadowCameraBottom": -15,
+          "shadowCameraLeft": -30,
+          "shadowCameraRight": 30,
+          "shadowCameraTop": 25,
           "uuid": "cfe05433-9edc-4dfe-a535-c71f33e92d78"
         },
         "uuid": "9a86d389088b361c"
@@ -492,169 +515,6 @@
         "editorData": {
           "hidden": false
         },
-        "name": "GLTFMeshActor_250",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "castShadow": true,
-          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
-          "name": "GLTFMeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -11.951282,
-              4,
-              -19.021434
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              -0.349066,
-              0
-            ]
-          },
-          "uuid": "f780f347-2076-4fa2-a728-c8d1d5ddc898"
-        },
-        "uuid": "551565549007dab4"
-      },
-      "9": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "editorData": {
-          "hidden": false
-        },
-        "name": "GLTFMeshActor_251",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "castShadow": true,
-          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
-          "name": "GLTFMeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -12.048718,
-              5.01,
-              -18.978566
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              0.523599,
-              0
-            ]
-          },
-          "uuid": "158a332b-5759-4763-a464-d63a8c92d61f"
-        },
-        "uuid": "a62758ef0089259e"
-      },
-      "10": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "editorData": {
-          "hidden": false
-        },
-        "name": "GLTFMeshActor_252",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "castShadow": true,
-          "modelMaterial": "@engine/assets/shaders/M_Velvet_Purple.material.json",
-          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
-          "name": "GLTFMeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              12.572222,
-              -0.033333,
-              -12.162305
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              3.141592,
-              1.047198,
-              3.141592
-            ]
-          },
-          "uuid": "9235db27-32f8-4e89-9928-fee3a242bb3b"
-        },
-        "uuid": "e93a0780592552ec"
-      },
-      "11": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "editorData": {
-          "hidden": false
-        },
-        "name": "GLTFMeshActor_253",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "castShadow": true,
-          "modelMaterial": "@engine/assets/shaders/M_Velvet_Red.material.json",
-          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
-          "name": "GLTFMeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              11.355556,
-              -0.033333,
-              -11.868848
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              0.174533,
-              0
-            ]
-          },
-          "uuid": "928b1975-19f3-4a9e-a315-e6191aa0818a"
-        },
-        "uuid": "e5378bbbb8f88bb5"
-      },
-      "12": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "editorData": {
-          "hidden": false
-        },
-        "name": "GLTFMeshActor_254",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "castShadow": true,
-          "modelMaterial": "@engine/assets/shaders/M_Velvet_Red.material.json",
-          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
-          "name": "GLTFMeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              12.072222,
-              0.966667,
-              -11.968848
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              -0.349066,
-              0
-            ]
-          },
-          "uuid": "a7b619a9-a588-4be1-adea-bd3eabc2db89"
-        },
-        "uuid": "881497b03dadb60b"
-      },
-      "13": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "editorData": {
-          "hidden": false
-        },
         "name": "GLTFMeshActor_259",
         "rootComponent": {
           "$bc": "ENGINE.ModelMeshComponent",
@@ -682,7 +542,7 @@
         },
         "uuid": "29a503d54bd56c5e"
       },
-      "14": {
+      "9": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -714,7 +574,7 @@
         },
         "uuid": "c6604e386d5e3f9a"
       },
-      "15": {
+      "10": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -746,7 +606,7 @@
         },
         "uuid": "254041eb3dfea581"
       },
-      "16": {
+      "11": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -778,7 +638,7 @@
         },
         "uuid": "1a270f08-2503-4617-b2ee-b926fb0dcacc"
       },
-      "17": {
+      "12": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -811,7 +671,7 @@
         },
         "uuid": "f80e12c2-3061-4f48-9ff1-93657e994d92"
       },
-      "18": {
+      "13": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -843,7 +703,7 @@
         },
         "uuid": "2404d290-020a-423b-b6de-e3b3bea831d7"
       },
-      "19": {
+      "14": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -876,7 +736,7 @@
         },
         "uuid": "b350d159-fc2d-414c-baa9-cac87ea10e3b"
       },
-      "20": {
+      "15": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -908,7 +768,7 @@
         },
         "uuid": "92602c0b-1d4a-498a-aaee-84b4324539a7"
       },
-      "21": {
+      "16": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -940,7 +800,7 @@
         },
         "uuid": "bfb93412-81a0-4d94-ad3e-b1903646b01f"
       },
-      "22": {
+      "17": {
         "$bc": "ENGINE.Actor",
         "editorData": {
           "hidden": false
@@ -969,7 +829,7 @@
         },
         "uuid": "5a5128b065a3e870"
       },
-      "23": {
+      "18": {
         "$bc": "ENGINE.Actor",
         "editorData": {
           "hidden": false
@@ -990,7 +850,7 @@
         },
         "uuid": "4fea4a9dd1c93f75"
       },
-      "24": {
+      "19": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1022,7 +882,7 @@
         },
         "uuid": "ea1f7d68cd6b0cd7"
       },
-      "25": {
+      "20": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1054,7 +914,7 @@
         },
         "uuid": "ac5bce4eb673b78c"
       },
-      "26": {
+      "21": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1087,7 +947,7 @@
         },
         "uuid": "c5a4e6ff4fe449c4"
       },
-      "27": {
+      "22": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1120,7 +980,7 @@
         },
         "uuid": "7cf123d3e48f05b0"
       },
-      "28": {
+      "23": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1152,7 +1012,7 @@
         },
         "uuid": "5ba0d068c26283b7"
       },
-      "29": {
+      "24": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1184,7 +1044,7 @@
         },
         "uuid": "5c8b7c03e020e4a7"
       },
-      "30": {
+      "25": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1217,7 +1077,7 @@
         },
         "uuid": "a903a7652c980c8e"
       },
-      "31": {
+      "26": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1250,7 +1110,7 @@
         },
         "uuid": "b40e4d50881bb12e"
       },
-      "32": {
+      "27": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1282,7 +1142,7 @@
         },
         "uuid": "e40fce9172568e2a"
       },
-      "33": {
+      "28": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1314,7 +1174,7 @@
         },
         "uuid": "52ccaa89e83a9fe8"
       },
-      "34": {
+      "29": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1347,7 +1207,7 @@
         },
         "uuid": "2e88891f5c5205a7"
       },
-      "35": {
+      "30": {
         "$bc": "ENGINE.ModelMeshActor",
         "editorData": {
           "hidden": false
@@ -1380,7 +1240,7 @@
         },
         "uuid": "86eb658403321869"
       },
-      "36": {
+      "31": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "name": "Sky",
@@ -1389,12 +1249,16 @@
           "children": {
             "$length": 2
           },
+          "cloudCoverage": 0.52,
           "cloudDensity": 0.7,
-          "cloudElevation": 0.42,
-          "cloudSpeed": 0.00005,
+          "cloudElevation": 0.28,
+          "cloudSpeed": 0.00008,
+          "environmentMapIntensity": 0.85,
           "generateEnvironmentMap": true,
-          "mieDirectionalG": 0.85,
+          "mieCoefficient": 0.02,
+          "mieDirectionalG": 0.9,
           "name": "Sky",
+          "rayleigh": 1.35,
           "scale": {
             "$bc": "v3",
             "_": [
@@ -1403,11 +1267,12 @@
               10000
             ]
           },
+          "turbidity": 9,
           "uuid": "c1388027c3cb35fa"
         },
         "uuid": "075dcdc931c49300"
       },
-      "37": {
+      "32": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1420,7 +1285,7 @@
           "children": {
             "$length": 1
           },
-          "material": "@engine/assets/shaders/M_Velvet_Blue.material.json",
+          "material": "",
           "name": "MeshComponent",
           "position": {
             "$bc": "v3",
@@ -1443,7 +1308,7 @@
         },
         "uuid": "e136963d56cbc9e2"
       },
-      "38": {
+      "33": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1462,7 +1327,7 @@
             "$bc": "v3",
             "_": [
               -0.5,
-              3.5,
+              -1.5,
               -20
             ]
           },
@@ -1479,7 +1344,7 @@
         },
         "uuid": "f8b4a8cce9490095"
       },
-      "39": {
+      "34": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1515,51 +1380,7 @@
         },
         "uuid": "846ea30decfd0855"
       },
-      "40": {
-        "$bc": "ENGINE.Actor",
-        "$initOptions": {},
-        "editorData": {
-          "hidden": false
-        },
-        "name": "Mesh_Wall",
-        "rootComponent": {
-          "$bc": "ENGINE.MeshComponent",
-          "castShadow": true,
-          "children": {
-            "$length": 1
-          },
-          "material": "@project/assets/materials/M_Wall.material.json",
-          "name": "MeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -0.5,
-              -4.35,
-              -24.5
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              1.570796,
-              0,
-              0
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              49,
-              1,
-              8
-            ]
-          },
-          "uuid": "f3165aa2b7c1d2db"
-        },
-        "uuid": "09162add26d970ea"
-      },
-      "41": {
+      "35": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1603,7 +1424,7 @@
         },
         "uuid": "b6288f5581d82ff7"
       },
-      "42": {
+      "36": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1647,7 +1468,7 @@
         },
         "uuid": "f70add681f31a1a2"
       },
-      "43": {
+      "37": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1691,7 +1512,7 @@
         },
         "uuid": "9ed6eea2ceac813d"
       },
-      "44": {
+      "38": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1735,7 +1556,7 @@
         },
         "uuid": "b39016f8ce7fd9b6"
       },
-      "45": {
+      "39": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1779,7 +1600,7 @@
         },
         "uuid": "8f3673c5eb4c6795"
       },
-      "46": {
+      "40": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1823,7 +1644,7 @@
         },
         "uuid": "e0b8e9e184304b20"
       },
-      "47": {
+      "41": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -1867,37 +1688,89 @@
         },
         "uuid": "1129c81344e2d3f4"
       },
-      "48": {
+      "42": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
-          "modelUrl": "@project/assets/models/basket.glb"
+          "modelUrl": "@project/assets/models/left_hand.glb"
         },
-        "name": "Basket",
+        "name": "Left Hand",
         "rootComponent": {
           "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/basket.glb",
+          "modelUrl": "@project/assets/models/right_hand.glb",
           "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
           "position": {
             "$bc": "v3",
             "_": [
-              -0.5,
-              3.7,
-              -15.15
+              -0.75,
+              1.45,
+              -0.125
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              3.141592,
+              1.396264,
+              3.141592
             ]
           },
           "scale": {
             "$bc": "v3",
             "_": [
-              5.89,
-              5.89,
-              5.89
+              0.5,
+              0.5,
+              0.5
             ]
           },
-          "uuid": "83c6660f-97bc-467f-926a-7009862362c9"
+          "uuid": "36e68a4c-8b62-43ba-ba3d-212b800d6930"
         },
-        "uuid": "edd198ce7db3d70f"
+        "uuid": "ee5419c2ba8b5b4b"
       },
-      "49": {
+      "43": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/right_hand.glb"
+        },
+        "name": "Right Hand",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/left_hand.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              1,
+              1.45,
+              -0.075
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              0.5,
+              0.5,
+              0.5
+            ]
+          },
+          "uuid": "feb8103d-33b6-4a88-a036-c3bc76f47a78"
+        },
+        "uuid": "cf203254720bc7f5"
+      },
+      "44": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {
           "rootComponent": {
@@ -1909,16 +1782,20 @@
             }
           ]
         },
+        "$meta": {
+          "editorOnly": true
+        },
         "actorTags": [
-          "dribble-hand"
+          "hand-placeholder"
         ],
-        "name": "Left Hand",
+        "editorOnly": true,
+        "name": "Left Hand Placeholder",
         "rootComponent": {
           "$ref": 4
         },
-        "uuid": "3f66c104af2edb22"
+        "uuid": "64ea414666e33227"
       },
-      "50": {
+      "45": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {
           "rootComponent": {
@@ -1930,16 +1807,45 @@
             }
           ]
         },
+        "$meta": {
+          "editorOnly": true
+        },
         "actorTags": [
-          "dribble-hand"
+          "hand-placeholder"
         ],
-        "name": "Right Hand",
+        "editorOnly": true,
+        "name": "Right Hand Placeholder",
         "rootComponent": {
           "$ref": 6
         },
-        "uuid": "cf86b8b752eba6dc"
+        "uuid": "b9e3fb601c936b8d"
       },
-      "$length": 51
+      "46": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/Basketballscene.glb"
+        },
+        "name": "Basketballscene",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/Basketballscene.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.05,
+              0.65,
+              -2
+            ]
+          },
+          "uuid": "70800e0d-08d4-4aa3-97de-ccaadcdb6cad"
+        },
+        "uuid": "db730ce76aa0bf8f"
+      },
+      "$length": 47
     },
     "editorData": {
       "sceneTree": {
@@ -1976,31 +1882,6 @@
           },
           {
             "id": "97db092abd53efa6",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "551565549007dab4",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "a62758ef0089259e",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "e93a0780592552ec",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "e5378bbbb8f88bb5",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "881497b03dadb60b",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -2130,11 +2011,6 @@
             "nodeType": "actor"
           },
           {
-            "id": "09162add26d970ea",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "b6288f5581d82ff7",
             "isExpanded": false,
             "nodeType": "actor"
@@ -2175,17 +2051,27 @@
             "nodeType": "actor"
           },
           {
-            "id": "edd198ce7db3d70f",
+            "id": "ee5419c2ba8b5b4b",
             "isExpanded": false,
             "nodeType": "actor"
           },
           {
-            "id": "3f66c104af2edb22",
+            "id": "cf203254720bc7f5",
             "isExpanded": false,
             "nodeType": "actor"
           },
           {
-            "id": "cf86b8b752eba6dc",
+            "id": "64ea414666e33227",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "b9e3fb601c936b8d",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "db730ce76aa0bf8f",
             "isExpanded": false,
             "nodeType": "actor"
           }
@@ -2199,20 +2085,20 @@
       "effects": [
         {
           "enabled": true,
-          "exposure": 0.5,
+          "exposure": 0.72,
           "mode": 4,
           "type": "toneMapping"
         },
         {
           "enabled": true,
           "ignoreBackground": true,
-          "levels": 10,
+          "levels": 6,
           "mipmapBlur": true,
-          "radius": 0.12,
+          "radius": 0.2,
           "selectiveEmissive": false,
-          "smoothing": 0.69,
-          "strength": 0.12,
-          "threshold": 2,
+          "smoothing": 0.55,
+          "strength": 0.32,
+          "threshold": 1.15,
           "type": "bloom"
         },
         {
@@ -2224,11 +2110,11 @@
           "enabled": true,
           "fade": 0.01,
           "gtaoRadius": 0.34,
-          "gtaoSamples": 27,
+          "gtaoSamples": 12,
           "gtaoStrength": 1,
           "luminanceInfluence": 0.7,
           "minRadiusScale": 0.33,
-          "resolutionScale": 1,
+          "resolutionScale": 0.75,
           "ssaoRadius": 0.1,
           "ssaoSamples": 9,
           "ssaoStrength": 1.33,

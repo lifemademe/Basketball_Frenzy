@@ -44,6 +44,11 @@ export class DribbleTarget extends ENGINE.Actor {
 
   private hit = false;
   private gameplayActive = true;
+  private removalRequested = false;
+  private glowShell: ENGINE.MeshComponent | null = null;
+  private glowMaterial: THREE.MeshBasicMaterial | null = null;
+  private glowPhase = Math.random() * Math.PI * 2;
+  private glowBaseOpacity = 0.24;
 
   public override initialize(options?: DribbleTargetOptions): void {
     this.kind = options?.kind ?? this.kind;
@@ -68,33 +73,50 @@ export class DribbleTarget extends ENGINE.Actor {
     const material = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: this.kind === 'health' || this.kind === 'bonus' ? 0.8 : 0.25,
-      roughness: 0.42,
+      emissiveIntensity: this.kind === 'bonus' ? 4.2 : this.kind === 'health' ? 3.2 : 2.8,
+      roughness: 0.3,
+      metalness: 0.12,
     });
     const rootComponent = ENGINE.MeshComponent.create({
       name: 'Target Mesh',
       geometry,
       material,
+      physicsOptions: { enabled: false },
     });
+
+    this.glowBaseOpacity = this.kind === 'bonus' ? 0.4 : this.kind === 'health' ? 0.3 : 0.24;
+    this.glowMaterial = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: this.glowBaseOpacity,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    this.glowShell = ENGINE.MeshComponent.create({
+      name: 'Target Glow Shell',
+      geometry: geometry.clone(),
+      material: this.glowMaterial,
+      scale: new THREE.Vector3(1.14, 1.14, 1.14),
+      physicsOptions: { enabled: false },
+    });
+    rootComponent.add(this.glowShell);
 
     if (this.kind === 'health') {
       rootComponent.add(ENGINE.MeshComponent.create({
         name: 'Health Crossbar',
         geometry: new THREE.BoxGeometry(0.9, 0.2, 0.18),
         material,
+        physicsOptions: { enabled: false },
       }));
     } else if (this.kind === 'bonus') {
       rootComponent.add(ENGINE.PointLightComponent.create({
         name: 'Bonus Star Glow',
         color,
-        intensity: 2.2,
-        distance: 2.8,
-      }));
-      rootComponent.add(ENGINE.PointLightComponent.create({
-        name: 'Health Glow',
-        color,
-        intensity: 1.5,
-        distance: 2.2,
+        intensity: 1.8,
+        distance: 2.6,
+        decay: 2,
+        castShadow: false,
       }));
     }
 
@@ -112,6 +134,12 @@ export class DribbleTarget extends ENGINE.Actor {
     }
 
     this.rootComponent.position.z += this.getApproachSpeed() * deltaTime;
+    this.glowPhase += deltaTime * (this.kind === 'bonus' ? 7 : 4.5);
+    const glowPulse = Math.sin(this.glowPhase);
+    this.glowShell?.scale.setScalar(1.14 + glowPulse * 0.045);
+    if (this.glowMaterial) {
+      this.glowMaterial.opacity = this.glowBaseOpacity + glowPulse * 0.07;
+    }
     if (this.kind === 'bonus') {
       this.rootComponent.rotation.y += deltaTime * 0.45;
       this.rootComponent.rotation.z += deltaTime * 2.2;
@@ -123,6 +151,16 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.rootComponent.position.z > 2.5) {
       this.destroy();
     }
+  }
+
+  public override destroy(): void {
+    if (this.removalRequested) {
+      return;
+    }
+
+    this.removalRequested = true;
+    this.gameplayActive = false;
+    super.destroy();
   }
 
   public consumeHit(): boolean {

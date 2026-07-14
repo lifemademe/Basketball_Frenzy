@@ -26,6 +26,7 @@ export class DribbleImpactBurst extends ENGINE.Actor {
         geometry: new THREE.TorusGeometry(0.48, 0.08, 8, 28),
         material: this.material,
         scale: new THREE.Vector3(0.45, 0.45, 0.45),
+        physicsOptions: { enabled: false },
       }),
       actorTags: [...(options?.actorTags ?? []), 'impact-burst'],
     });

@@ -1,24 +1,37 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
-import { DribbleBall } from './dribble-ball.js';
+import { DribbleBall, type DribbleSide } from './dribble-ball.js';
+import { DribbleComboPopup } from './dribble-combo-popup.js';
 import { DribbleImpactBurst } from './dribble-impact-burst.js';
+import { DribbleMainMenu } from './dribble-main-menu.js';
 import { DribbleOverlay } from './dribble-overlay.js';
-import { DribbleJuiceHud, DribbleLivesDisplay, DribbleTimingMeter } from './dribble-status-hud.js';
+import {
+  DribbleJuiceHud,
+  DribbleLivesDisplay,
+  DribbleSideHints,
+  DribbleTimingMeter,
+} from './dribble-status-hud.js';
 import { DribbleTarget } from './dribble-target.js';
 
-type DribbleGameState = 'playing' | 'paused' | 'gameOver';
+type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
+
+interface HandAnimationState {
+  action: THREE.AnimationAction;
+  mixer: THREE.AnimationMixer;
+}
 
 @ENGINE.GameClass()
 export class DribbleGameplayManager extends ENGINE.Actor {
   private ball: DribbleBall | null = null;
   private scoreDisplay: ENGINE.NumberDisplay | null = null;
   private livesDisplay: DribbleLivesDisplay | null = null;
+  private sideHints: DribbleSideHints | null = null;
   private crosshair: ENGINE.Crosshair | null = null;
   private timingMeter: DribbleTimingMeter | null = null;
   private juiceHud: DribbleJuiceHud | null = null;
-  private comboDisplay: ENGINE.Badge | null = null;
   private hitFeedback: ENGINE.Badge | null = null;
+  private mainMenu: DribbleMainMenu | null = null;
   private overlay: DribbleOverlay | null = null;
   private spawnTimer = 0.9;
   private elapsedTime = 0;
@@ -27,7 +40,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private combo = 0;
   private frenzyCharge = 0;
   private frenzyTimeRemaining = 0;
-  private gameState: DribbleGameState = 'playing';
+  private readonly handAnimations = new Map<DribbleSide, HandAnimationState>();
+  private gameState: DribbleGameState = 'menu';
   private feedbackTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly lanes = [-0.95, 0, 0.95];
   private readonly frenzyHitsRequired = 6;
@@ -48,7 +62,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   public togglePause(): void {
-    if (this.gameState === 'gameOver') {
+    if (this.gameState === 'menu' || this.gameState === 'gameOver') {
       return;
     }
 
@@ -71,6 +85,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     for (const burst of world.getActors(DribbleImpactBurst)) {
       burst.destroy();
     }
+    for (const popup of world.getActors(DribbleComboPopup)) {
+      popup.destroy();
+    }
 
     this.gameState = 'playing';
     this.spawnTimer = 0.7;
@@ -85,10 +102,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.scoreDisplay?.setValue(0, false);
     this.scoreDisplay?.setTrend(null);
     this.livesDisplay?.setLives(this.lives);
-    this.comboDisplay?.hide();
     this.hitFeedback?.hide();
     this.timingMeter?.setTiming(0, false, false);
     this.juiceHud?.setFrenzy(0, 0, false);
+    this.mainMenu?.hide();
     this.overlay?.hide();
     this.setHudVisible(true);
     world.inputManager.requestPointerLock({ unadjustedMovement: true });
@@ -111,11 +128,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     this.updateTimingMeter();
     this.checkBallTargetHits();
+    this.updateHandAnimations(deltaTime);
   }
 
   protected override doBeginPlay(): void {
     super.doBeginPlay();
     this.setupArena();
+    void this.setupHandAnimations();
     void this.setupHud();
   }
 
@@ -126,20 +145,26 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     this.scoreDisplay?.destroy();
     this.livesDisplay?.destroy();
+    this.sideHints?.destroy();
     this.crosshair?.destroy();
     this.timingMeter?.destroy();
     this.juiceHud?.destroy();
-    this.comboDisplay?.destroy();
     this.hitFeedback?.destroy();
+    this.mainMenu?.destroy();
     this.overlay?.destroy();
     this.scoreDisplay = null;
     this.livesDisplay = null;
+    this.sideHints = null;
     this.crosshair = null;
     this.timingMeter = null;
     this.juiceHud = null;
-    this.comboDisplay = null;
     this.hitFeedback = null;
+    this.mainMenu = null;
     this.overlay = null;
+    for (const state of this.handAnimations.values()) {
+      state.mixer.stopAllAction();
+    }
+    this.handAnimations.clear();
     super.doEndPlay();
   }
 
@@ -154,7 +179,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       width: 3.6,
       height: 0.16,
       depth: 30,
-      color: 0x2f3437,
+      color: 0x2b2134,
     }).setName('Dribble Court Floor');
 
     world.addBox({
@@ -162,7 +187,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       width: 0.12,
       height: 0.04,
       depth: 0.8,
-      color: 0xf5f5f5,
+      color: 0xffd36a,
     }).setName('Center Bounce Mark');
 
     for (const laneX of this.lanes) {
@@ -171,16 +196,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         width: 0.035,
         height: 0.04,
         depth: 30,
-        color: laneX === 0 ? 0xd7ff43 : 0x8e8e93,
+        color: laneX === 0 ? 0xffd36a : laneX < 0 ? 0xff6b8a : 0x65b8ff,
       }).setName(`Lane Guide ${laneX}`);
     }
 
-    this.addHand(world, 'Left Hand', this.lanes[0], 0x4a90e2);
-    this.addHand(world, 'Right Hand', this.lanes[2], 0xff9f0a);
+    this.addHand(world, 'Left Hand', '@project/assets/models/right_hand.glb');
+    this.addHand(world, 'Right Hand', '@project/assets/models/left_hand.glb');
     this.addLights(world);
 
     this.ball = DribbleBall.create({ name: 'Dribble Ball' });
     world.addActor(this.ball);
+    this.ball.setGameplayActive(false);
   }
 
   private async setupHud(): Promise<void> {
@@ -191,6 +217,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     this.scoreDisplay = new ENGINE.NumberDisplay(world.uiManager, {
       position: 'top-left',
+      visible: false,
       label: 'Score',
       initialValue: 0,
       animate: true,
@@ -198,27 +225,27 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     });
     this.livesDisplay = new DribbleLivesDisplay(world.uiManager, {
       position: 'top-right',
+      visible: false,
       initialLives: this.lives,
       maxLives: 3,
     });
+    this.sideHints = new DribbleSideHints(world.uiManager, {
+      visible: false,
+    });
     this.crosshair = new ENGINE.Crosshair(world.uiManager, {
       ...ENGINE.Crosshair.presets.bracket,
+      visible: false,
       size: 42,
       color: '#d7ff43',
       accentColor: '#ffffff',
     });
     this.timingMeter = new DribbleTimingMeter(world.uiManager, {
       position: 'bottom-center',
+      visible: false,
     });
     this.juiceHud = new DribbleJuiceHud(world.uiManager, {
       position: 'top-center',
-    });
-    this.comboDisplay = new ENGINE.Badge(world.uiManager, {
-      ...ENGINE.Badge.presets.yellowLarge,
-      position: 'bottom-right',
       visible: false,
-      label: 'COMBO x2',
-      dot: true,
     });
     this.hitFeedback = new ENGINE.Badge(world.uiManager, {
       ...ENGINE.Badge.presets.greenLarge,
@@ -227,19 +254,25 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       label: '+10',
       dot: true,
     });
+    this.mainMenu = new DribbleMainMenu(world.uiManager, {
+      onPlay: () => this.restartRun(),
+      onVolumeChange: volume => this.applyMasterVolume(volume),
+    });
     this.overlay = new DribbleOverlay(world.uiManager, {
       onResume: () => this.resumeRun(),
       onRestart: () => this.restartRun(),
+      onMainMenu: () => this.returnToMainMenu(),
     });
 
     await Promise.all([
       this.scoreDisplay.initialize(),
       this.livesDisplay.initialize(),
+      this.sideHints.initialize(),
       this.crosshair.initialize(),
       this.timingMeter.initialize(),
       this.juiceHud.initialize(),
-      this.comboDisplay.initialize(),
       this.hitFeedback.initialize(),
+      this.mainMenu.initialize(),
       this.overlay.initialize(),
     ]);
     this.scoreDisplay.setPosition({
@@ -254,49 +287,103 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.syncUiState();
   }
 
-  private addHand(world: ENGINE.World, name: string, x: number, color: THREE.ColorRepresentation): void {
-    if (world.getActorByName(name)) {
+  private addHand(world: ENGINE.World, name: string, modelUrl: string): void {
+    const existing = world.getActorByName(name);
+    const existingModel = existing?.rootComponent instanceof ENGINE.ModelMeshComponent
+      ? existing.rootComponent
+      : existing?.getComponent(ENGINE.ModelMeshComponent);
+    if (existingModel?.modelUrl === modelUrl) {
+      existingModel.replacePhysicsOptions({ enabled: false });
+      return;
+    }
+    existing?.destroy();
+
+    world.addActor(ENGINE.ModelMeshActor.create({
+      name,
+      modelUrl,
+      position: new THREE.Vector3(0, 1.32, -1.08),
+      scale: new THREE.Vector3(0.5, 0.5, 0.5),
+      physicsOptions: { enabled: false },
+    }));
+  }
+
+  private async setupHandAnimations(): Promise<void> {
+    await Promise.all([
+      this.setupHandAnimation('left', 'Left Hand'),
+      this.setupHandAnimation('right', 'Right Hand'),
+    ]);
+  }
+
+  private async setupHandAnimation(side: DribbleSide, actorName: string): Promise<void> {
+    const actor = this.getWorld()?.getActorByName(actorName);
+    const model = actor?.rootComponent instanceof ENGINE.ModelMeshComponent
+      ? actor.rootComponent
+      : actor?.getComponent(ENGINE.ModelMeshComponent);
+    if (!model) {
       return;
     }
 
-    const palm = world.addSphere({
-      position: new THREE.Vector3(x, 1.32, -1.08),
-      radius: 0.18,
-      color,
-    });
-    palm.setName(name);
+    await model.waitForLoad();
+    const modelRoot = model.getModel();
+    const clip = model.getAnimations().find(animation => animation.name === 'Bounce');
+    if (!modelRoot || !clip) {
+      return;
+    }
 
-    const wrist = ENGINE.MeshComponent.create({
-      name: 'Wrist Mesh',
-      geometry: new THREE.CapsuleGeometry(0.08, 0.42, 8, 16),
-      material: new THREE.MeshStandardMaterial({ color, roughness: 0.65 }),
-      position: new THREE.Vector3(0, -0.18, 0.18),
-      rotation: new THREE.Euler(Math.PI * 0.62, 0, 0),
-    });
-    palm.addComponent(wrist);
+    const mixer = new THREE.AnimationMixer(modelRoot);
+    const action = mixer.clipAction(clip);
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.play();
+    action.paused = true;
+    this.handAnimations.set(side, { action, mixer });
+  }
+
+  private updateHandAnimations(deltaTime: number): void {
+    const ballState = this.ball?.getState();
+    if (!ballState) {
+      return;
+    }
+
+    this.sideHints?.setState(ballState.side, ballState.isTransferring);
+
+    for (const [side, state] of this.handAnimations) {
+      const active = ballState.side === side && !ballState.isTransferring;
+      state.action.paused = !active;
+      if (active) {
+        state.mixer.update(deltaTime);
+      } else if (state.action.time !== 0) {
+        state.action.time = 0;
+        state.mixer.update(0);
+      }
+    }
   }
 
   private addLights(world: ENGINE.World): void {
-    const keyLight = ENGINE.Actor.create({
-      name: 'Dribble Key Light',
-      rootComponent: ENGINE.DirectionalLightComponent.create({
-        color: 0xffffff,
-        intensity: 3.2,
-        castShadow: true,
-        position: new THREE.Vector3(-4, 7, 4),
-      }),
-    });
-    keyLight.rootComponent.lookAt(new THREE.Vector3(0, 0, -7));
-
-    const ambient = ENGINE.Actor.create({
-      name: 'Dribble Ambient Light',
-      rootComponent: ENGINE.AmbientLightComponent.create({
-        color: 0x9fb7ff,
-        intensity: 0.72,
+    const coralFill = ENGINE.Actor.create({
+      name: 'Sunset Coral Lane Fill',
+      rootComponent: ENGINE.PointLightComponent.create({
+        color: 0xff4f7b,
+        intensity: 9,
+        distance: 9,
+        decay: 2,
+        castShadow: false,
+        position: new THREE.Vector3(-2.2, 2.5, -4.5),
       }),
     });
 
-    world.addActors(keyLight, ambient);
+    const blueFill = ENGINE.Actor.create({
+      name: 'Sunset Blue Lane Fill',
+      rootComponent: ENGINE.PointLightComponent.create({
+        color: 0x4da6ff,
+        intensity: 8,
+        distance: 10,
+        decay: 2,
+        castShadow: false,
+        position: new THREE.Vector3(2.2, 2.2, -6.5),
+      }),
+    });
+
+    world.addActors(coralFill, blueFill);
   }
 
   private spawnTarget(): void {
@@ -426,9 +513,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const points = basePoints * this.combo;
     this.score += points;
     this.scoreDisplay?.setValue(this.score, true);
-    this.updateComboDisplay();
-    this.showHitFeedback(`+${points}${this.combo > 1 ? `  COMBO x${this.combo}` : ''}`, 'green');
-    this.spawnImpactBurst(position, bonus ? 0xffca3a : 0x59df86);
+    this.spawnComboPopup();
+    this.showHitFeedback(`+${points}`, 'green');
+    this.spawnImpactBurst(position, bonus || this.frenzyTimeRemaining > 0 ? 0xffca3a : 0x59df86);
     if (this.frenzyCharge >= this.frenzyHitsRequired && this.frenzyTimeRemaining <= 0) {
       this.activateFrenzy();
     } else if (bonus) {
@@ -452,7 +539,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.combo = 0;
     this.frenzyCharge = 0;
     this.livesDisplay?.setLives(this.lives);
-    this.updateComboDisplay();
     this.showHitFeedback('LIFE LOST', 'red');
     this.spawnImpactBurst(position, 0xff453a);
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/explosion.mp3', {
@@ -493,11 +579,38 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }));
   }
 
+  private spawnComboPopup(): void {
+    const world = this.getWorld();
+    const ballState = this.ball?.getState();
+    if (!world || !ballState || this.combo < 2) {
+      return;
+    }
+
+    world.addActor(DribbleComboPopup.create({
+      name: 'Ball Combo Popup',
+      label: `COMBO x${this.combo}`,
+      color: this.combo >= 5 ? '#ffca3a' : '#65e6a8',
+      position: ballState.position.clone().add(new THREE.Vector3(0, 0.16, 0)),
+    }));
+  }
+
   private activateFrenzy(): void {
+    const world = this.getWorld();
     this.frenzyCharge = 0;
     this.frenzyTimeRemaining = this.frenzyDuration;
+    this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
     this.juiceHud?.showPraise('FRENZY!', 'gold');
+    if (world) {
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+        volume: 0.9,
+        bus: 'SFX',
+      });
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.5,
+        bus: 'SFX',
+      });
+    }
   }
 
   private updateFrenzy(deltaTime: number): void {
@@ -511,6 +624,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.frenzyTimeRemaining,
       active,
     );
+    if (!active) {
+      this.ball?.setFrenzyActive(false);
+    }
   }
 
   private showScorePraise(): void {
@@ -537,17 +653,22 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }, 700);
   }
 
-  private updateComboDisplay(): void {
-    if (!this.comboDisplay) {
+  private applyMasterVolume(volume: number): void {
+    this.getWorld()?.globalAudioManager.getBus('Master')?.setVolume(volume);
+  }
+
+  private returnToMainMenu(): void {
+    const world = this.getWorld();
+    if (!world) {
       return;
     }
-    if (this.combo < 2 || this.gameState !== 'playing') {
-      this.comboDisplay.hide();
-      return;
-    }
-    this.comboDisplay.setLabel(`COMBO x${this.combo}`);
-    this.comboDisplay.setColor(this.combo >= 5 ? 'green' : 'yellow');
-    this.comboDisplay.show();
+
+    this.gameState = 'menu';
+    this.setGameplayActive(false);
+    this.setHudVisible(false);
+    this.overlay?.hide();
+    this.mainMenu?.showHome();
+    world.inputManager.exitPointerLock();
   }
 
   private pauseRun(): void {
@@ -571,7 +692,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setGameplayActive(true);
     this.overlay?.hide();
     this.setHudVisible(true);
-    this.updateComboDisplay();
     world.inputManager.requestPointerLock({ unadjustedMovement: true });
   }
 
@@ -599,12 +719,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     for (const burst of world.getActors(DribbleImpactBurst)) {
       burst.setGameplayActive(active);
     }
+    for (const popup of world.getActors(DribbleComboPopup)) {
+      popup.setGameplayActive(active);
+    }
   }
 
   private setHudVisible(visible: boolean): void {
     const components = [
       this.scoreDisplay,
       this.livesDisplay,
+      this.sideHints,
       this.crosshair,
       this.timingMeter,
       this.juiceHud,
@@ -614,22 +738,28 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       else component?.hide();
     }
     if (!visible) {
-      this.comboDisplay?.hide();
       this.hitFeedback?.hide();
     }
   }
 
   private syncUiState(): void {
-    if (this.gameState === 'paused') {
+    if (this.gameState === 'menu') {
+      this.setGameplayActive(false);
+      this.setHudVisible(false);
+      this.overlay?.hide();
+      this.mainMenu?.showHome();
+    } else if (this.gameState === 'paused') {
+      this.mainMenu?.hide();
       this.setHudVisible(false);
       this.overlay?.showPause(this.score);
     } else if (this.gameState === 'gameOver') {
+      this.mainMenu?.hide();
       this.setHudVisible(false);
       this.overlay?.showGameOver(this.score);
     } else {
+      this.mainMenu?.hide();
       this.overlay?.hide();
       this.setHudVisible(true);
-      this.updateComboDisplay();
     }
   }
 }

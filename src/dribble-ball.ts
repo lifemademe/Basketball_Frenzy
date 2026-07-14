@@ -3,6 +3,42 @@ import * as THREE from 'three';
 
 import { DribbleBallTrail } from './dribble-ball-trail.js';
 
+function createFrenzyVfxDefinition(): ENGINE.VFXDefinition {
+  const definition = new ENGINE.VFXDefinition();
+  definition.name = 'DribbleFrenzyBallAura';
+  definition.particles = [Object.assign(new ENGINE.VFXParticlesSettings(), {
+    nbParticles: 56,
+    intensity: 2.4,
+    renderMode: 'stretchBillboard' as const,
+    stretchScale: 1.8,
+    fadeSize: [0, 0.8] as [number, number],
+    fadeAlpha: [0.08, 0.72] as [number, number],
+    gravity: [0, 0.5, 0] as [number, number, number],
+    appearance: 'circular' as const,
+    easeFunction: 'easeOutPower2' as const,
+    blendingMode: 'additive' as const,
+    depthTest: false,
+  })];
+  definition.emitters = [Object.assign(new ENGINE.VFXEmitterSettings(), {
+    particlesIndex: 0,
+    loop: true,
+    duration: 0.5,
+    nbParticles: 18,
+    spawnMode: 'time' as const,
+    particlesLifetime: [0.22, 0.48] as [number, number],
+    startPositionMin: [-0.24, -0.24, -0.08] as [number, number, number],
+    startPositionMax: [0.24, 0.24, 0.08] as [number, number, number],
+    directionMin: [-0.7, -0.25, -0.18] as [number, number, number],
+    directionMax: [0.7, 1, 0.18] as [number, number, number],
+    size: [0.025, 0.075] as [number, number],
+    speed: [0.45, 1.25] as [number, number],
+    colorStart: ['#fff8c7', '#ffd84f', '#ffb300'],
+    colorEnd: ['#ffca3a', '#ff8a00'],
+    useLocalDirection: true,
+  })];
+  return definition;
+}
+
 export type DribbleSide = 'left' | 'right';
 
 export interface DribbleBallState {
@@ -30,6 +66,11 @@ export class DribbleBall extends ENGINE.Actor {
   private boostBouncePlayed = false;
   private gameplayActive = true;
   private trail: DribbleBallTrail | null = null;
+  private frenzyVfx: ENGINE.VFXComponent | null = null;
+  private frenzyInnerRing: ENGINE.MeshComponent | null = null;
+  private frenzyOuterRing: ENGINE.MeshComponent | null = null;
+  private frenzyActive = false;
+  private frenzyPhase = 0;
   private bounceCycle = 0;
   private transferBouncePlayed = false;
   private readonly floorY = 0.08;
@@ -45,6 +86,7 @@ export class DribbleBall extends ENGINE.Actor {
     const ballModel = ENGINE.ModelMeshComponent.create({
       name: 'Ball Model',
       modelUrl: '@project/assets/models/ball.glb',
+      physicsOptions: { enabled: false },
     });
     const modelScale = (this.radius * 2) / 1.1889150142669678;
     ballModel.scale.setScalar(modelScale);
@@ -54,10 +96,38 @@ export class DribbleBall extends ENGINE.Actor {
       0.0017669298794641408 * modelScale,
     );
 
+    const frenzyMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffca3a,
+      transparent: true,
+      opacity: 0.82,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    this.frenzyInnerRing = ENGINE.MeshComponent.create({
+      name: 'Frenzy Inner Aura',
+      geometry: new THREE.TorusGeometry(0.43, 0.018, 6, 32),
+      material: frenzyMaterial,
+      physicsOptions: { enabled: false },
+    });
+    this.frenzyInnerRing.visible = false;
+    this.frenzyOuterRing = ENGINE.MeshComponent.create({
+      name: 'Frenzy Outer Aura',
+      geometry: new THREE.TorusGeometry(0.55, 0.01, 5, 32),
+      material: frenzyMaterial.clone(),
+      physicsOptions: { enabled: false },
+    });
+    this.frenzyOuterRing.visible = false;
+    this.frenzyVfx = ENGINE.VFXComponent.create({
+      name: 'Frenzy Ball Sparks',
+      vfxDefinition: createFrenzyVfxDefinition(),
+      autoStart: false,
+    });
+
     super.initialize({
       ...options,
       rootComponent: ENGINE.SceneComponent.create({ name: 'Ball Root' }),
-      sceneComponents: [ballModel],
+      sceneComponents: [ballModel, this.frenzyInnerRing, this.frenzyOuterRing, this.frenzyVfx],
       actorTags: [...(options?.actorTags ?? []), 'dribble-ball'],
     });
     this.updateBouncePosition(0);
@@ -91,9 +161,21 @@ export class DribbleBall extends ENGINE.Actor {
 
   public setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
+    this.applyFrenzyVisualState();
+  }
+
+  public setFrenzyActive(active: boolean): void {
+    if (this.frenzyActive === active) {
+      return;
+    }
+    this.frenzyActive = active;
+    this.frenzyPhase = 0;
+    this.trail?.setFrenzyActive(active);
+    this.applyFrenzyVisualState();
   }
 
   public reset(): void {
+    this.setFrenzyActive(false);
     this.side = 'left';
     this.phase = 0;
     this.transferTime = 0;
@@ -116,6 +198,7 @@ export class DribbleBall extends ENGINE.Actor {
     }
     this.trail = DribbleBallTrail.create({ name: 'Dribble Ball Trail VFX' });
     world.addActor(this.trail);
+    this.trail.setFrenzyActive(this.frenzyActive);
     this.trail.record(this.getWorldPosition());
   }
 
@@ -172,6 +255,32 @@ export class DribbleBall extends ENGINE.Actor {
     }
 
     this.trail?.record(this.getWorldPosition());
+    this.updateFrenzyVisuals(deltaTime);
+  }
+
+  private applyFrenzyVisualState(): void {
+    const visible = this.frenzyActive && this.gameplayActive;
+    if (this.frenzyInnerRing) this.frenzyInnerRing.visible = visible;
+    if (this.frenzyOuterRing) this.frenzyOuterRing.visible = visible;
+    if (visible) this.frenzyVfx?.startEmitting(false);
+    else this.frenzyVfx?.stopEmitting();
+  }
+
+  private updateFrenzyVisuals(deltaTime: number): void {
+    if (!this.frenzyActive) {
+      return;
+    }
+
+    this.frenzyPhase += deltaTime * 8;
+    const pulse = 1 + Math.sin(this.frenzyPhase) * 0.08;
+    if (this.frenzyInnerRing) {
+      this.frenzyInnerRing.scale.setScalar(pulse);
+      this.frenzyInnerRing.rotation.z += deltaTime * 1.8;
+    }
+    if (this.frenzyOuterRing) {
+      this.frenzyOuterRing.scale.setScalar(1.05 - Math.sin(this.frenzyPhase * 0.78) * 0.1);
+      this.frenzyOuterRing.rotation.z -= deltaTime * 1.2;
+    }
   }
 
   private startTransfer(from: DribbleSide, to: DribbleSide): boolean {

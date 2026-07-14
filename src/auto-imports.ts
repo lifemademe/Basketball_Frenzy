@@ -1,7 +1,9 @@
 import './dribble-ball-trail.ts';
 import './dribble-ball.ts';
+import './dribble-combo-popup.ts';
 import './dribble-gameplay.ts';
 import './dribble-impact-burst.ts';
+import './dribble-main-menu.ts';
 import './dribble-overlay.ts';
 import './dribble-status-hud.ts';
 import './dribble-target.ts';

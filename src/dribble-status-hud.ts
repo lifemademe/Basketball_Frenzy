@@ -1,5 +1,59 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
+import type { DribbleSide } from './dribble-ball.js';
+
+export interface DribbleSideHintsOptions extends ENGINE.BaseUIComponentOptions {}
+
+export class DribbleSideHints extends ENGINE.BaseUIComponent<DribbleSideHintsOptions> {
+  public static metadata: ENGINE.UIComponentMetadata = {
+    displayName: 'Dribble Side Hints',
+    category: 'hud',
+    summary: 'Left and right edge indicators for the current dribble side.',
+    useCases: ['left indicator', 'right indicator', 'dribble side'],
+    optionsType: 'DribbleSideHintsOptions',
+    assetPaths: {
+      template: '@project/assets/ui/dribble-side-hints.html',
+      styles: '@project/assets/ui/dribble-side-hints.css',
+    },
+  };
+
+  private rootElement: HTMLElement | null = null;
+
+  protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
+    return {
+      templatePath: DribbleSideHints.metadata.assetPaths.template,
+      stylesPath: DribbleSideHints.metadata.assetPaths.styles,
+    };
+  }
+
+  protected override getDefaultOptions(): Required<DribbleSideHintsOptions> {
+    return {
+      position: 'center',
+      visible: false,
+      customClasses: [],
+      customStyles: {},
+    };
+  }
+
+  protected override getInitialData(): Record<string, string> {
+    return {};
+  }
+
+  protected override cacheElements(): void {
+    this.rootElement = this.layout?.querySelector('[data-side-hints]') as HTMLElement | null;
+  }
+
+  public setState(side: DribbleSide, transferring: boolean): void {
+    if (!this.rootElement) return;
+    this.rootElement.dataset.side = side;
+    this.rootElement.dataset.transferring = transferring ? 'true' : 'false';
+  }
+
+  protected override onDestroy(): void {
+    this.rootElement = null;
+  }
+}
+
 export interface DribbleLivesDisplayOptions extends ENGINE.BaseUIComponentOptions {
   initialLives?: number;
   maxLives?: number;
@@ -14,12 +68,13 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
     optionsType: 'DribbleLivesDisplayOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-lives.html',
-      styles: '@project/assets/ui/dribble-status-hud.css',
+      styles: '@project/assets/ui/dribble-status-hud-boogaloo.css',
     },
   };
 
   private rootElement: HTMLElement | null = null;
   private heartsElement: HTMLElement | null = null;
+  private heartMarkup = '';
   private lives = 3;
   private hitTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -57,6 +112,9 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
   }
 
   protected override async onInitialize(): Promise<void> {
+    this.heartMarkup = await ENGINE.resolveAssetPathsInText(
+      '<img src="@project/assets/textures/Heart.png" alt="">',
+    );
     this.renderHearts();
   }
 
@@ -90,7 +148,7 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
       const heart = document.createElement('span');
       heart.className = 'dribble-life-heart';
       heart.dataset.active = index < this.lives ? 'true' : 'false';
-      heart.innerHTML = ENGINE.Icons.heart;
+      heart.innerHTML = this.heartMarkup;
       this.heartsElement.appendChild(heart);
     }
   }
@@ -116,7 +174,7 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
     optionsType: 'DribbleTimingMeterOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-timing-meter.html',
-      styles: '@project/assets/ui/dribble-status-hud.css',
+      styles: '@project/assets/ui/dribble-status-hud-boogaloo.css',
     },
   };
 
@@ -179,7 +237,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     optionsType: 'DribbleJuiceHudOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-juice-hud.html',
-      styles: '@project/assets/ui/dribble-status-hud.css',
+      styles: '@project/assets/ui/dribble-status-hud-boogaloo.css',
     },
   };
 
@@ -188,6 +246,8 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private timeElement: HTMLElement | null = null;
   private praiseElement: HTMLElement | null = null;
   private praiseTimer: ReturnType<typeof setTimeout> | null = null;
+  private activationTimer: ReturnType<typeof setTimeout> | null = null;
+  private frenzyActive = false;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -221,6 +281,22 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     const clamped = Math.max(0, Math.min(1, progress));
     this.rootElement?.style.setProperty('--frenzy-progress', String(clamped));
     this.rootElement?.style.setProperty('--frenzy-inset', `${(1 - clamped) * 50}%`);
+    if (this.rootElement && active !== this.frenzyActive) {
+      this.rootElement.dataset.frenzyActive = active ? 'true' : 'false';
+      if (active) {
+        if (this.activationTimer) clearTimeout(this.activationTimer);
+        this.rootElement.classList.remove('is-frenzy-activating');
+        void this.rootElement.offsetWidth;
+        this.rootElement.classList.add('is-frenzy-activating');
+        this.activationTimer = setTimeout(() => {
+          this.rootElement?.classList.remove('is-frenzy-activating');
+          this.activationTimer = null;
+        }, 720);
+      } else {
+        this.rootElement.classList.remove('is-frenzy-activating');
+      }
+    }
+    this.frenzyActive = active;
     if (this.frenzyElement) this.frenzyElement.dataset.active = active ? 'true' : 'false';
     if (this.timeElement) this.timeElement.textContent = remaining.toFixed(1);
   }
@@ -245,6 +321,10 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     if (this.praiseTimer) {
       clearTimeout(this.praiseTimer);
       this.praiseTimer = null;
+    }
+    if (this.activationTimer) {
+      clearTimeout(this.activationTimer);
+      this.activationTimer = null;
     }
     this.rootElement = null;
     this.frenzyElement = null;

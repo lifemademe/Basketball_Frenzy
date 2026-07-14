@@ -3,6 +3,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 export interface DribbleOverlayOptions extends ENGINE.BaseUIComponentOptions {
   onResume?: () => void;
   onRestart?: () => void;
+  onMainMenu?: () => void;
 }
 
 export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions> {
@@ -14,7 +15,7 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     optionsType: 'DribbleOverlayOptions',
     assetPaths: {
       template: '@project/assets/ui/dribble-overlay.html',
-      styles: '@project/assets/ui/dribble-overlay.css',
+      styles: '@project/assets/ui/dribble-overlay-boogaloo.css',
     },
   };
 
@@ -41,6 +42,7 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
       customStyles: {},
       onResume: () => {},
       onRestart: () => {},
+      onMainMenu: () => {},
     };
   }
 
@@ -67,7 +69,8 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
 
   protected override async onInitialize(): Promise<void> {
     const restartSlot = this.layout?.querySelector('[data-overlay-restart-slot]') as HTMLElement | null;
-    if (!this.resumeSlot || !restartSlot) {
+    const mainMenuSlot = this.layout?.querySelector('[data-overlay-main-menu-slot]') as HTMLElement | null;
+    if (!this.resumeSlot || !restartSlot || !mainMenuSlot) {
       return;
     }
 
@@ -82,6 +85,11 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
         label: 'Restart Run',
         onClick: () => this.options.onRestart(),
       }, restartSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Main Menu',
+        onClick: () => this.options.onMainMenu(),
+      }, mainMenuSlot),
     ]);
   }
 

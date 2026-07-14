@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Boogaloo';
+  src: url('@project/assets/fonts/Boogaloo-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 .dribble-overlay {
   position: fixed;
   inset: 0;
@@ -6,9 +14,14 @@
   place-items: center;
   padding: 24px;
   box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
   color: #f4f7f8;
   pointer-events: auto;
+}
+
+.dribble-overlay,
+.dribble-overlay * {
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
 }
 
 .dribble-overlay-backdrop {
@@ -106,13 +119,22 @@
 }
 
 .dribble-overlay[data-mode='game-over'] .dribble-overlay-actions {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
+}
+
+[data-overlay-resume-slot] {
+  grid-column: 1 / -1;
 }
 
 .dribble-overlay-action,
 .dribble-overlay-action .ui-button {
   width: 100%;
   box-sizing: border-box;
+}
+
+.dribble-overlay-action .ui-button {
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  font-weight: 400;
 }
 
 @media (max-width: 520px) {

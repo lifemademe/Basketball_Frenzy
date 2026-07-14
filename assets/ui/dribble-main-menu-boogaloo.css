@@ -1,0 +1,410 @@
+@font-face {
+  font-family: 'Boogaloo';
+  src: url('@project/assets/fonts/Boogaloo-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.dribble-main-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 14000;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: #ffffff;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  pointer-events: auto;
+}
+
+.dribble-main-menu,
+.dribble-main-menu * {
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+}
+
+.dribble-main-menu-background {
+  position: absolute;
+  inset: 0;
+  background-color: #182431;
+  overflow: hidden;
+}
+
+.dribble-main-menu-background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+}
+
+.dribble-main-menu-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(500px, calc(52vw - 64px));
+  min-width: 360px;
+  height: 100%;
+  margin-left: clamp(28px, 5vw, 76px);
+  padding: clamp(20px, 3vh, 38px) 0 24px;
+  box-sizing: border-box;
+}
+
+.dribble-main-menu-brand {
+  flex: 0 0 auto;
+}
+
+.dribble-main-menu-panel-heading span {
+  display: block;
+  margin-bottom: 10px;
+  color: #65d5ff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 16px;
+  letter-spacing: 0;
+}
+
+.dribble-main-menu-logo {
+  position: relative;
+  width: min(320px, 100%);
+  height: clamp(205px, 34vh, 280px);
+  overflow: hidden;
+}
+
+.dribble-main-menu-logo img {
+  position: absolute;
+  top: clamp(-62px, -7vh, -34px);
+  left: 50%;
+  width: clamp(500px, 46vw, 680px);
+  max-width: none;
+  transform: translateX(-50%);
+  user-select: none;
+}
+
+.dribble-logo-sparkle {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: #fff8c9;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  filter: drop-shadow(0 0 5px #ffffff) drop-shadow(0 0 9px #ffd84f);
+  opacity: 0;
+  pointer-events: none;
+  animation: dribble-logo-sparkle 2.15s ease-in-out infinite;
+}
+
+.dribble-logo-sparkle-a { top: 22%; left: 12%; animation-delay: -0.2s; }
+.dribble-logo-sparkle-b { top: 31%; right: 9%; width: 13px; height: 13px; animation-delay: -1.3s; }
+.dribble-logo-sparkle-c { bottom: 24%; left: 7%; width: 11px; height: 11px; animation-delay: -0.8s; }
+.dribble-logo-sparkle-d { right: 14%; bottom: 17%; width: 16px; height: 16px; animation-delay: -1.75s; }
+
+.dribble-main-menu-logo::after {
+  position: absolute;
+  z-index: 2;
+  top: 39%;
+  left: -35%;
+  width: 34%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 9px #ffffff, 0 0 16px #ffd84f;
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(-18deg);
+  animation: dribble-logo-shine 4.2s ease-in-out infinite 0.9s;
+}
+
+.dribble-main-menu-panel {
+  display: none;
+  width: min(390px, 100%);
+  margin-top: clamp(8px, 1.5vh, 18px);
+}
+
+.dribble-main-menu[data-panel='home'] .dribble-main-menu-home,
+.dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-how,
+.dribble-main-menu[data-panel='settings'] .dribble-main-menu-settings {
+  display: block;
+  animation: dribble-main-menu-enter 220ms ease-out both;
+}
+
+.dribble-main-menu-action {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.dribble-main-menu-action .ui-button {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  padding-inline: 20px;
+  border-color: rgba(255, 255, 255, 0.24);
+  border-radius: 6px;
+  background: rgba(15, 23, 35, 0.72);
+  color: #ffffff;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+.dribble-main-menu-home {
+  width: min(320px, 100%);
+}
+
+.dribble-main-menu-home .dribble-main-menu-action {
+  margin-bottom: 6px;
+}
+
+.dribble-main-menu-home .ui-button {
+  min-height: 68px;
+  justify-content: center;
+  padding: 0 24px;
+  border: 0;
+  background-color: transparent;
+  background-image: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 400;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.9);
+  filter: none;
+}
+
+.dribble-main-menu-play .ui-button,
+.dribble-main-menu-tutorial .ui-button {
+  font-size: 28px;
+}
+
+.dribble-main-menu-action .ui-button:hover,
+.dribble-main-menu-action .ui-button:focus-visible {
+  border-color: #65d5ff;
+  background: rgba(24, 44, 64, 0.92);
+  transform: translateX(4px);
+}
+
+.dribble-main-menu .dribble-main-menu-home .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-home .ui-button:focus-visible {
+  border: 0;
+  background-color: transparent;
+  background-image: url('@project/assets/textures/menu-button-background.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: #512b00;
+  text-shadow: 0 1px 0 rgba(255, 244, 172, 0.85);
+  filter: brightness(1.1) saturate(1.08) drop-shadow(0 10px 14px rgba(62, 26, 0, 0.36));
+  transform: translateX(5px) scale(1.02);
+}
+
+.dribble-main-menu-panel-heading h2 {
+  margin: 0 0 22px;
+  font-size: 30px;
+  line-height: 34px;
+  letter-spacing: 0;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.9);
+}
+
+.dribble-main-menu-controls {
+  display: grid;
+  gap: 9px;
+}
+
+.dribble-main-menu-controls > div {
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dribble-main-menu-controls kbd {
+  color: #ffffff;
+  font: 400 12px/30px 'Boogaloo', 'Trebuchet MS', sans-serif;
+  text-align: center;
+  border: 1px solid rgba(101, 213, 255, 0.55);
+  border-radius: 5px;
+  background: rgba(101, 213, 255, 0.12);
+}
+
+.dribble-main-menu-controls p,
+.dribble-main-menu-tip {
+  margin: 0;
+  color: #c7d0da;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.92);
+}
+
+.dribble-main-menu-tip {
+  margin-top: 16px;
+  color: #ffd36a;
+}
+
+.dribble-main-menu-back {
+  margin-top: 22px;
+}
+
+.dribble-main-menu-setting {
+  display: block;
+  margin-bottom: 22px;
+  color: #ffffff;
+}
+
+.dribble-main-menu-setting > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 11px;
+}
+
+.dribble-main-menu-setting b,
+.dribble-main-menu-setting output {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+
+.dribble-main-menu-setting output {
+  color: #65d5ff;
+  font-weight: 800;
+}
+
+.dribble-main-menu-setting input[type='range'] {
+  width: 100%;
+  accent-color: #ff4f9a;
+}
+
+.dribble-main-menu-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  cursor: pointer;
+}
+
+.dribble-main-menu-toggle > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+}
+
+.dribble-main-menu-toggle small {
+  color: #9eaab6;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.dribble-main-menu-toggle input {
+  position: absolute;
+  opacity: 0;
+}
+
+.dribble-main-menu-toggle i {
+  position: relative;
+  width: 46px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: #27313c;
+}
+
+.dribble-main-menu-toggle i::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  content: '';
+  transition: transform 140ms ease;
+}
+
+.dribble-main-menu-toggle input:checked + i {
+  border-color: #65d5ff;
+  background: #25769a;
+}
+
+.dribble-main-menu-toggle input:checked + i::after {
+  transform: translateX(22px);
+}
+
+.dribble-main-menu-content footer {
+  margin-top: auto;
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.dribble-main-menu-content footer span {
+  margin-left: 8px;
+  color: #65d5ff;
+}
+
+@keyframes dribble-main-menu-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dribble-logo-sparkle {
+  0%, 58%, 100% { opacity: 0; transform: scale(0.25) rotate(0); }
+  68% { opacity: 1; transform: scale(1.25) rotate(38deg); }
+  80% { opacity: 0.75; transform: scale(0.8) rotate(70deg); }
+  90% { opacity: 0; transform: scale(0.2) rotate(100deg); }
+}
+
+@keyframes dribble-logo-shine {
+  0%, 72% { left: -35%; opacity: 0; }
+  76% { opacity: 0.9; }
+  86% { left: 112%; opacity: 0; }
+  100% { left: 112%; opacity: 0; }
+}
+
+@media (max-width: 760px) {
+  .dribble-main-menu-background img {
+    object-position: 58% center;
+  }
+
+  .dribble-main-menu-content {
+    width: calc(100% - 40px);
+    min-width: 0;
+    margin-left: 20px;
+    padding: 34px 0 20px;
+  }
+
+  .dribble-main-menu-logo {
+    width: min(320px, 100%);
+    height: 190px;
+  }
+
+  .dribble-main-menu-logo img {
+    top: -36px;
+    width: 470px;
+  }
+
+  .dribble-main-menu-panel {
+    width: min(360px, 100%);
+    margin-top: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dribble-main-menu-panel,
+  .dribble-logo-sparkle,
+  .dribble-main-menu-logo::after,
+  .dribble-main-menu-action .ui-button,
+  .dribble-main-menu-toggle i::after {
+    animation: none;
+    transition: none;
+  }
+}
