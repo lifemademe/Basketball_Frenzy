@@ -1,0 +1,136 @@
+.dribble-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  color: #f4f7f8;
+  pointer-events: auto;
+}
+
+.dribble-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 12, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dribble-overlay-panel {
+  position: relative;
+  width: min(420px, calc(100vw - 48px));
+  padding: 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: #171c21;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.dribble-overlay-accent {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: #59df86;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-accent {
+  background: #ff5d57;
+}
+
+.dribble-overlay-eyebrow {
+  margin: 0 0 8px;
+  color: #59df86;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-eyebrow {
+  color: #ff7772;
+}
+
+.dribble-overlay-title {
+  margin: 0;
+  color: #f4f7f8;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 44px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-subtitle {
+  margin: 8px 0 24px;
+  color: #aeb8bf;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #0f1317;
+}
+
+.dribble-overlay-score span {
+  color: #8f9ba3;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-score strong {
+  color: #ffffff;
+  font-size: 30px;
+  line-height: 34px;
+  letter-spacing: 0;
+}
+
+.dribble-overlay-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-actions {
+  grid-template-columns: 1fr;
+}
+
+.dribble-overlay-action,
+.dribble-overlay-action .ui-button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 520px) {
+  .dribble-overlay {
+    padding: 16px;
+  }
+
+  .dribble-overlay-panel {
+    width: min(420px, calc(100vw - 32px));
+    padding: 22px;
+  }
+
+  .dribble-overlay-title {
+    font-size: 32px;
+    line-height: 38px;
+  }
+
+  .dribble-overlay-actions {
+    grid-template-columns: 1fr;
+  }
+}
