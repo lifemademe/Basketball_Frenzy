@@ -1,0 +1,17 @@
+{
+  "$version": 2,
+  "$root": {
+    "uuid": "745b670f-46eb-4226-8472-0db5f0896085",
+    "name": "M_Solid_Yellow",
+    "color": {
+      "_": [
+        1,
+        0.423268,
+        0
+      ],
+      "$bc": "c"
+    },
+    "roughness": 0.35,
+    "$bc": "THREE.MeshStandardMaterial"
+  }
+}

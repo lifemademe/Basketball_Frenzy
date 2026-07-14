@@ -1,0 +1,75 @@
+---
+description: Use Genesys MCP when Connected or Probe-capable (CallMcpTool + descriptors); never probe MCP via shell
+alwaysApply: true
+---
+
+# Genesys MCP (live editor)
+
+Before your first Genesys MCP tool call in a task, open `.agents/skills/genesys/genesys-mcp-orchestrator/SKILL.md` once for workflow context and safety expectations; this rule contains the required MCP dispatch discipline.
+
+## Scene-visible changes are MCP-first
+
+When the user asks to change something visible in the scene or editor — materials, colours, meshes, transforms, lights, cameras, component properties, hierarchy, or prefab instance overrides — use Genesys MCP before writing TypeScript.
+
+Before writing code, **classify where this state should live** (scene/editor vs runtime behaviour) and route accordingly — decide internally; do not ask the user unless genuinely ambiguous. If it belongs in the scene, follow `.agents/skills/genesys/genesys-mcp-orchestrator/SKILL.md`. If it belongs in reusable runtime behaviour, use normal code tools.
+
+| State owner | Use |
+|-------|-----|
+| **Scene / editor** | MCP first — per-scene or per-instance actor transform, hierarchy, component enabled state, component properties (`materialPath`, colours, mesh/model refs, light/camera settings), prefab instance overrides, active scene |
+| **Runtime behaviour** | TypeScript — reusable gameplay logic, class defaults, constructors for runtime-created objects, new actor/component classes, input, networking, UI logic, systems not already in the scene |
+| **Both** | Code first to build/register the capability, then MCP to place or configure it in the scene |
+
+Do **not** patch a specific editor-authored actor in `BeginPlay`, `doBeginPlay`, constructors, or one-off runtime code just to persist a visual scene change. It is still correct to define reusable class defaults, construct runtime-created objects, and initialise behaviour in code when those values should apply to every instance or to objects spawned at runtime.
+
+## Availability gate (required)
+
+Do **not** require first-class `query_*` tool names in the top-level tool list. Classify MCP in three states:
+
+| State | Signal |
+|-------|--------|
+| **Connected** | Genesys MCP tools (e.g. `query_scene`, `query_editor`, `batch_execute`) appear directly in the chat tool list |
+| **Probe-capable** | `CallMcpTool` is available **and** Genesys MCP tool descriptors exist under `mcps/*genesys*/tools/` (or equivalent server metadata) |
+| **Off** | User says MCP is disabled; or neither Connected nor Probe-capable signals are present |
+
+Descriptor presence means **probe-capable**, not **ready**. Treat MCP as **off** until a `query_editor(getState)` readiness probe succeeds for mutations.
+
+- **Do not** assume MCP is available because `.cursor/mcp.json` exists, because the user mentioned MCP, or because a skill references MCP.
+- **Do not** call the MCP HTTP endpoint, `curl`, `Invoke-WebRequest`, or any shell workaround to talk to `127.0.0.1` / the URL in `mcp.json`.
+- If the user says MCP is disabled or not connected, treat MCP as off for the rest of the session unless they say it is enabled again.
+
+When MCP is off (or probe fails):
+
+1. Say briefly that live editor access needs Genesys MCP enabled and connected in Cursor (and the editor running with this project); include `blockingReasons` when a probe failed.
+2. Continue with code, filesystem, and repo tools where possible.
+3. Do **not** open or edit `*.genesys-scene` files unless the user explicitly asks or filesystem fallback is appropriate after MCP is genuinely unavailable (see `AGENTS.md`).
+4. Do **not** retry MCP in the same turn.
+
+## When MCP is connected or probe-capable
+
+- Follow `.agents/skills/genesys/genesys-mcp-orchestrator/SKILL.md`.
+- Use only the provided Genesys MCP tools (direct or via `CallMcpTool`) — not HTTP or terminal emulation. Read tool schemas before `CallMcpTool` invocations.
+- **Mandatory readiness probe** — call `query_editor(getState)` before the first scene/editor mutation in a task. No other discovery preamble is required.
+- **Prefer MCP actions** (`action_actor`, `action_component`, `action_scene`, `batch_execute`) for scene/outliner operations when the probe passes; do not edit `*.genesys-scene` directly as the first choice.
+- Use `batch_execute(mode="readOnly")` for inspection, and use `dryRun` before apply for destructive or ambiguous edits. For low-risk, fully specified actions in `auto` mode, direct `apply` is acceptable. Pass inline `approval={summary}` on `batch_execute` or direct `action_*` calls for clearer prompt-mode dialogue/audit trails — no separate `genesys_request_approval` needed in `auto` mode unless pre-approving or reusing a token.
+- Check `query_editor(getBusyState)` before mutating; do not edit during play mode or long builds.
+- **Efficiency default** — after mutations, prefer `action_scene(save)` + minimal re-query. Do **not** call `action_actor(select)`, `action_editor(frameSelection)`, or `action_actor(focus)` unless the user asks for viewport help, the next MCP step needs active selection, or screenshot composition requires framing.
+- For token efficiency on multi-step or bulk tasks (e.g. spawning many primitives), follow the `## Token efficiency (cache-aware)` section in `.agents/skills/genesys/genesys-mcp-orchestrator/SKILL.md`.
+
+### Discovery discipline (required)
+
+- Skills are the primary discovery layer — do **not** run `search_tools` or `describe_tool` as a default preamble.
+- First-class compact tools (`run_script`, `search_tools`, `describe_tool`, `batch_execute`, `genesys_request_approval`, `query_scene`, `query_actor`, `query_project`, `query_editor`, `action_actor`, `action_scene`, `action_editor`) should be called directly without schema lookup.
+- Hidden compact tools (`action_component`, `action_asset`, `action_prefab`, `action_build`, `query_asset`, `query_diagnostics`) should be dispatched through `run_script` or `batch_execute`; do **not** call `describe_tool` first.
+- Use `describe_tool` or `search_tools` only for schema/validation failures, genuinely unknown tools, or explicit capability exploration; do not call both for the same tool in one task.
+
+### Common footguns
+
+- `describe_tool` takes `name`, not `toolName`.
+- `query_actor` requires `actorIds: [...]` even for one actor; `getState` belongs to `query_editor`, not `query_scene`.
+- In generic MCP wrappers, nest `mode`, `approval`, `groupUndo`, and `code` inside the `run_script` arguments object; top-level wrapper fields are ignored and default to read-only mode.
+
+### Asset paths (MCP vs filesystem)
+
+- MCP returns project-relative forward-slash paths (e.g. `assets/default.genesys-scene`); `assetPath` may also use `@project/...`.
+- When comparing MCP results to repo search or glob output, treat `assets/foo` and `.\assets\foo` as the same asset — not a mismatch.
+- For runtime references in game code, use `@project/...` per `AGENTS.md`.

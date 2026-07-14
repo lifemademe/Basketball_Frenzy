@@ -1,0 +1,2283 @@
+{
+  "$objects": [
+    {
+      "$bc": "THREE.DirectionalLight",
+      "$id": 1,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              1,
+              0.930111,
+              0.83077
+            ]
+          },
+          8
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.HemisphereLight",
+      "$id": 2,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              0.64448,
+              0.62396,
+              0.887923
+            ]
+          },
+          {
+            "$bc": "c",
+            "_": [
+              0.947307,
+              0.838799,
+              0.83077
+            ]
+          },
+          1
+        ]
+      }
+    },
+    {
+      "$bc": "THREE.AmbientLight",
+      "$id": 3,
+      "$value": {
+        "_": [
+          {
+            "$bc": "c",
+            "_": [
+              1,
+              0.730461,
+              0.003035
+            ]
+          },
+          0
+        ]
+      }
+    }
+  ],
+  "$root": {
+    "$bc": "ENGINE.World",
+    "$uuid": "f4415fee1c4b5530",
+    "actors": {
+      "1": {
+        "$bc": "ENGINE.Actor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Directional Light",
+        "rootComponent": {
+          "$bc": "ENGINE.DirectionalLightComponent",
+          "castShadow": true,
+          "children": [
+            {
+              "$ref": 1
+            }
+          ],
+          "isSunLight": true,
+          "light": {
+            "$ref": 1
+          },
+          "name": "DirectionalLightComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              10,
+              50,
+              -10
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.919862,
+              0,
+              0
+            ]
+          },
+          "shadowBias": -0.001,
+          "shadowCameraBottom": -200,
+          "shadowCameraLeft": -200,
+          "shadowCameraRight": 200,
+          "shadowCameraTop": 200,
+          "shadowFar": 500,
+          "uuid": "cfe05433-9edc-4dfe-a535-c71f33e92d78"
+        },
+        "uuid": "9a86d389088b361c"
+      },
+      "2": {
+        "$bc": "ENGINE.Actor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Ground",
+        "rootComponent": {
+          "$bc": "ENGINE.SceneComponent",
+          "children": [
+            {
+              "$bc": "ENGINE.MeshComponent",
+              "children": {
+                "$length": 1
+              },
+              "geometry": {
+                "$bc": "THREE.BoxGeometry",
+                "_": [
+                  500,
+                  0.1,
+                  500
+                ]
+              },
+              "material": {
+                "$bc": "THREE.MeshToonMaterial",
+                "color": {
+                  "$bc": "c",
+                  "_": [
+                    0.097587,
+                    0.138432,
+                    0.250158
+                  ]
+                },
+                "defines": {
+                  "TOON": ""
+                },
+                "uuid": "9bc11dbd-6a7e-4ac4-947f-37f30a7e9832"
+              },
+              "name": "MeshComponent",
+              "position": {
+                "$bc": "v3",
+                "_": [
+                  0,
+                  -0.9,
+                  0
+                ]
+              },
+              "receiveShadow": true,
+              "uuid": "59aaf385-72c3-4758-97b1-52711d19a5a6",
+              "uvScaleTilesPerUnit": 0.2
+            }
+          ],
+          "name": "SceneComponent",
+          "userData": {
+            "objectFlags": 1
+          },
+          "uuid": "c111fdd6-8516-4905-ace1-5645e162ab30"
+        },
+        "uuid": "d7e302a171f3c6f6"
+      },
+      "3": {
+        "$bc": "ENGINE.PlayerStart",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "PlayerStart_6",
+        "rootComponent": {
+          "$bc": "ENGINE.SceneComponent",
+          "name": "SceneComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              8,
+              0
+            ]
+          },
+          "userData": {
+            "objectFlags": 1
+          },
+          "uuid": "1db1b93e-cd10-4653-b3a9-24d76d9d6832"
+        },
+        "uuid": "003eae0d37a591ee"
+      },
+      "4": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_243",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              4,
+              0,
+              0
+            ]
+          },
+          "receiveShadow": true,
+          "uuid": "2e8094bf-fdfd-458f-8cb7-1c963573d783"
+        },
+        "uuid": "e8d2e7f0-c3aa-4d88-bc14-b46640b450ce"
+      },
+      "5": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_247",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              15.35,
+              4,
+              17.483333
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.396263,
+              0
+            ]
+          },
+          "uuid": "46475193-b622-4fe4-8d81-d6908c0dbcb2"
+        },
+        "uuid": "3c00e54ea91bb191"
+      },
+      "6": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_248",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              14.51,
+              4,
+              16.433333
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -3.141593,
+              1.22173,
+              -3.141593
+            ]
+          },
+          "uuid": "91eb6f02-6438-4d64-b02d-bffea78da74e"
+        },
+        "uuid": "142e3644259e8b96"
+      },
+      "7": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_249",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              14.8,
+              5,
+              17.083333
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.047197,
+              0
+            ]
+          },
+          "uuid": "ff2ebe73-6043-4223-80a3-37f03810a2cf"
+        },
+        "uuid": "97db092abd53efa6"
+      },
+      "8": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_250",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -11.951282,
+              4,
+              -19.021434
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -0.349066,
+              0
+            ]
+          },
+          "uuid": "f780f347-2076-4fa2-a728-c8d1d5ddc898"
+        },
+        "uuid": "551565549007dab4"
+      },
+      "9": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_251",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -12.048718,
+              5.01,
+              -18.978566
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0.523599,
+              0
+            ]
+          },
+          "uuid": "158a332b-5759-4763-a464-d63a8c92d61f"
+        },
+        "uuid": "a62758ef0089259e"
+      },
+      "10": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_252",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              12.572222,
+              -0.033333,
+              -12.162305
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              3.141592,
+              1.047198,
+              3.141592
+            ]
+          },
+          "uuid": "9235db27-32f8-4e89-9928-fee3a242bb3b"
+        },
+        "uuid": "e93a0780592552ec"
+      },
+      "11": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_253",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              11.355556,
+              -0.033333,
+              -11.868848
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0.174533,
+              0
+            ]
+          },
+          "uuid": "928b1975-19f3-4a9e-a315-e6191aa0818a"
+        },
+        "uuid": "e5378bbbb8f88bb5"
+      },
+      "12": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_254",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              12.072222,
+              0.966667,
+              -11.968848
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -0.349066,
+              0
+            ]
+          },
+          "uuid": "a7b619a9-a588-4be1-adea-bd3eabc2db89"
+        },
+        "uuid": "881497b03dadb60b"
+      },
+      "13": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_259",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -15.143333,
+              0,
+              10.64
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0.349066,
+              0
+            ]
+          },
+          "uuid": "923afe06-4f06-478d-adcb-6b5cdbacf7bf"
+        },
+        "uuid": "29a503d54bd56c5e"
+      },
+      "14": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_260",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -14.873333,
+              0,
+              9.38
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -0.523599,
+              0
+            ]
+          },
+          "uuid": "27d84ab0-6527-41c5-a232-3b644acc7784"
+        },
+        "uuid": "c6604e386d5e3f9a"
+      },
+      "15": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_261",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -14.983333,
+              1,
+              9.98
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -0.523599,
+              0
+            ]
+          },
+          "uuid": "f7945224-abb3-44f6-9044-affa8ae08449"
+        },
+        "uuid": "254041eb3dfea581"
+      },
+      "16": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_277",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -24,
+              0,
+              -12
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "554a4cc1-423b-45ac-833e-6c2c966036cb"
+        },
+        "uuid": "1a270f08-2503-4617-b2ee-b926fb0dcacc"
+      },
+      "17": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_278",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -24,
+              2,
+              -16
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "bfbeed97-f572-407f-9d11-4966c36cd478"
+        },
+        "uuid": "f80e12c2-3061-4f48-9ff1-93657e994d92"
+      },
+      "18": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_279",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -24,
+              2,
+              -16
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "4c13aec2-20df-4185-9649-68ec6b9f47df"
+        },
+        "uuid": "2404d290-020a-423b-b6de-e3b3bea831d7"
+      },
+      "19": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_281",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20,
+              2,
+              -16
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              3.141592,
+              0,
+              1.570796
+            ]
+          },
+          "uuid": "35d6ede8-ae04-4384-95c2-462647bfb101"
+        },
+        "uuid": "b350d159-fc2d-414c-baa9-cac87ea10e3b"
+      },
+      "20": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_287",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0,
+              -4
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "453ef030-633e-4126-85f6-a73557c85a38"
+        },
+        "uuid": "e14ba15f-9937-49a9-86b9-743576353227"
+      },
+      "21": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_288",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              4,
+              0,
+              -4
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "7654e896-adf3-4557-a686-1af20741b826"
+        },
+        "uuid": "a9bd4f0d-7ebd-41fb-9a92-9dbbac88c416"
+      },
+      "22": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_293",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              15.973871,
+              0,
+              8.950551
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              0.523599,
+              0
+            ]
+          },
+          "uuid": "bedbc6cc-5767-4dc0-a28e-403dc21b691c"
+        },
+        "uuid": "92602c0b-1d4a-498a-aaee-84b4324539a7"
+      },
+      "23": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_294",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@engine/assets/models/SM_ChamferCube.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              16.026129,
+              1,
+              9.049449
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -0.349066,
+              0
+            ]
+          },
+          "uuid": "8dae19c8-c42a-4bb5-a7da-8b0e4ee1f81c"
+        },
+        "uuid": "bfb93412-81a0-4d94-ad3e-b1903646b01f"
+      },
+      "24": {
+        "$bc": "ENGINE.Actor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "HemisphereLight",
+        "rootComponent": {
+          "$bc": "ENGINE.HemisphereLightComponent",
+          "children": [
+            {
+              "$ref": 2
+            }
+          ],
+          "light": {
+            "$ref": 2
+          },
+          "name": "HemisphereLightComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              13.9,
+              0
+            ]
+          },
+          "uuid": "e5d2ff2e-0a98-4aab-b1d6-e5dca36acc25"
+        },
+        "uuid": "5a5128b065a3e870"
+      },
+      "25": {
+        "$bc": "ENGINE.Actor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Actor_5",
+        "rootComponent": {
+          "$bc": "ENGINE.AmbientLightComponent",
+          "children": [
+            {
+              "$ref": 3
+            }
+          ],
+          "light": {
+            "$ref": 3
+          },
+          "name": "AmbientLightComponent",
+          "uuid": "7152a696-aa21-4bcc-a840-aca8674bf417"
+        },
+        "uuid": "4fea4a9dd1c93f75"
+      },
+      "26": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_255",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              4,
+              0,
+              4
+            ]
+          },
+          "receiveShadow": true,
+          "uuid": "231c1a4e0b57f16d"
+        },
+        "uuid": "1e9c7005c26557f8"
+      },
+      "27": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_291",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -4,
+              0,
+              -4
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              3.141592,
+              0,
+              3.141592
+            ]
+          },
+          "uuid": "dc6a845fcc09cba7"
+        },
+        "uuid": "e3654dcab2d4a90e"
+      },
+      "28": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_292",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -4,
+              0,
+              0
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              3.141592,
+              0,
+              3.141592
+            ]
+          },
+          "uuid": "4e91b1c9c2546547"
+        },
+        "uuid": "8fce590e5cff87cd"
+      },
+      "29": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_854",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -4,
+              0,
+              4
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "e5e6bc1da43d573f"
+        },
+        "uuid": "8c2731057017c50b"
+      },
+      "30": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_221",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              0,
+              4
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "9f63c3acd3fc69c5"
+        },
+        "uuid": "2a2f950bf733c5f7"
+      },
+      "31": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_280",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19,
+              0,
+              -12
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "49d9123176f3e1d8"
+        },
+        "uuid": "ea1f7d68cd6b0cd7"
+      },
+      "32": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_284",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19,
+              2,
+              -16
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "03c0cdc0ee207b05"
+        },
+        "uuid": "ac5bce4eb673b78c"
+      },
+      "33": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_297",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19,
+              2,
+              -12
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.000001,
+              0,
+              -1.570797
+            ]
+          },
+          "uuid": "1d3c8a5921ab0990"
+        },
+        "uuid": "c5a4e6ff4fe449c4"
+      },
+      "34": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_298",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19,
+              2,
+              -16
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              -1.570796,
+              0
+            ]
+          },
+          "uuid": "ffdcff074238111c"
+        },
+        "uuid": "7cf123d3e48f05b0"
+      },
+      "35": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_285",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              23,
+              0,
+              11
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "32d02b192885f2ab"
+        },
+        "uuid": "5ba0d068c26283b7"
+      },
+      "36": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_286",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              23,
+              2,
+              15
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "415011f340625516"
+        },
+        "uuid": "5c8b7c03e020e4a7"
+      },
+      "37": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_299",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19,
+              2,
+              15
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0.000001,
+              0,
+              -1.570797
+            ]
+          },
+          "uuid": "8b7f28bb8295eb56"
+        },
+        "uuid": "a903a7652c980c8e"
+      },
+      "38": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_300",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              23,
+              2,
+              15
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -1.570796,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "3434a831f3799389"
+        },
+        "uuid": "b40e4d50881bb12e"
+      },
+      "39": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_289",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20,
+              2,
+              15
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "98f248068f1bf843"
+        },
+        "uuid": "e40fce9172568e2a"
+      },
+      "40": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_290",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelUrl": "@project/assets/models/SM_Ramp_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20,
+              0,
+              11
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "53fbf40a3cce58b3"
+        },
+        "uuid": "52ccaa89e83a9fe8"
+      },
+      "41": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_301",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20,
+              2,
+              11
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              3.141592,
+              0,
+              1.570796
+            ]
+          },
+          "uuid": "dae913ca126576ea"
+        },
+        "uuid": "2e88891f5c5205a7"
+      },
+      "42": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "editorData": {
+          "hidden": false
+        },
+        "name": "GLTFMeshActor_302",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "castShadow": true,
+          "modelMaterial": "@project/assets/materials/M_Solid_Yellow.material.json",
+          "modelUrl": "@project/assets/models/SM_Floor_Thin_400x400.glb",
+          "name": "GLTFMeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20,
+              2,
+              15
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -1.570796,
+              1.570796,
+              0
+            ]
+          },
+          "uuid": "15127c974f149bca"
+        },
+        "uuid": "86eb658403321869"
+      },
+      "43": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "name": "Sky",
+        "rootComponent": {
+          "$bc": "ENGINE.SkyComponent",
+          "cloudDensity": 0.7,
+          "cloudElevation": 0.42,
+          "cloudSpeed": 0.00005,
+          "generateEnvironmentMap": true,
+          "mieDirectionalG": 0.85,
+          "name": "Sky",
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10000,
+              10000,
+              10000
+            ]
+          },
+          "uuid": "c1388027c3cb35fa"
+        },
+        "uuid": "075dcdc931c49300"
+      },
+      "44": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Floor",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Floor.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.5,
+              -0.5,
+              -0.6
+            ]
+          },
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              49
+            ]
+          },
+          "uuid": "6ada5561-7039-4796-8838-d6636f0f3e95"
+        },
+        "uuid": "e136963d56cbc9e2"
+      },
+      "45": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Floor 02",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Floor.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.5,
+              3.5,
+              -20
+            ]
+          },
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              8
+            ]
+          },
+          "uuid": "1f1c9f2ad5ca986f"
+        },
+        "uuid": "f8b4a8cce9490095"
+      },
+      "46": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Floor 03",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Floor.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.5,
+              3.5,
+              19
+            ]
+          },
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              8
+            ]
+          },
+          "uuid": "b7ebbdd275ba3c92"
+        },
+        "uuid": "846ea30decfd0855"
+      },
+      "47": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Floor 04",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Floor.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              1.5,
+              0
+            ]
+          },
+          "receiveShadow": true,
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              8,
+              1,
+              8
+            ]
+          },
+          "uuid": "841b7937f17f4b82"
+        },
+        "uuid": "4b5adf238c7e500f"
+      },
+      "48": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.5,
+              4,
+              -24.5
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              8
+            ]
+          },
+          "uuid": "f3165aa2b7c1d2db"
+        },
+        "uuid": "09162add26d970ea"
+      },
+      "49": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 02",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -0.5,
+              4,
+              23.5
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              8
+            ]
+          },
+          "uuid": "1e5b2b093a207f23"
+        },
+        "uuid": "b6288f5581d82ff7"
+      },
+      "50": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 03",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -24.5,
+              4,
+              -0.6
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              1.570796
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              8
+            ]
+          },
+          "uuid": "a7c543935158c96d"
+        },
+        "uuid": "f70add681f31a1a2"
+      },
+      "51": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 04",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              23.5,
+              4,
+              -0.6
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              1.570796
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              49,
+              1,
+              8
+            ]
+          },
+          "uuid": "5cef38fcb006e2a6"
+        },
+        "uuid": "9ed6eea2ceac813d"
+      },
+      "52": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 05",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19.5,
+              1.9,
+              19
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              1.570796
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              8,
+              1,
+              4
+            ]
+          },
+          "uuid": "8a516b1e5c51591d"
+        },
+        "uuid": "b39016f8ce7fd9b6"
+      },
+      "53": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 06",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20.5,
+              1.9,
+              19
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              1.570796
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              8,
+              1,
+              4
+            ]
+          },
+          "uuid": "4fada982389e1011"
+        },
+        "uuid": "8f3673c5eb4c6795"
+      },
+      "54": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 07",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20.5,
+              1.9,
+              -20
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              1.570796
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              8,
+              1,
+              4
+            ]
+          },
+          "uuid": "71ee0289890e1d20"
+        },
+        "uuid": "e0b8e9e184304b20"
+      },
+      "55": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "editorData": {
+          "hidden": false
+        },
+        "name": "Mesh_Wall 08",
+        "rootComponent": {
+          "$bc": "ENGINE.MeshComponent",
+          "castShadow": true,
+          "children": {
+            "$length": 1
+          },
+          "material": "@project/assets/materials/M_Wall.material.json",
+          "name": "MeshComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              19.5,
+              1.9,
+              -20
+            ]
+          },
+          "receiveShadow": true,
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              1.570796,
+              0,
+              1.570796
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              8,
+              1,
+              4
+            ]
+          },
+          "uuid": "de50029448a85983"
+        },
+        "uuid": "1129c81344e2d3f4"
+      },
+      "$length": 56
+    },
+    "editorData": {
+      "sceneTree": {
+        "children": [
+          {
+            "id": "9a86d389088b361c",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "075dcdc931c49300",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "d7e302a171f3c6f6",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "003eae0d37a591ee",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e8d2e7f0-c3aa-4d88-bc14-b46640b450ce",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "1e9c7005c26557f8",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "3c00e54ea91bb191",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "142e3644259e8b96",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "97db092abd53efa6",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "551565549007dab4",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "a62758ef0089259e",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e93a0780592552ec",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e5378bbbb8f88bb5",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "881497b03dadb60b",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "29a503d54bd56c5e",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "c6604e386d5e3f9a",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "254041eb3dfea581",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "1a270f08-2503-4617-b2ee-b926fb0dcacc",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "f80e12c2-3061-4f48-9ff1-93657e994d92",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "ea1f7d68cd6b0cd7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "ac5bce4eb673b78c",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "c5a4e6ff4fe449c4",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "7cf123d3e48f05b0",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e40fce9172568e2a",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "52ccaa89e83a9fe8",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "2e88891f5c5205a7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "86eb658403321869",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "5ba0d068c26283b7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "5c8b7c03e020e4a7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "a903a7652c980c8e",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "b40e4d50881bb12e",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "2404d290-020a-423b-b6de-e3b3bea831d7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "b350d159-fc2d-414c-baa9-cac87ea10e3b",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e14ba15f-9937-49a9-86b9-743576353227",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e3654dcab2d4a90e",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "8fce590e5cff87cd",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "8c2731057017c50b",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "2a2f950bf733c5f7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "a9bd4f0d-7ebd-41fb-9a92-9dbbac88c416",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "92602c0b-1d4a-498a-aaee-84b4324539a7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "bfb93412-81a0-4d94-ad3e-b1903646b01f",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "5a5128b065a3e870",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "4fea4a9dd1c93f75",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e136963d56cbc9e2",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "4b5adf238c7e500f",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "f8b4a8cce9490095",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "09162add26d970ea",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "b6288f5581d82ff7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "f70add681f31a1a2",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "9ed6eea2ceac813d",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "b39016f8ce7fd9b6",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "1129c81344e2d3f4",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "8f3673c5eb4c6795",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "e0b8e9e184304b20",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "846ea30decfd0855",
+            "isExpanded": false,
+            "nodeType": "actor"
+          }
+        ],
+        "id": "f4415fee1c4b5530",
+        "nodeType": "scene"
+      }
+    },
+    "gameModeClass": null,
+    "postProcessConfiguration": {
+      "effects": [
+        {
+          "enabled": true,
+          "exposure": 0.5,
+          "mode": 4,
+          "type": "toneMapping"
+        },
+        {
+          "enabled": true,
+          "ignoreBackground": true,
+          "levels": 10,
+          "mipmapBlur": true,
+          "radius": 0.12,
+          "selectiveEmissive": false,
+          "smoothing": 0.69,
+          "strength": 0.12,
+          "threshold": 2,
+          "type": "bloom"
+        },
+        {
+          "bias": 0.025,
+          "color": null,
+          "depthAwareUpsampling": true,
+          "distanceExponent": 0.65,
+          "distanceFallOff": 0.69,
+          "enabled": true,
+          "fade": 0.01,
+          "gtaoRadius": 0.34,
+          "gtaoSamples": 27,
+          "gtaoStrength": 1,
+          "luminanceInfluence": 0.7,
+          "minRadiusScale": 0.33,
+          "resolutionScale": 1,
+          "ssaoRadius": 0.1,
+          "ssaoSamples": 9,
+          "ssaoStrength": 1.33,
+          "thickness": 0.4,
+          "type": "ao",
+          "worldDistanceFalloff": 0.0025,
+          "worldDistanceThreshold": 0.02,
+          "worldProximityFalloff": 0.0001,
+          "worldProximityThreshold": 0.0003
+        }
+      ]
+    },
+    "resources": null,
+    "settings": {}
+  },
+  "$version": 2
+}

@@ -1,0 +1,22 @@
+{
+  "defaultScene": "./assets/default.genesys-scene",
+  "engineVersion": "12.3.6-staging",
+  "assetCompiler": {
+    "enabled": false,
+    "compileOnPlay": false,
+    "textureCompression": {
+      "enabled": true,
+      "quality": "medium",
+      "maxSize": 2048,
+      "formats": {
+        "png": true,
+        "jpeg": true,
+        "webp": false
+      }
+    },
+    "meshCompression": {
+      "enabled": true,
+      "level": "medium"
+    }
+  }
+}
