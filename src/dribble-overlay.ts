@@ -122,12 +122,13 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.show();
   }
 
-  public showGameOver(score: number, highScore: number): void {
+  public showGameOver(score: number, highScore: number, mode: 'normal' | 'hard'): void {
+    const modeLabel = mode === 'hard' ? 'Hard' : 'Normal';
     this.setContent({
       mode: 'game-over',
       eyebrow: 'RUN COMPLETE',
       title: 'GAME OVER',
-      subtitle: `High score: ${highScore}`,
+      subtitle: `${modeLabel} best: ${highScore}`,
       scoreLabel: 'POINTS',
       score,
       showResume: false,

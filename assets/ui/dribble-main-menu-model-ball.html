@@ -17,13 +17,22 @@
     </header>
 
     <div class="dribble-main-menu-profile" aria-label="Player progression">
-      <div>
+      <div class="dribble-profile-currency">
         <small>STARS</small>
         <span><img src="@project/assets/textures/Star.png" alt=""> <b data-menu-stars>0</b></span>
       </div>
-      <div>
-        <small>HIGH SCORE</small>
-        <strong data-menu-high-score>0</strong>
+      <div class="dribble-profile-records">
+        <small>BEST SCORES</small>
+        <div class="dribble-profile-score-grid">
+          <span class="dribble-profile-mode-score dribble-profile-mode-normal">
+            <em>NORMAL</em>
+            <strong data-menu-normal-high-score>0</strong>
+          </span>
+          <span class="dribble-profile-mode-score dribble-profile-mode-hard">
+            <em>HARD</em>
+            <strong data-menu-hard-high-score>0</strong>
+          </span>
+        </div>
       </div>
     </div>
 
@@ -83,6 +92,40 @@
         <strong><img src="@project/assets/textures/Star.png" alt="Stars"> <b data-shop-stars>0</b></strong>
       </div>
       <div class="dribble-shop-inventory">
+        <section class="dribble-wristband-customizer" aria-labelledby="dribble-wristband-title">
+          <div class="dribble-wristband-heading">
+            <div>
+              <span>FREE CUSTOMIZATION</span>
+              <h3 id="dribble-wristband-title">Wristbands</h3>
+            </div>
+            <div class="dribble-wristband-preview" aria-label="Selected wristband colors">
+              <span data-wristband-preview="left"><i></i><b>LEFT</b></span>
+              <span data-wristband-preview="right"><i></i><b>RIGHT</b></span>
+            </div>
+          </div>
+          <div class="dribble-wristband-row">
+            <b>LEFT</b>
+            <div class="dribble-wristband-swatches" role="group" aria-label="Left wristband color">
+              <button type="button" data-wristband-side="left" data-wristband-color="orange" aria-label="Orange left wristband" title="Orange"></button>
+              <button type="button" data-wristband-side="left" data-wristband-color="blue" aria-label="Blue left wristband" title="Blue"></button>
+              <button type="button" data-wristband-side="left" data-wristband-color="lime" aria-label="Electric Lime left wristband" title="Electric Lime"></button>
+              <button type="button" data-wristband-side="left" data-wristband-color="pink" aria-label="Hot Pink left wristband" title="Hot Pink"></button>
+              <button type="button" data-wristband-side="left" data-wristband-color="white" aria-label="Bright White left wristband" title="Bright White"></button>
+              <button type="button" data-wristband-side="left" data-wristband-color="purple" aria-label="Deep Purple left wristband" title="Deep Purple"></button>
+            </div>
+          </div>
+          <div class="dribble-wristband-row">
+            <b>RIGHT</b>
+            <div class="dribble-wristband-swatches" role="group" aria-label="Right wristband color">
+              <button type="button" data-wristband-side="right" data-wristband-color="orange" aria-label="Orange right wristband" title="Orange"></button>
+              <button type="button" data-wristband-side="right" data-wristband-color="blue" aria-label="Blue right wristband" title="Blue"></button>
+              <button type="button" data-wristband-side="right" data-wristband-color="lime" aria-label="Electric Lime right wristband" title="Electric Lime"></button>
+              <button type="button" data-wristband-side="right" data-wristband-color="pink" aria-label="Hot Pink right wristband" title="Hot Pink"></button>
+              <button type="button" data-wristband-side="right" data-wristband-color="white" aria-label="Bright White right wristband" title="Bright White"></button>
+              <button type="button" data-wristband-side="right" data-wristband-color="purple" aria-label="Deep Purple right wristband" title="Deep Purple"></button>
+            </div>
+          </div>
+        </section>
         <div class="dribble-shop-item dribble-shop-item-classic">
           <div class="dribble-shop-preview">
             <img src="@project/assets/textures/classicball.png" alt="Classic Ball">

@@ -10,9 +10,13 @@ import {
   epicBallPrice,
   getBallPrice,
   isBallOwned,
+  wristbandColorHex,
+  wristbandColors,
   type AchievementId,
   type BallCosmetic,
   type DribbleProgressionState,
+  type WristbandColor,
+  type WristbandSide,
 } from './dribble-progression.js';
 
 export type DribbleGameMode = 'normal' | 'hard';
@@ -27,6 +31,7 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   progression?: DribbleProgressionState;
   onPurchaseBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
   onEquipBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
+  onWristbandColorChange?: (side: WristbandSide, color: WristbandColor) => DribbleProgressionState;
 }
 
 export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptions> {
@@ -47,7 +52,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private volumeValue: HTMLElement | null = null;
   private fullscreenInput: HTMLInputElement | null = null;
   private homeStarsElement: HTMLElement | null = null;
-  private highScoreElement: HTMLElement | null = null;
+  private normalHighScoreElement: HTMLElement | null = null;
+  private hardHighScoreElement: HTMLElement | null = null;
   private shopStarsElement: HTMLElement | null = null;
   private classicStatusElement: HTMLElement | null = null;
   private epicStatusElement: HTMLElement | null = null;
@@ -55,6 +61,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private blackHoleStatusElement: HTMLElement | null = null;
   private achievementCountElement: HTMLElement | null = null;
   private achievementRows: HTMLElement[] = [];
+  private wristbandButtons: HTMLButtonElement[] = [];
+  private leftWristbandPreview: HTMLElement | null = null;
+  private rightWristbandPreview: HTMLElement | null = null;
   private classicActionButton: ENGINE.Button | null = null;
   private epicActionButton: ENGINE.Button | null = null;
   private discoActionButton: ENGINE.Button | null = null;
@@ -166,6 +175,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     void this.toggleFullscreen();
   };
 
+  private readonly handleWristbandClick = (event: Event): void => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const side = button.dataset.wristbandSide as WristbandSide | undefined;
+    const color = button.dataset.wristbandColor as WristbandColor | undefined;
+    if (!side || !color || !wristbandColors.includes(color)) return;
+    this.setProgression(this.options.onWristbandColorChange(side, color));
+  };
+
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
       templatePath: DribbleMainMenu.metadata.assetPaths.template,
@@ -186,6 +203,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       progression: createDefaultProgressionState(),
       onPurchaseBall: () => createDefaultProgressionState(),
       onEquipBall: () => createDefaultProgressionState(),
+      onWristbandColorChange: () => createDefaultProgressionState(),
     };
   }
 
@@ -200,7 +218,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.volumeValue = this.layout.querySelector('[data-menu-volume-value]') as HTMLElement | null;
     this.fullscreenInput = this.layout.querySelector('[data-menu-fullscreen]') as HTMLInputElement | null;
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
-    this.highScoreElement = this.layout.querySelector('[data-menu-high-score]') as HTMLElement | null;
+    this.normalHighScoreElement = this.layout.querySelector('[data-menu-normal-high-score]') as HTMLElement | null;
+    this.hardHighScoreElement = this.layout.querySelector('[data-menu-hard-high-score]') as HTMLElement | null;
     this.shopStarsElement = this.layout.querySelector('[data-shop-stars]') as HTMLElement | null;
     this.classicStatusElement = this.layout.querySelector('[data-shop-classic-status]') as HTMLElement | null;
     this.epicStatusElement = this.layout.querySelector('[data-shop-epic-status]') as HTMLElement | null;
@@ -208,6 +227,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = this.layout.querySelector('[data-shop-blackhole-status]') as HTMLElement | null;
     this.achievementCountElement = this.layout.querySelector('[data-achievement-count]') as HTMLElement | null;
     this.achievementRows = Array.from(this.layout.querySelectorAll('[data-achievement-id]')) as HTMLElement[];
+    this.wristbandButtons = Array.from(this.layout.querySelectorAll('[data-wristband-color]')) as HTMLButtonElement[];
+    this.leftWristbandPreview = this.layout.querySelector('[data-wristband-preview="left"]') as HTMLElement | null;
+    this.rightWristbandPreview = this.layout.querySelector('[data-wristband-preview="right"]') as HTMLElement | null;
     this.menuBall = this.layout.querySelector('[data-menu-ball]') as HTMLButtonElement | null;
     this.menuBallCanvas = this.layout.querySelector('[data-menu-ball-canvas]') as HTMLCanvasElement | null;
   }
@@ -350,6 +372,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.menuBall?.addEventListener('pointerup', this.handleBallPointerUp);
     this.menuBall?.addEventListener('pointercancel', this.handleBallPointerUp);
     this.menuBall?.addEventListener('click', this.handleBallClick);
+    for (const button of this.wristbandButtons) {
+      button.addEventListener('click', this.handleWristbandClick);
+    }
     window.addEventListener('resize', this.handleMenuResize);
     document.addEventListener('fullscreenchange', this.handleFullscreenChange);
     this.handleFullscreenChange();
@@ -439,9 +464,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   private refreshProgressionUi(): void {
-    const { stars, highScore, equippedBall } = this.progression;
+    const { stars, normalHighScore, hardHighScore, equippedBall } = this.progression;
     if (this.homeStarsElement) this.homeStarsElement.textContent = String(stars);
-    if (this.highScoreElement) this.highScoreElement.textContent = String(highScore);
+    if (this.normalHighScoreElement) this.normalHighScoreElement.textContent = String(normalHighScore);
+    if (this.hardHighScoreElement) this.hardHighScoreElement.textContent = String(hardHighScore);
     if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
     if (this.classicStatusElement) {
       this.classicStatusElement.textContent = equippedBall === 'classic' ? 'EQUIPPED' : 'OWNED';
@@ -459,6 +485,22 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.refreshBallAction(this.discoActionButton, 'disco');
     this.refreshBallAction(this.blackHoleActionButton, 'blackhole');
     this.refreshAchievementsUi();
+    this.refreshWristbandUi();
+  }
+
+  private refreshWristbandUi(): void {
+    const selected: Record<WristbandSide, WristbandColor> = {
+      left: this.progression.leftWristbandColor,
+      right: this.progression.rightWristbandColor,
+    };
+    for (const button of this.wristbandButtons) {
+      const side = button.dataset.wristbandSide as WristbandSide | undefined;
+      const color = button.dataset.wristbandColor as WristbandColor | undefined;
+      const isSelected = side !== undefined && color !== undefined && selected[side] === color;
+      button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    }
+    this.leftWristbandPreview?.style.setProperty('--wristband-color', wristbandColorHex[selected.left]);
+    this.rightWristbandPreview?.style.setProperty('--wristband-color', wristbandColorHex[selected.right]);
   }
 
   private refreshAchievementsUi(): void {
@@ -727,6 +769,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.menuBall?.removeEventListener('pointerup', this.handleBallPointerUp);
     this.menuBall?.removeEventListener('pointercancel', this.handleBallPointerUp);
     this.menuBall?.removeEventListener('click', this.handleBallClick);
+    for (const button of this.wristbandButtons) {
+      button.removeEventListener('click', this.handleWristbandClick);
+    }
     window.removeEventListener('resize', this.handleMenuResize);
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     this.stopBallPhysics();
@@ -737,10 +782,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.volumeValue = null;
     this.fullscreenInput = null;
     this.homeStarsElement = null;
-    this.highScoreElement = null;
+    this.normalHighScoreElement = null;
+    this.hardHighScoreElement = null;
     this.shopStarsElement = null;
     this.classicStatusElement = null;
     this.epicStatusElement = null;
+    this.wristbandButtons = [];
+    this.leftWristbandPreview = null;
+    this.rightWristbandPreview = null;
     this.classicActionButton = null;
     this.epicActionButton = null;
     this.menuBall = null;

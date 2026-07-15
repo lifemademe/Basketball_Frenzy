@@ -1,4 +1,24 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
+export type WristbandColor = 'orange' | 'blue' | 'lime' | 'pink' | 'white' | 'purple';
+export type WristbandSide = 'left' | 'right';
+
+export const wristbandColors: readonly WristbandColor[] = [
+  'orange',
+  'blue',
+  'lime',
+  'pink',
+  'white',
+  'purple',
+];
+
+export const wristbandColorHex: Readonly<Record<WristbandColor, string>> = {
+  orange: '#ff6a2a',
+  blue: '#168cff',
+  lime: '#83f23d',
+  pink: '#ff4fa3',
+  white: '#f4f8ff',
+  purple: '#814dff',
+};
 export type AchievementId =
   | 'score10000'
   | 'firstPurchase'
@@ -15,8 +35,11 @@ export const achievementIds: readonly AchievementId[] = [
 ];
 
 export interface DribbleProgressionState {
-  highScore: number;
+  normalHighScore: number;
+  hardHighScore: number;
   stars: number;
+  leftWristbandColor: WristbandColor;
+  rightWristbandColor: WristbandColor;
   epicBallOwned: boolean;
   discoBallOwned: boolean;
   blackHoleBallOwned: boolean;
@@ -32,8 +55,11 @@ const storageKey = 'basketball-frenzy-progression-v1';
 
 export function createDefaultProgressionState(): DribbleProgressionState {
   return {
-    highScore: 0,
+    normalHighScore: 0,
+    hardHighScore: 0,
     stars: 0,
+    leftWristbandColor: 'orange',
+    rightWristbandColor: 'blue',
     epicBallOwned: false,
     discoBallOwned: false,
     blackHoleBallOwned: false,
@@ -47,13 +73,17 @@ export function loadProgression(): DribbleProgressionState {
   try {
     const stored = localStorage.getItem(storageKey);
     if (!stored) return fallback;
-    const parsed = JSON.parse(stored) as Partial<DribbleProgressionState>;
+    const parsed = JSON.parse(stored) as Partial<DribbleProgressionState> & { highScore?: unknown };
+    const legacyHighScore = sanitizeCount(parsed.highScore);
     const epicBallOwned = parsed.epicBallOwned === true;
     const discoBallOwned = parsed.discoBallOwned === true;
     const blackHoleBallOwned = parsed.blackHoleBallOwned === true;
     const loaded: DribbleProgressionState = {
-      highScore: sanitizeCount(parsed.highScore),
+      normalHighScore: Math.max(sanitizeCount(parsed.normalHighScore), legacyHighScore),
+      hardHighScore: sanitizeCount(parsed.hardHighScore),
       stars: sanitizeCount(parsed.stars),
+      leftWristbandColor: isWristbandColor(parsed.leftWristbandColor) ? parsed.leftWristbandColor : 'orange',
+      rightWristbandColor: isWristbandColor(parsed.rightWristbandColor) ? parsed.rightWristbandColor : 'blue',
       epicBallOwned,
       discoBallOwned,
       blackHoleBallOwned,
@@ -61,8 +91,9 @@ export function loadProgression(): DribbleProgressionState {
       achievements: loadAchievements(parsed.achievements),
     };
     if (!isBallOwned(loaded, loaded.equippedBall)) loaded.equippedBall = 'classic';
-    if (loaded.highScore > 0) loaded.achievements.firstPoint = true;
-    if (loaded.highScore >= 10000) loaded.achievements.score10000 = true;
+    const bestScore = Math.max(loaded.normalHighScore, loaded.hardHighScore);
+    if (bestScore > 0) loaded.achievements.firstPoint = true;
+    if (bestScore >= 10000) loaded.achievements.score10000 = true;
     if (loaded.epicBallOwned || loaded.discoBallOwned || loaded.blackHoleBallOwned) {
       loaded.achievements.firstPurchase = true;
     }
@@ -82,9 +113,27 @@ export function awardStars(state: DribbleProgressionState, amount: number): Drib
 export function recordHighScore(
   state: DribbleProgressionState,
   score: number,
+  mode: 'normal' | 'hard',
 ): DribbleProgressionState {
-  const highScore = Math.max(state.highScore, sanitizeCount(score));
-  return highScore === state.highScore ? state : persist({ ...state, highScore });
+  const key = mode === 'hard' ? 'hardHighScore' : 'normalHighScore';
+  const highScore = Math.max(state[key], sanitizeCount(score));
+  return highScore === state[key] ? state : persist({ ...state, [key]: highScore });
+}
+
+export function getHighScore(
+  state: DribbleProgressionState,
+  mode: 'normal' | 'hard',
+): number {
+  return mode === 'hard' ? state.hardHighScore : state.normalHighScore;
+}
+
+export function setWristbandColor(
+  state: DribbleProgressionState,
+  side: WristbandSide,
+  color: WristbandColor,
+): DribbleProgressionState {
+  const key = side === 'left' ? 'leftWristbandColor' : 'rightWristbandColor';
+  return state[key] === color ? state : persist({ ...state, [key]: color });
 }
 
 export function purchaseBall(
@@ -158,6 +207,10 @@ export function isBallOwned(
 
 function isBallCosmetic(value: unknown): value is BallCosmetic {
   return value === 'classic' || value === 'epic' || value === 'disco' || value === 'blackhole';
+}
+
+function isWristbandColor(value: unknown): value is WristbandColor {
+  return wristbandColors.some(color => color === value);
 }
 
 function createDefaultAchievements(): Record<AchievementId, boolean> {

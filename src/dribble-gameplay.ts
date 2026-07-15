@@ -12,14 +12,19 @@ import { DribblePatternDirector, type PatternLane } from './dribble-pattern-dire
 import {
   awardStars,
   equipBall,
+  getHighScore,
   isBallOwned,
   loadProgression,
   purchaseBall,
   recordHighScore,
+  setWristbandColor as saveWristbandColor,
   unlockAchievement,
+  wristbandColorHex,
   type AchievementId,
   type BallCosmetic,
   type DribbleProgressionState,
+  type WristbandColor,
+  type WristbandSide,
 } from './dribble-progression.js';
 import {
   DribbleJuiceHud,
@@ -70,6 +75,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private centerRhythmOpportunityCount = 0;
   private lastSpawnWasCenterRhythm = false;
   private readonly handAnimations = new Map<DribbleSide, HandAnimationState>();
+  private readonly handModelRoots = new Map<DribbleSide, THREE.Object3D>();
   private readonly referenceHandVisibility = new Map<ENGINE.SceneComponent, boolean>();
   private readonly impactBursts: DribbleImpactBurst[] = [];
   private readonly comboPopups: DribbleComboPopup[] = [];
@@ -288,6 +294,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   protected override doEndPlay(): void {
     this.scoreDisplay?.destroy();
+    this.handModelRoots.clear();
     this.pauseButton?.destroy();
     this.livesDisplay?.destroy();
     this.sideHints?.destroy();
@@ -533,6 +540,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       progression: this.progression,
       onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
       onEquipBall: cosmetic => this.setEquippedBall(cosmetic),
+      onWristbandColorChange: (side, color) => this.setWristbandSelection(side, color),
     });
     this.overlay = new DribbleOverlay(world.uiManager, {
       onResume: () => this.resumeRun(),
@@ -675,9 +683,15 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     await model.waitForLoad();
     const modelRoot = model.getModel();
     const clip = model.getAnimations().find(animation => animation.name === 'Bounce');
-    if (!modelRoot || !clip) {
+    if (!modelRoot) {
       return;
     }
+    this.handModelRoots.set(side, modelRoot);
+    const wristbandColor = side === 'left'
+      ? this.progression.leftWristbandColor
+      : this.progression.rightWristbandColor;
+    this.applyWristbandColor(side, wristbandColor);
+    if (!clip) return;
 
     const mixer = new THREE.AnimationMixer(modelRoot);
     const action = mixer.clipAction(clip);
@@ -685,6 +699,43 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     action.play();
     action.paused = true;
     this.handAnimations.set(side, { action, mixer });
+  }
+
+  private applyWristbandColor(side: WristbandSide, color: WristbandColor): void {
+    const modelRoot = this.handModelRoots.get(side);
+    if (!modelRoot) return;
+    const tint = wristbandColorHex[color];
+    modelRoot.traverse(object => {
+      if (!(object instanceof THREE.Mesh) || !this.isWristbandObject(object, modelRoot)) return;
+      if (object.userData.dribbleWristbandMaterialCloned !== true) {
+        object.material = Array.isArray(object.material)
+          ? object.material.map(material => this.isWristbandMaterial(material) ? material.clone() : material)
+          : this.isWristbandMaterial(object.material) ? object.material.clone() : object.material;
+        object.userData.dribbleWristbandMaterialCloned = true;
+      }
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        if (this.isWristbandMaterial(material) && 'color' in material && material.color instanceof THREE.Color) {
+          material.color.set(tint);
+          material.needsUpdate = true;
+        }
+      }
+    });
+  }
+
+  private isWristbandObject(object: THREE.Object3D, modelRoot: THREE.Object3D): boolean {
+    let current: THREE.Object3D | null = object;
+    while (current) {
+      if (current.name.toLowerCase().includes('wristband')) return true;
+      if (current === modelRoot) return false;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  private isWristbandMaterial(material: THREE.Material): boolean {
+    const name = material.name.toLowerCase();
+    return !name.includes('emblem') && (name.includes('cuff') || name.includes('wristband'));
   }
 
   private updateHandAnimations(deltaTime: number, ballState: DribbleBallState): void {
@@ -1346,7 +1397,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setGameplayActive(false);
     this.deactivateHitEffects();
     this.setHudVisible(false);
-    this.overlay?.showGameOver(this.score, this.progression.highScore);
+    this.overlay?.showGameOver(this.score, getHighScore(this.progression, this.gameMode), this.gameMode);
     world.inputManager.exitPointerLock();
   }
 
@@ -1422,7 +1473,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private commitHighScore(): void {
-    const updatedProgression = recordHighScore(this.progression, this.score);
+    const updatedProgression = recordHighScore(this.progression, this.score, this.gameMode);
     if (updatedProgression === this.progression) {
       return;
     }
@@ -1440,6 +1491,18 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         bus: 'SFX',
       });
     }
+    return this.progression;
+  }
+
+  private setWristbandSelection(side: WristbandSide, color: WristbandColor): DribbleProgressionState {
+    const updatedProgression = saveWristbandColor(this.progression, side, color);
+    if (updatedProgression === this.progression) return this.progression;
+    this.progression = updatedProgression;
+    this.applyWristbandColor(side, color);
+    void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+      volume: 0.16,
+      bus: 'SFX',
+    });
     return this.progression;
   }
 
@@ -1490,7 +1553,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     } else if (this.gameState === 'gameOver') {
       this.mainMenu?.hide();
       this.setHudVisible(false);
-      this.overlay?.showGameOver(this.score, this.progression.highScore);
+      this.overlay?.showGameOver(this.score, getHighScore(this.progression, this.gameMode), this.gameMode);
     } else {
       this.mainMenu?.hide();
       this.overlay?.hide();
