@@ -1,5 +1,6 @@
 import './dribble-ball-trail.ts';
 import './dribble-ball.ts';
+import './dribble-blackhole-debris.ts';
 import './dribble-boot-screen.ts';
 import './dribble-bounce-audio.ts';
 import './dribble-combo-popup.ts';

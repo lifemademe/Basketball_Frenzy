@@ -3,8 +3,12 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import {
+  blackHoleBallPrice,
   createDefaultProgressionState,
+  discoBallPrice,
   epicBallPrice,
+  getBallPrice,
+  isBallOwned,
   type BallCosmetic,
   type DribbleProgressionState,
 } from './dribble-progression.js';
@@ -19,7 +23,7 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onVolumeChange?: (volume: number) => void;
   onBallBounce?: (strength: number) => void;
   progression?: DribbleProgressionState;
-  onPurchaseEpicBall?: () => DribbleProgressionState;
+  onPurchaseBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
   onEquipBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
 }
 
@@ -45,8 +49,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private shopStarsElement: HTMLElement | null = null;
   private classicStatusElement: HTMLElement | null = null;
   private epicStatusElement: HTMLElement | null = null;
+  private discoStatusElement: HTMLElement | null = null;
+  private blackHoleStatusElement: HTMLElement | null = null;
   private classicActionButton: ENGINE.Button | null = null;
   private epicActionButton: ENGINE.Button | null = null;
+  private discoActionButton: ENGINE.Button | null = null;
+  private blackHoleActionButton: ENGINE.Button | null = null;
   private progression = createDefaultProgressionState();
   private menuBall: HTMLButtonElement | null = null;
   private menuBallCanvas: HTMLCanvasElement | null = null;
@@ -172,7 +180,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onVolumeChange: () => {},
       onBallBounce: () => {},
       progression: createDefaultProgressionState(),
-      onPurchaseEpicBall: () => createDefaultProgressionState(),
+      onPurchaseBall: () => createDefaultProgressionState(),
       onEquipBall: () => createDefaultProgressionState(),
     };
   }
@@ -192,6 +200,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.shopStarsElement = this.layout.querySelector('[data-shop-stars]') as HTMLElement | null;
     this.classicStatusElement = this.layout.querySelector('[data-shop-classic-status]') as HTMLElement | null;
     this.epicStatusElement = this.layout.querySelector('[data-shop-epic-status]') as HTMLElement | null;
+    this.discoStatusElement = this.layout.querySelector('[data-shop-disco-status]') as HTMLElement | null;
+    this.blackHoleStatusElement = this.layout.querySelector('[data-shop-blackhole-status]') as HTMLElement | null;
     this.menuBall = this.layout.querySelector('[data-menu-ball]') as HTMLButtonElement | null;
     this.menuBallCanvas = this.layout.querySelector('[data-menu-ball-canvas]') as HTMLCanvasElement | null;
   }
@@ -213,10 +223,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const shopBackSlot = slot('shop-back');
     const classicActionSlot = slot('classic-action');
     const epicActionSlot = slot('epic-action');
+    const discoActionSlot = slot('disco-action');
+    const blackHoleActionSlot = slot('blackhole-action');
     if (
       !playSlot || !normalModeSlot || !hardModeSlot || !modeBackSlot
       || !howSlot || !settingsSlot || !shopSlot || !howBackSlot
       || !settingsBackSlot || !shopBackSlot || !classicActionSlot || !epicActionSlot
+      || !discoActionSlot || !blackHoleActionSlot
     ) return;
 
     const mounted = await Promise.all([
@@ -279,11 +292,23 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
         label: `Buy - ${epicBallPrice} Star`,
-        onClick: () => this.handleEpicAction(),
+        onClick: () => this.handleBallAction('epic'),
       }, epicActionSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: `Buy - ${discoBallPrice} Stars`,
+        onClick: () => this.handleBallAction('disco'),
+      }, discoActionSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: `Buy - ${blackHoleBallPrice} Stars`,
+        onClick: () => this.handleBallAction('blackhole'),
+      }, blackHoleActionSlot),
     ]);
-    this.classicActionButton = mounted[mounted.length - 2];
-    this.epicActionButton = mounted[mounted.length - 1];
+    this.classicActionButton = mounted[mounted.length - 4];
+    this.epicActionButton = mounted[mounted.length - 3];
+    this.discoActionButton = mounted[mounted.length - 2];
+    this.blackHoleActionButton = mounted[mounted.length - 1];
     this.setProgression(this.options.progression);
 
     let volume = 0.8;
@@ -331,6 +356,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       '@project/assets/textures/Heart.png',
       '@project/assets/textures/classicball.png',
       '@project/assets/textures/blueball.png',
+      '@project/assets/textures/Discoball.png',
+      '@project/assets/textures/Blackholeball.png',
       '@project/assets/textures/mouse.png',
     ];
     const resolvedPaths = await Promise.all(
@@ -376,45 +403,57 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.setProgression(this.options.onEquipBall('classic'));
   }
 
-  private handleEpicAction(): void {
-    if (!this.progression.epicBallOwned) {
-      this.setProgression(this.options.onPurchaseEpicBall());
+  private handleBallAction(cosmetic: BallCosmetic): void {
+    if (!isBallOwned(this.progression, cosmetic)) {
+      this.setProgression(this.options.onPurchaseBall(cosmetic));
       return;
     }
-    this.setProgression(this.options.onEquipBall('epic'));
+    this.setProgression(this.options.onEquipBall(cosmetic));
   }
 
   private refreshProgressionUi(): void {
-    const { stars, highScore, epicBallOwned, equippedBall } = this.progression;
+    const { stars, highScore, equippedBall } = this.progression;
     if (this.homeStarsElement) this.homeStarsElement.textContent = String(stars);
     if (this.highScoreElement) this.highScoreElement.textContent = String(highScore);
     if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
     if (this.classicStatusElement) {
       this.classicStatusElement.textContent = equippedBall === 'classic' ? 'EQUIPPED' : 'OWNED';
     }
-    if (this.epicStatusElement) {
-      this.epicStatusElement.textContent = !epicBallOwned
-        ? 'LOCKED'
-        : equippedBall === 'epic'
-          ? 'EQUIPPED'
-          : 'OWNED';
-    }
+    this.refreshBallStatus(this.epicStatusElement, 'epic');
+    this.refreshBallStatus(this.discoStatusElement, 'disco');
+    this.refreshBallStatus(this.blackHoleStatusElement, 'blackhole');
     if (this.rootElement) {
-      this.rootElement.dataset.epicOwned = epicBallOwned ? 'true' : 'false';
+      this.rootElement.dataset.epicOwned = this.progression.epicBallOwned ? 'true' : 'false';
       this.rootElement.dataset.epicEquipped = equippedBall === 'epic' ? 'true' : 'false';
     }
     this.classicActionButton?.setLabel(equippedBall === 'classic' ? 'Equipped' : 'Equip');
     this.classicActionButton?.setDisabled(equippedBall === 'classic');
-    if (!this.epicActionButton) return;
-    if (!epicBallOwned) {
-      this.epicActionButton.setLabel(`Buy - ${epicBallPrice} Star`);
-      this.epicActionButton.setDisabled(stars < epicBallPrice);
-    } else if (equippedBall === 'epic') {
-      this.epicActionButton.setLabel('Equipped');
-      this.epicActionButton.setDisabled(true);
+    this.refreshBallAction(this.epicActionButton, 'epic');
+    this.refreshBallAction(this.discoActionButton, 'disco');
+    this.refreshBallAction(this.blackHoleActionButton, 'blackhole');
+  }
+
+  private refreshBallStatus(element: HTMLElement | null, cosmetic: BallCosmetic): void {
+    if (!element) return;
+    element.textContent = !isBallOwned(this.progression, cosmetic)
+      ? 'LOCKED'
+      : this.progression.equippedBall === cosmetic
+        ? 'EQUIPPED'
+        : 'OWNED';
+  }
+
+  private refreshBallAction(button: ENGINE.Button | null, cosmetic: BallCosmetic): void {
+    if (!button) return;
+    const price = getBallPrice(cosmetic);
+    if (!isBallOwned(this.progression, cosmetic)) {
+      button.setLabel(`Buy - ${price} ${price === 1 ? 'Star' : 'Stars'}`);
+      button.setDisabled(this.progression.stars < price);
+    } else if (this.progression.equippedBall === cosmetic) {
+      button.setLabel('Equipped');
+      button.setDisabled(true);
     } else {
-      this.epicActionButton.setLabel('Equip');
-      this.epicActionButton.setDisabled(false);
+      button.setLabel('Equip');
+      button.setDisabled(false);
     }
   }
 

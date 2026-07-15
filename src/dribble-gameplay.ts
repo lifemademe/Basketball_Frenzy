@@ -12,8 +12,9 @@ import { DribblePatternDirector, type PatternLane } from './dribble-pattern-dire
 import {
   awardStars,
   equipBall,
+  isBallOwned,
   loadProgression,
-  purchaseEpicBall,
+  purchaseBall,
   recordHighScore,
   type BallCosmetic,
   type DribbleProgressionState,
@@ -520,7 +521,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onVolumeChange: volume => this.applyMasterVolume(volume),
       onBallBounce: strength => playBasketballBounce(world, strength),
       progression: this.progression,
-      onPurchaseEpicBall: () => this.purchaseEpicBall(),
+      onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
       onEquipBall: cosmetic => this.setEquippedBall(cosmetic),
     });
     this.overlay = new DribbleOverlay(world.uiManager, {
@@ -1379,12 +1380,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
   }
 
-  private purchaseEpicBall(): DribbleProgressionState {
-    const previouslyOwned = this.progression.epicBallOwned;
-    this.progression = purchaseEpicBall(this.progression);
+  private purchaseBall(cosmetic: BallCosmetic): DribbleProgressionState {
+    const previouslyOwned = isBallOwned(this.progression, cosmetic);
+    this.progression = purchaseBall(this.progression, cosmetic);
     this.ball?.setEquippedCosmetic(this.progression.equippedBall);
     this.updateScoreStarCounter();
-    if (!previouslyOwned && this.progression.epicBallOwned) {
+    if (!previouslyOwned && isBallOwned(this.progression, cosmetic)) {
       void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
         volume: 0.72,
         bus: 'SFX',

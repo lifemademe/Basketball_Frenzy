@@ -10,6 +10,7 @@ import { DribbleGameplayManager } from './dribble-gameplay.js';
 @ENGINE.GameClass()
 export class FirstPersonPlayer extends ENGINE.CharacterPawn {
   private static readonly powerBounceImpulseDuration = 0.24;
+  private static readonly gameplayCameraPullback = 0.22;
 
   private powerBounceImpulseTime = FirstPersonPlayer.powerBounceImpulseDuration;
   private powerBounceImpulseSide = 1;
@@ -52,6 +53,7 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
 
   protected override updateCamera(deltaTime: number): void {
     if (!this.cameraTransformCaptured) {
+      this.camera.position.z += FirstPersonPlayer.gameplayCameraPullback;
       this.cameraBasePosition.copy(this.camera.position);
       this.cameraBaseQuaternion.copy(this.camera.quaternion);
       this.cameraTransformCaptured = true;

@@ -562,8 +562,10 @@
 }
 
 .dribble-main-menu-shop {
+  width: min(470px, calc(100vw - 34px));
+  height: min(700px, calc(100vh - 240px));
   min-height: 500px;
-  padding: 54px 52px 28px;
+  padding: 58px 52px 30px;
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
@@ -613,47 +615,46 @@
 
 .dribble-shop-inventory {
   display: grid;
-  gap: 6px;
+  gap: 9px;
+  max-height: calc(100% - 122px);
+  padding-right: 3px;
+  overflow-y: auto;
 }
 
 .dribble-shop-item {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
-  min-height: 116px;
-  padding: 5px 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  gap: 11px;
+  min-height: 112px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: rgba(0, 54, 136, 0.2);
 }
 
 .dribble-shop-preview {
   position: relative;
   display: grid;
-  width: 90px;
-  height: 90px;
+  width: 76px;
+  height: 76px;
   overflow: hidden;
   border-radius: 50%;
-  background: #020912;
+  background: transparent;
   place-items: center;
 }
 
 .dribble-shop-preview::before {
-  position: absolute;
-  inset: 13px;
-  border-radius: 50%;
-  background: rgba(72, 201, 255, 0.18);
-  box-shadow: 0 0 24px rgba(72, 201, 255, 0.46);
-  content: '';
+  display: none;
 }
 
 .dribble-shop-preview img {
   position: relative;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  object-fit: cover;
-  filter: drop-shadow(0 9px 8px rgba(0, 24, 78, 0.42));
-  transform: scale(1.36);
+  width: 76px;
+  height: 76px;
+  border-radius: 0;
+  object-fit: contain;
+  transform: none;
 }
 
 .dribble-shop-copy > span {
@@ -665,8 +666,8 @@
 .dribble-shop-copy h3 {
   margin: 1px 0 2px;
   color: #ffffff;
-  font-size: 24px;
-  line-height: 27px;
+  font-size: 22px;
+  line-height: 25px;
   text-shadow: 0 2px 5px rgba(0, 42, 124, 0.9);
 }
 
@@ -965,14 +966,20 @@
   }
 
   .dribble-main-menu-shop {
+    width: min(390px, 100%);
+    height: min(560px, calc(100vh - 200px));
     min-height: 480px;
-    padding: 48px 46px 26px;
+    padding: 48px 42px 26px;
+  }
+
+  .dribble-shop-inventory {
+    max-height: 360px;
   }
 
   .dribble-shop-item {
     grid-template-columns: 78px minmax(0, 1fr);
     gap: 12px;
-    min-height: 108px;
+    min-height: 112px;
   }
 
   .dribble-shop-preview,

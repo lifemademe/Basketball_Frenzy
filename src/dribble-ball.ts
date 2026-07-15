@@ -2,12 +2,15 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { DribbleBallTrail } from './dribble-ball-trail.js';
+import { DribbleBlackHoleDebris } from './dribble-blackhole-debris.js';
 import { playBasketballBounce } from './dribble-bounce-audio.js';
 import type { BallCosmetic } from './dribble-progression.js';
 
 const ballModelPaths: Record<BallCosmetic | 'gold', string> = {
   classic: '@project/assets/models/ball_runtime.glb',
   epic: '@project/assets/models/ball2_runtime.glb',
+  disco: '@project/assets/models/discoball_runtime.glb',
+  blackhole: '@project/assets/models/blackholeball_runtime.glb',
   gold: '@project/assets/models/goldball_runtime.glb',
 };
 
@@ -47,6 +50,42 @@ function createFrenzyVfxDefinition(): ENGINE.VFXDefinition {
   return definition;
 }
 
+function createDiscoImpactVfxDefinition(): ENGINE.VFXDefinition {
+  const definition = new ENGINE.VFXDefinition();
+  definition.name = 'DribbleDiscoImpact';
+  definition.particles = [Object.assign(new ENGINE.VFXParticlesSettings(), {
+    nbParticles: 24,
+    intensity: 2.2,
+    renderMode: 'stretchBillboard' as const,
+    stretchScale: 1.4,
+    fadeSize: [0, 0.72] as [number, number],
+    fadeAlpha: [0.04, 0.78] as [number, number],
+    gravity: [0, -2.8, 0] as [number, number, number],
+    appearance: 'circular' as const,
+    easeFunction: 'easeOutPower2' as const,
+    blendingMode: 'additive' as const,
+    depthTest: false,
+  })];
+  definition.emitters = [Object.assign(new ENGINE.VFXEmitterSettings(), {
+    particlesIndex: 0,
+    loop: false,
+    duration: 0.08,
+    nbParticles: 18,
+    spawnMode: 'burst' as const,
+    particlesLifetime: [0.18, 0.38] as [number, number],
+    startPositionMin: [-0.12, 0, -0.08] as [number, number, number],
+    startPositionMax: [0.12, 0.04, 0.08] as [number, number, number],
+    directionMin: [-1.6, 0.7, -0.6] as [number, number, number],
+    directionMax: [1.6, 2.4, 0.6] as [number, number, number],
+    size: [0.018, 0.055] as [number, number],
+    speed: [0.65, 1.5] as [number, number],
+    colorStart: ['#ff4fd8', '#55e9ff', '#fff46b', '#9d63ff'],
+    colorEnd: ['#ff78e5', '#6ef5ff', '#ffffff'],
+    useLocalDirection: true,
+  })];
+  return definition;
+}
+
 export type DribbleSide = 'left' | 'right';
 
 export interface DribbleBallState {
@@ -77,11 +116,15 @@ export class DribbleBall extends ENGINE.Actor {
   private ballModel: ENGINE.ModelMeshComponent | null = null;
   private equippedCosmetic: BallCosmetic = 'classic';
   private frenzyVfx: ENGINE.VFXComponent | null = null;
+  private discoImpactVfx: ENGINE.VFXComponent | null = null;
+  private blackHoleDebris: DribbleBlackHoleDebris | null = null;
   private frenzyInnerRing: ENGINE.MeshComponent | null = null;
   private frenzyOuterRing: ENGINE.MeshComponent | null = null;
   private frenzyActive = false;
   private frenzyPreloadTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyPhase = 0;
+  private modelAnimationMixer: THREE.AnimationMixer | null = null;
+  private modelLoadToken = 0;
   private bounceCycle = 0;
   private transferBouncePlayed = false;
   private readonly floorY = 0.08;
@@ -93,6 +136,7 @@ export class DribbleBall extends ENGINE.Actor {
     right: new THREE.Vector3(0.95, 0, -1.2),
   };
   private readonly scratchPosition = new THREE.Vector3();
+  private readonly localImpactPosition = new THREE.Vector3();
   private readonly ballState: DribbleBallState = {
     side: 'left',
     position: new THREE.Vector3(),
@@ -144,11 +188,21 @@ export class DribbleBall extends ENGINE.Actor {
       vfxDefinition: createFrenzyVfxDefinition(),
       autoStart: false,
     });
-
+    this.discoImpactVfx = ENGINE.VFXComponent.create({
+      name: 'Disco Bounce Sparkles',
+      vfxDefinition: createDiscoImpactVfxDefinition(),
+      autoStart: false,
+    });
     super.initialize({
       ...options,
       rootComponent: ENGINE.SceneComponent.create({ name: 'Ball Root' }),
-      sceneComponents: [ballModel, this.frenzyInnerRing, this.frenzyOuterRing, this.frenzyVfx],
+      sceneComponents: [
+        ballModel,
+        this.frenzyInnerRing,
+        this.frenzyOuterRing,
+        this.frenzyVfx,
+        this.discoImpactVfx,
+      ],
       actorTags: [...(options?.actorTags ?? []), 'dribble-ball'],
     });
     this.updateBouncePosition(0);
@@ -180,7 +234,8 @@ export class DribbleBall extends ENGINE.Actor {
 
   public setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
-    this.applyFrenzyVisualState();
+    if (!active) this.blackHoleDebris?.deactivate();
+    this.applyCosmeticVisualState();
   }
 
   public setFrenzyActive(active: boolean): void {
@@ -191,7 +246,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.frenzyPhase = 0;
     this.applyBallModel();
     this.trail?.setFrenzyActive(active);
-    this.applyFrenzyVisualState();
+    this.applyCosmeticVisualState();
   }
 
   public setEquippedCosmetic(cosmetic: BallCosmetic): void {
@@ -200,6 +255,8 @@ export class DribbleBall extends ENGINE.Actor {
     }
     this.equippedCosmetic = cosmetic;
     this.applyBallModel();
+    this.trail?.setCosmetic(cosmetic);
+    this.applyCosmeticVisualState();
   }
 
   public reset(): void {
@@ -226,8 +283,12 @@ export class DribbleBall extends ENGINE.Actor {
     }
     this.trail = DribbleBallTrail.create({ name: 'Dribble Ball Trail VFX' });
     world.addActor(this.trail);
+    this.blackHoleDebris = DribbleBlackHoleDebris.create({ name: 'Black Hole Bounce Debris' });
+    world.addActor(this.blackHoleDebris);
+    this.trail.setCosmetic(this.equippedCosmetic);
     this.trail.setFrenzyActive(this.frenzyActive);
     this.trail.record(this.rootComponent.position);
+    void this.ballModel?.waitForLoad().then(() => this.startModelAnimations());
     this.frenzyPreloadTimer = setTimeout(() => {
       this.frenzyPreloadTimer = null;
       void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(ballModelPaths.gold))
@@ -242,6 +303,10 @@ export class DribbleBall extends ENGINE.Actor {
     }
     this.trail?.destroy();
     this.trail = null;
+    this.blackHoleDebris?.destroy();
+    this.blackHoleDebris = null;
+    this.modelAnimationMixer?.stopAllAction();
+    this.modelAnimationMixer = null;
     super.doEndPlay();
   }
 
@@ -292,14 +357,17 @@ export class DribbleBall extends ENGINE.Actor {
     }
 
     this.trail?.record(this.rootComponent.position);
-    this.updateFrenzyVisuals(deltaTime);
+    this.modelAnimationMixer?.update(deltaTime);
+    this.updateCosmeticVisuals(deltaTime);
   }
 
-  private applyFrenzyVisualState(): void {
-    const visible = this.frenzyActive && this.gameplayActive;
+  private applyCosmeticVisualState(): void {
+    const cosmeticAura = this.equippedCosmetic === 'disco' || this.equippedCosmetic === 'blackhole';
+    const visible = this.gameplayActive && (this.frenzyActive || cosmeticAura);
     if (this.frenzyInnerRing) this.frenzyInnerRing.visible = visible;
     if (this.frenzyOuterRing) this.frenzyOuterRing.visible = visible;
-    if (visible) this.frenzyVfx?.startEmitting(false);
+    this.updateAuraMaterials();
+    if (this.frenzyActive && this.gameplayActive) this.frenzyVfx?.startEmitting(false);
     else this.frenzyVfx?.stopEmitting();
   }
 
@@ -308,17 +376,25 @@ export class DribbleBall extends ENGINE.Actor {
     if (!this.ballModel || this.ballModel.modelUrl === modelPath) {
       return;
     }
-    void this.ballModel.loadModel(ENGINE.AssetPath.fromString(modelPath)).catch(error => {
-      console.warn(`Could not load basketball model: ${modelPath}`, error);
-    });
+    const loadToken = ++this.modelLoadToken;
+    this.modelAnimationMixer?.stopAllAction();
+    this.modelAnimationMixer = null;
+    void this.ballModel.loadModel(ENGINE.AssetPath.fromString(modelPath))
+      .then(() => {
+        if (loadToken !== this.modelLoadToken) return;
+        this.startModelAnimations();
+      })
+      .catch(error => {
+        console.warn(`Could not load basketball model: ${modelPath}`, error);
+      });
   }
 
-  private updateFrenzyVisuals(deltaTime: number): void {
-    if (!this.frenzyActive) {
+  private updateCosmeticVisuals(deltaTime: number): void {
+    if (!this.frenzyActive && this.equippedCosmetic !== 'disco' && this.equippedCosmetic !== 'blackhole') {
       return;
     }
 
-    this.frenzyPhase += deltaTime * 8;
+    this.frenzyPhase += deltaTime * (this.equippedCosmetic === 'blackhole' ? 5.4 : 8);
     const pulse = 1 + Math.sin(this.frenzyPhase) * 0.08;
     if (this.frenzyInnerRing) {
       this.frenzyInnerRing.scale.setScalar(pulse);
@@ -327,6 +403,46 @@ export class DribbleBall extends ENGINE.Actor {
     if (this.frenzyOuterRing) {
       this.frenzyOuterRing.scale.setScalar(1.05 - Math.sin(this.frenzyPhase * 0.78) * 0.1);
       this.frenzyOuterRing.rotation.z -= deltaTime * 1.2;
+    }
+    if (!this.frenzyActive && this.equippedCosmetic === 'disco') {
+      const hue = (this.frenzyPhase * 0.045) % 1;
+      const innerMaterial = this.frenzyInnerRing?.material as THREE.MeshBasicMaterial | undefined;
+      const outerMaterial = this.frenzyOuterRing?.material as THREE.MeshBasicMaterial | undefined;
+      innerMaterial?.color.setHSL(hue, 1, 0.62);
+      outerMaterial?.color.setHSL((hue + 0.42) % 1, 1, 0.62);
+    }
+  }
+
+  private updateAuraMaterials(): void {
+    const innerMaterial = this.frenzyInnerRing?.material as THREE.MeshBasicMaterial | undefined;
+    const outerMaterial = this.frenzyOuterRing?.material as THREE.MeshBasicMaterial | undefined;
+    if (!innerMaterial || !outerMaterial) return;
+    if (this.frenzyActive) {
+      innerMaterial.color.set(0xffca3a);
+      outerMaterial.color.set(0xfff1a1);
+      innerMaterial.opacity = 0.82;
+      outerMaterial.opacity = 0.7;
+    } else if (this.equippedCosmetic === 'blackhole') {
+      innerMaterial.color.set(0x8c20ff);
+      outerMaterial.color.set(0xff641f);
+      innerMaterial.opacity = 0.55;
+      outerMaterial.opacity = 0.72;
+    } else {
+      innerMaterial.color.set(0x4ef4ff);
+      outerMaterial.color.set(0xff4fd8);
+      innerMaterial.opacity = 0.64;
+      outerMaterial.opacity = 0.55;
+    }
+  }
+
+  private startModelAnimations(): void {
+    const model = this.ballModel?.getModel();
+    const clips = this.ballModel?.getAnimations() ?? [];
+    if (!model || clips.length === 0) return;
+    this.modelAnimationMixer?.stopAllAction();
+    this.modelAnimationMixer = new THREE.AnimationMixer(model);
+    for (const clip of clips) {
+      this.modelAnimationMixer.clipAction(clip).play();
     }
   }
 
@@ -435,6 +551,12 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   private playBounceSound(): void {
-    playBasketballBounce(this.getWorld());
+    const style = this.frenzyActive ? 'gold' : this.equippedCosmetic;
+    playBasketballBounce(this.getWorld(), 1, style);
+    if (!this.frenzyActive && this.equippedCosmetic === 'disco') {
+      this.discoImpactVfx?.emitAtPosition(this.localImpactPosition, true);
+    } else if (!this.frenzyActive && this.equippedCosmetic === 'blackhole') {
+      this.blackHoleDebris?.play(this.rootComponent.position);
+    }
   }
 }
