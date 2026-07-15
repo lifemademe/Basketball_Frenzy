@@ -6,8 +6,9 @@ import { playBasketballBounce } from './dribble-bounce-audio.js';
 import { hideDribbleBootScreen } from './dribble-boot-screen.js';
 import { DribbleComboPopup } from './dribble-combo-popup.js';
 import { DribbleImpactBurst } from './dribble-impact-burst.js';
-import { DribbleMainMenu } from './dribble-main-menu.js';
+import { DribbleMainMenu, type DribbleGameMode } from './dribble-main-menu.js';
 import { DribbleOverlay } from './dribble-overlay.js';
+import { DribblePatternDirector, type PatternLane } from './dribble-pattern-director.js';
 import {
   awardStars,
   equipBall,
@@ -25,6 +26,8 @@ import {
   DribbleTimingMeter,
 } from './dribble-status-hud.js';
 import { DribbleTarget, type TargetKind } from './dribble-target.js';
+import { DribbleTutorialDirector, type TutorialEvent } from './dribble-tutorial-director.js';
+import { DribbleTutorialHud } from './dribble-tutorial-hud.js';
 
 type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
 
@@ -44,11 +47,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private juiceHud: DribbleJuiceHud | null = null;
   private mainMenu: DribbleMainMenu | null = null;
   private overlay: DribbleOverlay | null = null;
+  private tutorialHud: DribbleTutorialHud | null = null;
   private spawnTimer = 0.9;
   private elapsedTime = 0;
   private score = 0;
   private progression: DribbleProgressionState = loadProgression();
   private lives = 3;
+  private maxLives = 3;
+  private gameMode: DribbleGameMode = 'normal';
   private combo = 0;
   private frenzyCharge = 0;
   private frenzyTimeRemaining = 0;
@@ -64,6 +70,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly impactBursts: DribbleImpactBurst[] = [];
   private readonly comboPopups: DribbleComboPopup[] = [];
   private readonly activeTargets: DribbleTarget[] = [];
+  private readonly patternDirector = new DribblePatternDirector();
+  private readonly tutorialDirector = new DribbleTutorialDirector();
+  private tutorialActive = false;
+  private tutorialTarget: DribbleTarget | null = null;
+  private tutorialLessonId = '';
   private readonly targetHitPosition = new THREE.Vector3();
   private readonly comboPopupPosition = new THREE.Vector3();
   private gameState: DribbleGameState = 'menu';
@@ -78,19 +89,28 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly minimumTargetGap = 2.35;
   private readonly comfortableTargetGap = 3.15;
   private readonly centerRhythmLength = 8;
+  private lastSpawnIntervalScale = 1;
 
   public handleLeftClick(): void {
     if (this.gameState !== 'playing') return;
     const ballState = this.ball?.getState();
-    if (ballState?.side === 'left') this.ball?.boostLeft();
-    else this.ball?.transferToLeft();
+    const actionWorked = ballState?.side === 'left'
+      ? this.ball?.boostLeft()
+      : this.ball?.transferToLeft();
+    if (actionWorked && this.tutorialActive) {
+      this.recordTutorialEvent(ballState?.side === 'left' ? 'boost-left' : 'switch-left');
+    }
   }
 
   public handleRightClick(): void {
     if (this.gameState !== 'playing') return;
     const ballState = this.ball?.getState();
-    if (ballState?.side === 'right') this.ball?.boostRight();
-    else this.ball?.transferToRight();
+    const actionWorked = ballState?.side === 'right'
+      ? this.ball?.boostRight()
+      : this.ball?.transferToRight();
+    if (actionWorked && this.tutorialActive) {
+      this.recordTutorialEvent(ballState?.side === 'right' ? 'boost-right' : 'switch-right');
+    }
   }
 
   public togglePause(): void {
@@ -105,13 +125,18 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
   }
 
-  public restartRun(): void {
+  public restartRun(mode?: DribbleGameMode): void {
     const world = this.getWorld();
     if (!world) {
       return;
     }
 
-    this.commitHighScore();
+    if (!this.tutorialActive) this.commitHighScore();
+    this.stopTutorial();
+    if (mode) {
+      this.gameMode = mode;
+      this.maxLives = mode === 'hard' ? 1 : 3;
+    }
 
     for (const target of this.activeTargets) {
       target.destroy();
@@ -123,7 +148,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.spawnTimer = 0.7;
     this.elapsedTime = 0;
     this.score = 0;
-    this.lives = 3;
+    this.lives = this.maxLives;
     this.combo = 0;
     this.frenzyCharge = 0;
     this.frenzyTimeRemaining = 0;
@@ -134,16 +159,54 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.centerRhythmCooldown = 12;
     this.centerRhythmOpportunityCount = 0;
     this.lastSpawnWasCenterRhythm = false;
+    this.lastSpawnIntervalScale = 1;
+    this.patternDirector.reset(this.gameMode);
     this.ball?.reset();
     this.setGameplayActive(true);
     this.scoreDisplay?.setValue(0, false);
     this.scoreDisplay?.setTrend(null);
-    this.livesDisplay?.setLives(this.lives);
+    this.livesDisplay?.resetLives(this.lives, this.maxLives);
     this.timingMeter?.setTiming(0, false, false);
     this.juiceHud?.setFrenzy(0, 0, false);
     this.mainMenu?.hide();
     this.overlay?.hide();
     this.setHudVisible(true);
+    world.inputManager.exitPointerLock();
+  }
+
+  public startTutorial(): void {
+    const world = this.getWorld();
+    if (!world) return;
+
+    for (const target of this.activeTargets) target.destroy();
+    this.activeTargets.length = 0;
+    this.deactivateHitEffects();
+    this.tutorialActive = true;
+    this.tutorialTarget = null;
+    this.tutorialLessonId = '';
+    this.gameState = 'playing';
+    this.elapsedTime = 0;
+    this.score = 0;
+    this.maxLives = 3;
+    this.lives = 3;
+    this.combo = 0;
+    this.frenzyCharge = 0;
+    this.frenzyTimeRemaining = 0;
+    this.patternDirector.cancel();
+    this.tutorialDirector.reset();
+    this.ball?.reset();
+    this.ball?.setFrenzyActive(false);
+    this.setGameplayActive(true);
+    this.scoreDisplay?.setValue(0, false);
+    this.livesDisplay?.resetLives(3, 3);
+    this.timingMeter?.setTiming(0, false, false);
+    this.juiceHud?.setFrenzy(0, 0, false);
+    this.mainMenu?.hide();
+    this.overlay?.hide();
+    this.setHudVisible(true);
+    this.scoreDisplay?.hide();
+    this.tutorialHud?.show();
+    this.syncTutorialLesson();
     world.inputManager.exitPointerLock();
   }
 
@@ -155,6 +218,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     this.elapsedTime += deltaTime;
     this.compactActiveTargets();
+    if (this.tutorialActive) {
+      this.updateTutorial(deltaTime);
+      const ballState = this.ball?.getState();
+      if (ballState) {
+        this.updateTimingMeter(ballState, this.activeTargets);
+        this.checkBallTargetHits(ballState, this.activeTargets);
+        this.updateHandAnimations(deltaTime, ballState);
+      }
+      return;
+    }
     this.centerRhythmCooldown = Math.max(0, this.centerRhythmCooldown - deltaTime);
     this.updateFrenzy(deltaTime);
     this.spawnTimer -= deltaTime;
@@ -170,7 +243,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         this.spawnTimer = THREE.MathUtils.randFloat(
           baseInterval * (this.lastSpawnWasCenterRhythm ? 0.97 : 0.9),
           baseInterval * (this.lastSpawnWasCenterRhythm ? 1.03 : 1.1),
-        ) * frenzyMultiplier;
+        ) * frenzyMultiplier * this.lastSpawnIntervalScale;
       } else {
         this.spawnTimer = 0.08;
       }
@@ -204,6 +277,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.sideHints?.destroy();
     this.timingMeter?.destroy();
     this.juiceHud?.destroy();
+    this.tutorialHud?.destroy();
     this.mainMenu?.destroy();
     this.overlay?.destroy();
     this.scoreDisplay = null;
@@ -212,6 +286,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.sideHints = null;
     this.timingMeter = null;
     this.juiceHud = null;
+    this.tutorialHud = null;
     this.mainMenu = null;
     this.overlay = null;
     this.restoreReferenceHands();
@@ -435,7 +510,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       visible: false,
     });
     this.mainMenu = new DribbleMainMenu(world.uiManager, {
-      onPlay: () => this.restartRun(),
+      onPlay: mode => this.restartRun(mode),
+      onTutorial: () => this.startTutorial(),
       onVolumeChange: volume => this.applyMasterVolume(volume),
       onBallBounce: strength => playBasketballBounce(world, strength),
       progression: this.progression,
@@ -444,8 +520,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     });
     this.overlay = new DribbleOverlay(world.uiManager, {
       onResume: () => this.resumeRun(),
-      onRestart: () => this.restartRun(),
+      onRestart: () => this.tutorialActive ? this.startTutorial() : this.restartRun(),
       onMainMenu: () => this.returnToMainMenu(),
+    });
+    this.tutorialHud = new DribbleTutorialHud(world.uiManager, {
+      visible: false,
+      onExit: () => this.returnToMainMenu(),
     });
 
     await Promise.all([
@@ -455,6 +535,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.sideHints.initialize(),
       this.timingMeter.initialize(),
       this.juiceHud.initialize(),
+      this.tutorialHud.initialize(),
       this.mainMenu.initialize(),
       this.overlay.initialize(),
     ]);
@@ -651,16 +732,33 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.tryStartCenterRhythm(existingTargets);
     const difficulty = this.getDifficultyRamp();
     const rhythmTarget = this.centerRhythmSpawnsRemaining > 0;
-    const kind = rhythmTarget ? this.centerRhythmNextKind : this.selectTargetKind(difficulty);
+    const patternStep = !rhythmTarget && this.frenzyTimeRemaining <= 0
+      ? this.patternDirector.takeStep({
+        difficulty,
+        elapsedTime: this.elapsedTime,
+        activeTargetCount: existingTargets.length,
+        mode: this.gameMode,
+      })
+      : null;
+    const kind = rhythmTarget
+      ? this.centerRhythmNextKind
+      : patternStep?.kind ?? this.selectTargetKind(difficulty);
+    if (!rhythmTarget && !patternStep) {
+      this.patternDirector.recordUnscriptedSpawn();
+    }
     if (!rhythmTarget) {
       this.recordSpawnKind(kind);
     }
     const availableLanes = kind === 'bonus' ? [this.lanes[0], this.lanes[2]] : this.lanes;
     const laneX = rhythmTarget
       ? 0
-      : availableLanes[Math.floor(Math.random() * availableLanes.length)];
+      : patternStep
+        ? this.getPatternLaneX(patternStep.lane)
+        : availableLanes[Math.floor(Math.random() * availableLanes.length)];
     const targetPace = THREE.MathUtils.lerp(4.1, 7.2, difficulty);
-    let speed = rhythmTarget ? targetPace : targetPace * THREE.MathUtils.randFloat(0.96, 1.04);
+    let speed = rhythmTarget
+      ? targetPace
+      : targetPace * THREE.MathUtils.randFloat(0.96, 1.04) * (patternStep?.speedScale ?? 1);
     if (rearmostTarget) {
       const timeToCollect = Math.max(
         1,
@@ -683,13 +781,25 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       rhythmTarget,
       position: new THREE.Vector3(
         laneX,
-        kind === 'bonus' ? 2.45 : rhythmTarget ? 0.48 : THREE.MathUtils.randFloat(0.24, 0.68),
+        kind === 'bonus'
+          ? 2.45
+          : rhythmTarget
+            ? 0.48
+            : patternStep?.height === 'low'
+              ? 0.3
+              : patternStep
+                ? 0.52
+                : THREE.MathUtils.randFloat(0.24, 0.68),
         this.targetSpawnZ,
       ),
     });
     world.addActor(target);
     this.activeTargets.push(target);
     this.lastSpawnWasCenterRhythm = rhythmTarget;
+    this.lastSpawnIntervalScale = patternStep?.intervalScale ?? 1;
+    if (patternStep?.startsPattern) {
+      this.juiceHud?.showPraise(patternStep.patternLabel, 'gold');
+    }
     if (rhythmTarget) {
       this.centerRhythmSpawnsRemaining -= 1;
       this.centerRhythmNextKind = kind === 'score' ? 'hazard' : 'score';
@@ -700,9 +810,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     return true;
   }
 
+  private getPatternLaneX(lane: PatternLane): number {
+    if (lane === 'left') return this.lanes[0];
+    if (lane === 'right') return this.lanes[2];
+    return this.lanes[1];
+  }
+
   private tryStartCenterRhythm(existingTargets: DribbleTarget[]): void {
     if (
       this.centerRhythmSpawnsRemaining > 0
+      || this.patternDirector.isActive()
       || this.centerRhythmCooldown > 0
       || this.frenzyTimeRemaining > 0
       || this.elapsedTime < 14
@@ -777,7 +894,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return 'hazard';
     }
 
-    const healthChance = this.lives < 3 ? 0.09 : 0;
+    const healthChance = this.lives < this.maxLives ? 0.09 : 0;
     const hazardChance = canSpawnHazard
       ? THREE.MathUtils.lerp(0.64, 0.72, difficulty)
       : 0;
@@ -859,6 +976,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }
 
       this.targetHitPosition.copy(targetPosition);
+      if (this.tutorialActive) {
+        this.handleTutorialTargetHit(target, this.targetHitPosition);
+        if (target === this.tutorialTarget) this.tutorialTarget = null;
+        target.destroy();
+        continue;
+      }
       if (target.kind === 'score') {
         this.handleScoreHit(this.targetHitPosition, target.isRhythmTarget);
       } else if (target.kind === 'bonus') {
@@ -952,7 +1075,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
-    this.lives = Math.min(3, this.lives + 1);
+    this.lives = Math.min(this.maxLives, this.lives + 1);
     this.livesDisplay?.setLives(this.lives);
     this.spawnImpactBurst(position, 0x4de6b8);
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
@@ -991,6 +1114,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.centerRhythmNextKind = 'score';
     this.centerRhythmCooldown = Math.max(this.centerRhythmCooldown, 14);
     this.centerRhythmOpportunityCount = 0;
+    this.patternDirector.cancel();
     this.frenzyCharge = 0;
     this.frenzyTimeRemaining = this.frenzyDuration;
     this.ball?.setFrenzyActive(true);
@@ -1036,17 +1160,122 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.getWorld()?.globalAudioManager.getBus('Master')?.setVolume(volume);
   }
 
+  private updateTutorial(deltaTime: number): void {
+    this.tutorialDirector.update(deltaTime);
+    this.syncTutorialLesson();
+    if (this.tutorialDirector.isComplete() || this.tutorialTarget) return;
+
+    const request = this.tutorialDirector.takeSpawnRequest();
+    const ballState = this.ball?.getState();
+    const world = this.getWorld();
+    if (!request || !ballState || !world) return;
+
+    const lane = this.tutorialDirector.resolveLane(request.lane, ballState.side);
+    const laneX = lane === 'center' ? this.lanes[1] : lane === 'left' ? this.lanes[0] : this.lanes[2];
+    const y = request.height === 'high' ? 2.45 : request.height === 'low' ? 0.3 : 0.52;
+    const target = DribbleTarget.create({
+      name: `Tutorial ${request.kind} Target`,
+      kind: request.kind,
+      laneX,
+      speed: request.rhythmTarget ? 3.15 : 3.35,
+      rhythmTarget: request.rhythmTarget ?? false,
+      position: new THREE.Vector3(laneX, y, -12),
+    });
+    world.addActor(target);
+    this.activeTargets.push(target);
+    this.tutorialTarget = target;
+  }
+
+  private handleTutorialTargetHit(target: DribbleTarget, position: THREE.Vector3): void {
+    const world = this.getWorld();
+    if (!world) return;
+
+    if (target.kind === 'hazard') {
+      this.spawnImpactBurst(position, 0xff453a);
+      this.juiceHud?.showPraise('TRY A HIGH BOUNCE', 'gold');
+      this.recordTutorialEvent('hazard-hit');
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/explosion.mp3', {
+        volume: 0.34,
+        bus: 'SFX',
+      });
+      return;
+    }
+
+    if (target.kind === 'health') {
+      this.lives = Math.min(this.maxLives, this.lives + 1);
+      this.livesDisplay?.setLives(this.lives);
+      this.spawnImpactBurst(position, 0x4de6b8);
+      this.recordTutorialEvent('health-hit');
+    } else if (target.kind === 'bonus') {
+      this.spawnImpactBurst(position, 0xffca3a);
+      this.recordTutorialEvent('bonus-hit');
+    } else {
+      this.spawnImpactBurst(position, 0xffca3a);
+      this.recordTutorialEvent(target.isRhythmTarget ? 'center-hit' : 'score-hit');
+    }
+    void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+      volume: 0.62,
+      bus: 'SFX',
+    });
+  }
+
+  private recordTutorialEvent(event: TutorialEvent): void {
+    if (!this.tutorialActive) return;
+    const advanced = this.tutorialDirector.recordEvent(event);
+    if (!advanced) return;
+    this.juiceHud?.showPraise(this.tutorialDirector.isComplete() ? 'COURT READY!' : 'NICE!', 'gold');
+    this.syncTutorialLesson();
+  }
+
+  private syncTutorialLesson(): void {
+    if (!this.tutorialActive) return;
+    if (this.tutorialDirector.isComplete()) {
+      if (this.tutorialLessonId !== 'complete') {
+        this.tutorialLessonId = 'complete';
+        this.ball?.setFrenzyActive(false);
+        this.tutorialHud?.showComplete();
+      }
+      return;
+    }
+
+    const lesson = this.tutorialDirector.getLesson();
+    if (lesson.id === this.tutorialLessonId) return;
+    this.tutorialLessonId = lesson.id;
+    if (lesson.id === 'health-target') {
+      this.lives = 2;
+      this.livesDisplay?.setLives(this.lives);
+    }
+    this.ball?.setFrenzyActive(lesson.id === 'frenzy');
+    this.tutorialHud?.setLesson(
+      this.tutorialDirector.getLessonNumber(),
+      this.tutorialDirector.getLessonCount(),
+      lesson.title,
+      lesson.instruction,
+      lesson.control,
+    );
+  }
+
+  private stopTutorial(): void {
+    this.tutorialActive = false;
+    this.tutorialTarget = null;
+    this.tutorialLessonId = '';
+    this.ball?.setFrenzyActive(false);
+    this.tutorialHud?.hide();
+  }
+
   private returnToMainMenu(): void {
     const world = this.getWorld();
     if (!world) {
       return;
     }
 
-    this.commitHighScore();
+    if (!this.tutorialActive) this.commitHighScore();
+    this.stopTutorial();
     this.gameState = 'menu';
     this.setGameplayActive(false);
     this.deactivateHitEffects();
     this.setHudVisible(false);
+    this.tutorialHud?.hide();
     this.overlay?.hide();
     this.mainMenu?.showHome();
     world.inputManager.exitPointerLock();
@@ -1060,6 +1289,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.gameState = 'paused';
     this.setGameplayActive(false);
     this.setHudVisible(false);
+    this.tutorialHud?.hide();
     this.overlay?.showPause(this.score);
     world.inputManager.exitPointerLock();
   }
@@ -1073,6 +1303,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setGameplayActive(true);
     this.overlay?.hide();
     this.setHudVisible(true);
+    if (this.tutorialActive) {
+      this.scoreDisplay?.hide();
+      this.tutorialHud?.show();
+    }
     world.inputManager.exitPointerLock();
   }
 
@@ -1183,6 +1417,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       if (!target.isRemovalPending()) {
         this.activeTargets[writeIndex] = target;
         writeIndex += 1;
+      } else if (this.tutorialActive && target === this.tutorialTarget) {
+        this.tutorialTarget = null;
+        if (target.kind === 'hazard') this.recordTutorialEvent('hazard-avoided');
+        else this.tutorialDirector.retryTarget();
       } else if (target.didMissScoreTarget()) {
         missedScoreTarget = true;
       }
@@ -1224,6 +1462,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.mainMenu?.hide();
       this.overlay?.hide();
       this.setHudVisible(true);
+      if (this.tutorialActive) {
+        this.scoreDisplay?.hide();
+        this.tutorialHud?.show();
+      }
     }
   }
 }

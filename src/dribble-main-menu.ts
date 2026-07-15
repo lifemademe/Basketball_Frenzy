@@ -9,10 +9,13 @@ import {
   type DribbleProgressionState,
 } from './dribble-progression.js';
 
-type MainMenuPanel = 'home' | 'how-to-play' | 'settings' | 'shop';
+export type DribbleGameMode = 'normal' | 'hard';
+
+type MainMenuPanel = 'home' | 'mode-select' | 'how-to-play' | 'settings' | 'shop';
 
 export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
-  onPlay?: () => void;
+  onPlay?: (mode: DribbleGameMode) => void;
+  onTutorial?: () => void;
   onVolumeChange?: (volume: number) => void;
   onBallBounce?: (strength: number) => void;
   progression?: DribbleProgressionState;
@@ -165,6 +168,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       customClasses: [],
       customStyles: {},
       onPlay: () => {},
+      onTutorial: () => {},
       onVolumeChange: () => {},
       onBallBounce: () => {},
       progression: createDefaultProgressionState(),
@@ -198,6 +202,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.layout?.querySelector(`[data-menu-${name}-slot]`) as HTMLElement | null
     );
     const playSlot = slot('play');
+    const normalModeSlot = slot('normal-mode');
+    const hardModeSlot = slot('hard-mode');
+    const modeBackSlot = slot('mode-back');
     const howSlot = slot('how');
     const settingsSlot = slot('settings');
     const shopSlot = slot('shop');
@@ -207,7 +214,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const classicActionSlot = slot('classic-action');
     const epicActionSlot = slot('epic-action');
     if (
-      !playSlot || !howSlot || !settingsSlot || !shopSlot || !howBackSlot
+      !playSlot || !normalModeSlot || !hardModeSlot || !modeBackSlot
+      || !howSlot || !settingsSlot || !shopSlot || !howBackSlot
       || !settingsBackSlot || !shopBackSlot || !classicActionSlot || !epicActionSlot
     ) return;
 
@@ -215,12 +223,27 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
         label: 'Play',
-        onClick: () => this.options.onPlay(),
+        onClick: () => this.showPanel('mode-select'),
       }, playSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: 'Normal',
+        onClick: () => this.options.onPlay('normal'),
+      }, normalModeSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Hard',
+        onClick: () => this.options.onPlay('hard'),
+      }, hardModeSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Back',
+        onClick: () => this.showPanel('home'),
+      }, modeBackSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
         label: 'Tutorial',
-        onClick: () => this.showPanel('how-to-play'),
+        onClick: () => this.options.onTutorial(),
       }, howSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
@@ -305,6 +328,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       '@project/assets/textures/Settings.png',
       '@project/assets/textures/Shop.png',
       '@project/assets/textures/Star.png',
+      '@project/assets/textures/Heart.png',
       '@project/assets/textures/classicball.png',
       '@project/assets/textures/blueball.png',
       '@project/assets/textures/mouse.png',

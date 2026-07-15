@@ -181,6 +181,7 @@
   user-select: none;
 }
 
+.dribble-main-menu[data-panel='mode-select'] .dribble-main-menu-logo,
 .dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-logo,
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-logo,
 .dribble-main-menu[data-panel='shop'] .dribble-main-menu-logo {
@@ -230,6 +231,7 @@
 }
 
 .dribble-main-menu[data-panel='home'] .dribble-main-menu-home,
+.dribble-main-menu[data-panel='mode-select'] .dribble-main-menu-mode-select,
 .dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-how,
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-settings,
 .dribble-main-menu[data-panel='shop'] .dribble-main-menu-shop {
@@ -239,6 +241,110 @@
 
 .dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
   display: grid;
+}
+
+.dribble-main-menu-mode-select {
+  min-height: 460px;
+  padding: 58px 50px 38px;
+  box-sizing: border-box;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
+.dribble-mode-heading {
+  text-align: center;
+}
+
+.dribble-mode-heading span {
+  margin-bottom: 3px;
+  color: #dff8ff;
+  font-size: 13px;
+  line-height: 16px;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
+}
+
+.dribble-mode-heading h2 {
+  margin-bottom: 20px;
+  color: #ffffff;
+  font-size: 38px;
+  line-height: 42px;
+  text-shadow: 0 3px 0 #0b43a5;
+}
+
+.dribble-mode-options {
+  display: grid;
+  gap: 12px;
+}
+
+.dribble-mode-option {
+  position: relative;
+  min-height: 82px;
+}
+
+.dribble-mode-option .dribble-main-menu-action {
+  height: 82px;
+  margin: 0;
+}
+
+.dribble-mode-option .ui-button {
+  height: 82px;
+  min-height: 82px;
+  padding: 14px 116px 14px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 30px;
+  line-height: 34px;
+  text-shadow: 0 2px 4px rgba(0, 28, 84, 0.78);
+}
+
+.dribble-mode-normal .ui-button {
+  background: rgba(8, 91, 190, 0.72);
+}
+
+.dribble-mode-hard .ui-button {
+  background: rgba(156, 25, 44, 0.78);
+  border-color: rgba(255, 207, 207, 0.72);
+}
+
+.dribble-mode-option .ui-button:hover,
+.dribble-mode-option .ui-button:focus-visible {
+  border-color: #ffffff;
+  filter: brightness(1.13) saturate(1.08);
+  transform: translateY(-2px);
+}
+
+.dribble-mode-lives {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 16px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.dribble-mode-lives img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.dribble-mode-lives span {
+  min-width: 40px;
+  margin-left: 3px;
+  text-align: right;
+}
+
+.dribble-main-menu-mode-select .dribble-main-menu-back {
+  width: 130px;
+  margin: 8px auto 0;
 }
 
 .dribble-main-menu-action {
@@ -296,20 +402,31 @@
 
 .dribble-main-menu-play .ui-button,
 .dribble-main-menu-play .ui-button.size-large {
+  position: relative;
+  display: grid !important;
   min-height: 106px;
+  padding: 0 !important;
   background: transparent url('@project/assets/textures/play_button_background.png') center / 92% 155% no-repeat !important;
   color: #ffffff;
   font-size: 66px !important;
   line-height: 1 !important;
+  place-items: center;
+  text-align: center;
   text-shadow: 0 3px 0 #0b43a5, 0 0 12px rgba(255, 255, 255, 0.7);
   filter: drop-shadow(0 10px 16px rgba(0, 42, 126, 0.4));
 }
 
 .dribble-main-menu-play .ui-button-label {
-  display: block;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  width: 100%;
+  height: 100%;
   font-size: 66px !important;
   line-height: 1 !important;
   letter-spacing: 0;
+  place-items: center;
+  text-align: center;
   -webkit-text-stroke: 1px rgba(5, 39, 112, 0.72);
 }
 
@@ -619,6 +736,9 @@
 .dribble-main-menu-settings .dribble-main-menu-back .ui-button,
 .dribble-main-menu-settings .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-settings .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
@@ -633,6 +753,9 @@
   filter: none;
 }
 
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
@@ -640,6 +763,14 @@
 }
 
 .dribble-main-menu-settings .dribble-main-menu-back .ui-button-label {
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  font-size: 0;
+}
+
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button-label {
   overflow: hidden;
   width: 1px;
   height: 1px;
@@ -657,6 +788,8 @@
 
 .dribble-main-menu-settings .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-settings .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
   filter: brightness(1.1) saturate(1.08);
@@ -824,6 +957,11 @@
   .dribble-main-menu-settings {
     min-height: 410px;
     padding: 54px 44px 42px;
+  }
+
+  .dribble-main-menu-mode-select {
+    min-height: 440px;
+    padding: 52px 42px 34px;
   }
 
   .dribble-main-menu-shop {

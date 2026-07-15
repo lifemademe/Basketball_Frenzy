@@ -152,11 +152,13 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
   private heartsElement: HTMLElement | null = null;
   private heartMarkup = '';
   private lives = 3;
+  private maxLives = 3;
   private hitTimer: ReturnType<typeof setTimeout> | null = null;
 
   public constructor(ui: ENGINE.UIManager, options: DribbleLivesDisplayOptions = {}) {
     super(ui, options);
     this.lives = this.options.initialLives;
+    this.maxLives = this.options.maxLives;
   }
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
@@ -195,7 +197,7 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
   }
 
   public setLives(lives: number): void {
-    const nextLives = Math.max(0, Math.min(this.options.maxLives, lives));
+    const nextLives = Math.max(0, Math.min(this.maxLives, lives));
     const lostLife = nextLives < this.lives;
     const gainedLife = nextLives > this.lives;
     this.lives = nextLives;
@@ -215,12 +217,26 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
     }
   }
 
+  public resetLives(lives: number, maxLives: number): void {
+    this.maxLives = Math.max(1, Math.floor(maxLives));
+    this.lives = Math.max(0, Math.min(this.maxLives, lives));
+    if (this.hitTimer) {
+      clearTimeout(this.hitTimer);
+      this.hitTimer = null;
+    }
+    if (this.rootElement) {
+      this.rootElement.dataset.hit = 'false';
+      this.rootElement.dataset.healed = 'false';
+    }
+    this.renderHearts();
+  }
+
   private renderHearts(): void {
     if (!this.heartsElement) {
       return;
     }
     this.heartsElement.replaceChildren();
-    for (let index = 0; index < this.options.maxLives; index += 1) {
+    for (let index = 0; index < this.maxLives; index += 1) {
       const heart = document.createElement('span');
       heart.className = 'dribble-life-heart';
       heart.dataset.active = index < this.lives ? 'true' : 'false';
