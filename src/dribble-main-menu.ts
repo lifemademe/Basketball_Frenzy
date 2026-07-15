@@ -3,19 +3,21 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import {
+  achievementIds,
   blackHoleBallPrice,
   createDefaultProgressionState,
   discoBallPrice,
   epicBallPrice,
   getBallPrice,
   isBallOwned,
+  type AchievementId,
   type BallCosmetic,
   type DribbleProgressionState,
 } from './dribble-progression.js';
 
 export type DribbleGameMode = 'normal' | 'hard';
 
-type MainMenuPanel = 'home' | 'mode-select' | 'how-to-play' | 'settings' | 'shop';
+type MainMenuPanel = 'home' | 'mode-select' | 'how-to-play' | 'settings' | 'shop' | 'achievements';
 
 export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onPlay?: (mode: DribbleGameMode) => void;
@@ -51,6 +53,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private epicStatusElement: HTMLElement | null = null;
   private discoStatusElement: HTMLElement | null = null;
   private blackHoleStatusElement: HTMLElement | null = null;
+  private achievementCountElement: HTMLElement | null = null;
+  private achievementRows: HTMLElement[] = [];
   private classicActionButton: ENGINE.Button | null = null;
   private epicActionButton: ENGINE.Button | null = null;
   private discoActionButton: ENGINE.Button | null = null;
@@ -202,6 +206,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.epicStatusElement = this.layout.querySelector('[data-shop-epic-status]') as HTMLElement | null;
     this.discoStatusElement = this.layout.querySelector('[data-shop-disco-status]') as HTMLElement | null;
     this.blackHoleStatusElement = this.layout.querySelector('[data-shop-blackhole-status]') as HTMLElement | null;
+    this.achievementCountElement = this.layout.querySelector('[data-achievement-count]') as HTMLElement | null;
+    this.achievementRows = Array.from(this.layout.querySelectorAll('[data-achievement-id]')) as HTMLElement[];
     this.menuBall = this.layout.querySelector('[data-menu-ball]') as HTMLButtonElement | null;
     this.menuBallCanvas = this.layout.querySelector('[data-menu-ball-canvas]') as HTMLCanvasElement | null;
   }
@@ -218,17 +224,19 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const howSlot = slot('how');
     const settingsSlot = slot('settings');
     const shopSlot = slot('shop');
+    const achievementsSlot = slot('achievements');
     const howBackSlot = slot('how-back');
     const settingsBackSlot = slot('settings-back');
     const shopBackSlot = slot('shop-back');
+    const achievementsBackSlot = slot('achievements-back');
     const classicActionSlot = slot('classic-action');
     const epicActionSlot = slot('epic-action');
     const discoActionSlot = slot('disco-action');
     const blackHoleActionSlot = slot('blackhole-action');
     if (
       !playSlot || !normalModeSlot || !hardModeSlot || !modeBackSlot
-      || !howSlot || !settingsSlot || !shopSlot || !howBackSlot
-      || !settingsBackSlot || !shopBackSlot || !classicActionSlot || !epicActionSlot
+      || !howSlot || !settingsSlot || !shopSlot || !achievementsSlot || !howBackSlot
+      || !settingsBackSlot || !shopBackSlot || !achievementsBackSlot || !classicActionSlot || !epicActionSlot
       || !discoActionSlot || !blackHoleActionSlot
     ) return;
 
@@ -270,6 +278,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, shopSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
+        label: 'Achievements',
+        onClick: () => this.showPanel('achievements'),
+      }, achievementsSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
         label: 'Back',
         onClick: () => this.showPanel('home'),
       }, howBackSlot),
@@ -283,6 +296,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: 'Back',
         onClick: () => this.showPanel('home'),
       }, shopBackSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Close',
+        onClick: () => this.showPanel('home'),
+      }, achievementsBackSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
         label: 'Equipped',
@@ -358,6 +376,15 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       '@project/assets/textures/blueball.png',
       '@project/assets/textures/Discoball.png',
       '@project/assets/textures/Blackholeball.png',
+      '@project/assets/textures/Achievments.png',
+      '@project/assets/textures/achievementsbutton.png',
+      '@project/assets/textures/10000pointsinonegame.png',
+      '@project/assets/textures/First purchase.png',
+      '@project/assets/textures/play tutorial.png',
+      '@project/assets/textures/Star without switching lanes.png',
+      '@project/assets/textures/First point.png',
+      '@project/assets/textures/close.png',
+      '@project/assets/textures/Back.png',
       '@project/assets/textures/mouse.png',
     ];
     const resolvedPaths = await Promise.all(
@@ -386,7 +413,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   private showPanel(panel: MainMenuPanel): void {
     if (this.rootElement) this.rootElement.dataset.panel = panel;
-    if (panel === 'shop') this.refreshProgressionUi();
+    if (panel === 'shop' || panel === 'achievements') this.refreshProgressionUi();
     if (panel === 'home') this.startBallPhysics();
     else {
       this.stopBallPhysics();
@@ -431,6 +458,22 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.refreshBallAction(this.epicActionButton, 'epic');
     this.refreshBallAction(this.discoActionButton, 'disco');
     this.refreshBallAction(this.blackHoleActionButton, 'blackhole');
+    this.refreshAchievementsUi();
+  }
+
+  private refreshAchievementsUi(): void {
+    let completed = 0;
+    for (const row of this.achievementRows) {
+      const achievement = row.dataset.achievementId as AchievementId | undefined;
+      const unlocked = achievement !== undefined
+        && achievementIds.includes(achievement)
+        && this.progression.achievements[achievement];
+      row.dataset.unlocked = unlocked ? 'true' : 'false';
+      const state = row.querySelector('.dribble-achievement-state');
+      if (state) state.textContent = unlocked ? 'COMPLETE' : 'LOCKED';
+      if (unlocked) completed += 1;
+    }
+    if (this.achievementCountElement) this.achievementCountElement.textContent = String(completed);
   }
 
   private refreshBallStatus(element: HTMLElement | null, cosmetic: BallCosmetic): void {

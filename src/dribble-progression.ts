@@ -1,4 +1,18 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
+export type AchievementId =
+  | 'score10000'
+  | 'firstPurchase'
+  | 'playTutorial'
+  | 'starWithoutSwitching'
+  | 'firstPoint';
+
+export const achievementIds: readonly AchievementId[] = [
+  'score10000',
+  'firstPurchase',
+  'playTutorial',
+  'starWithoutSwitching',
+  'firstPoint',
+];
 
 export interface DribbleProgressionState {
   highScore: number;
@@ -7,6 +21,7 @@ export interface DribbleProgressionState {
   discoBallOwned: boolean;
   blackHoleBallOwned: boolean;
   equippedBall: BallCosmetic;
+  achievements: Record<AchievementId, boolean>;
 }
 
 export const epicBallPrice = 1;
@@ -23,6 +38,7 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     discoBallOwned: false,
     blackHoleBallOwned: false,
     equippedBall: 'classic',
+    achievements: createDefaultAchievements(),
   };
 }
 
@@ -42,8 +58,14 @@ export function loadProgression(): DribbleProgressionState {
       discoBallOwned,
       blackHoleBallOwned,
       equippedBall: isBallCosmetic(parsed.equippedBall) ? parsed.equippedBall : 'classic',
+      achievements: loadAchievements(parsed.achievements),
     };
     if (!isBallOwned(loaded, loaded.equippedBall)) loaded.equippedBall = 'classic';
+    if (loaded.highScore > 0) loaded.achievements.firstPoint = true;
+    if (loaded.highScore >= 10000) loaded.achievements.score10000 = true;
+    if (loaded.epicBallOwned || loaded.discoBallOwned || loaded.blackHoleBallOwned) {
+      loaded.achievements.firstPurchase = true;
+    }
     return loaded;
   } catch {
     return fallback;
@@ -83,6 +105,24 @@ export function purchaseBall(
     ...ownership,
     stars: state.stars - price,
     equippedBall: cosmetic,
+    achievements: {
+      ...state.achievements,
+      firstPurchase: true,
+    },
+  });
+}
+
+export function unlockAchievement(
+  state: DribbleProgressionState,
+  achievement: AchievementId,
+): DribbleProgressionState {
+  if (state.achievements[achievement]) return state;
+  return persist({
+    ...state,
+    achievements: {
+      ...state.achievements,
+      [achievement]: true,
+    },
   });
 }
 
@@ -118,6 +158,29 @@ export function isBallOwned(
 
 function isBallCosmetic(value: unknown): value is BallCosmetic {
   return value === 'classic' || value === 'epic' || value === 'disco' || value === 'blackhole';
+}
+
+function createDefaultAchievements(): Record<AchievementId, boolean> {
+  return {
+    score10000: false,
+    firstPurchase: false,
+    playTutorial: false,
+    starWithoutSwitching: false,
+    firstPoint: false,
+  };
+}
+
+function loadAchievements(value: unknown): Record<AchievementId, boolean> {
+  const stored = typeof value === 'object' && value !== null
+    ? value as Partial<Record<AchievementId, unknown>>
+    : {};
+  return {
+    score10000: stored.score10000 === true,
+    firstPurchase: stored.firstPurchase === true,
+    playTutorial: stored.playTutorial === true,
+    starWithoutSwitching: stored.starWithoutSwitching === true,
+    firstPoint: stored.firstPoint === true,
+  };
 }
 
 function persist(state: DribbleProgressionState): DribbleProgressionState {

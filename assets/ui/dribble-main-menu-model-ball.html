@@ -29,6 +29,7 @@
 
     <nav class="dribble-main-menu-panel dribble-main-menu-home" aria-label="Main menu">
       <div class="dribble-main-menu-action dribble-main-menu-play" data-menu-play-slot></div>
+      <div class="dribble-main-menu-action dribble-main-menu-achievements-action" data-menu-achievements-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-tutorial" data-menu-how-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-settings-action" data-menu-settings-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-shop-action" data-menu-shop-slot></div>
@@ -77,7 +78,6 @@
     <section class="dribble-main-menu-panel dribble-main-menu-shop" aria-label="Ball shop">
       <div class="dribble-main-menu-panel-heading dribble-shop-heading">
         <div>
-          <span>SHOP</span>
           <h2>Locker</h2>
         </div>
         <strong><img src="@project/assets/textures/Star.png" alt="Stars"> <b data-shop-stars>0</b></strong>
@@ -131,9 +131,58 @@
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-shop-back-slot></div>
     </section>
 
+    <section class="dribble-main-menu-panel dribble-main-menu-achievements" aria-label="Achievements">
+      <div class="dribble-main-menu-action dribble-achievements-close" data-menu-achievements-back-slot></div>
+      <div class="dribble-achievements-summary">
+        <span>CAREER PROGRESS</span>
+        <strong><b data-achievement-count>0</b> / 5 COMPLETE</strong>
+      </div>
+      <div class="dribble-achievements-list">
+        <article class="dribble-achievement" data-achievement-id="score10000" data-unlocked="false">
+          <div class="dribble-achievement-icon"><img src="@project/assets/textures/10000pointsinonegame.png" alt=""></div>
+          <div class="dribble-achievement-copy">
+            <h3>Five-Figure Run</h3>
+            <p>Score 10,000 points in one game.</p>
+          </div>
+          <span class="dribble-achievement-state">LOCKED</span>
+        </article>
+        <article class="dribble-achievement" data-achievement-id="firstPurchase" data-unlocked="false">
+          <div class="dribble-achievement-icon"><img src="@project/assets/textures/First purchase.png" alt=""></div>
+          <div class="dribble-achievement-copy">
+            <h3>First Purchase</h3>
+            <p>Buy your first ball from the shop.</p>
+          </div>
+          <span class="dribble-achievement-state">LOCKED</span>
+        </article>
+        <article class="dribble-achievement" data-achievement-id="playTutorial" data-unlocked="false">
+          <div class="dribble-achievement-icon"><img src="@project/assets/textures/play tutorial.png" alt=""></div>
+          <div class="dribble-achievement-copy">
+            <h3>Training Day</h3>
+            <p>Play the tutorial.</p>
+          </div>
+          <span class="dribble-achievement-state">LOCKED</span>
+        </article>
+        <article class="dribble-achievement" data-achievement-id="starWithoutSwitching" data-unlocked="false">
+          <div class="dribble-achievement-icon"><img src="@project/assets/textures/Star without switching lanes.png" alt=""></div>
+          <div class="dribble-achievement-copy">
+            <h3>Hold Your Ground</h3>
+            <p>Collect a star without switching lanes.</p>
+          </div>
+          <span class="dribble-achievement-state">LOCKED</span>
+        </article>
+        <article class="dribble-achievement" data-achievement-id="firstPoint" data-unlocked="false">
+          <div class="dribble-achievement-icon"><img src="@project/assets/textures/First point.png" alt=""></div>
+          <div class="dribble-achievement-copy">
+            <h3>First Point</h3>
+            <p>Score your first point.</p>
+          </div>
+          <span class="dribble-achievement-state">LOCKED</span>
+        </article>
+      </div>
+    </section>
+
     <section class="dribble-main-menu-panel dribble-main-menu-settings" aria-label="Settings">
       <div class="dribble-main-menu-panel-heading">
-        <span>GAME OPTIONS</span>
         <h2>Settings</h2>
       </div>
       <label class="dribble-main-menu-setting" for="dribble-menu-volume">
@@ -141,7 +190,7 @@
         <input id="dribble-menu-volume" data-menu-volume type="range" min="0" max="100" step="1" value="80">
       </label>
       <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-fullscreen">
-        <span><b>Fullscreen</b><small>Use the entire display</small></span>
+        <span><b>Fullscreen</b></span>
         <input id="dribble-menu-fullscreen" data-menu-fullscreen type="checkbox">
         <i aria-hidden="true"></i>
       </label>

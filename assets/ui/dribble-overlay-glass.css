@@ -62,12 +62,12 @@
 .dribble-overlay-close {
   position: absolute;
   z-index: 3;
-  top: 48px;
-  right: 44px;
+  top: 7.4%;
+  right: 10.2%;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -77,8 +77,8 @@
 
 .dribble-overlay-close img {
   display: block;
-  width: 38px;
-  height: 34px;
+  width: 42px;
+  height: 36px;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -324,8 +324,8 @@
   }
 
   .dribble-overlay-close {
-    top: 42px;
-    right: 34px;
+    top: 7.4%;
+    right: 10.2%;
   }
 
   .dribble-overlay-title {

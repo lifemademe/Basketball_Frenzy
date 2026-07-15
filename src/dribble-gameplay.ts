@@ -16,6 +16,8 @@ import {
   loadProgression,
   purchaseBall,
   recordHighScore,
+  unlockAchievement,
+  type AchievementId,
   type BallCosmetic,
   type DribbleProgressionState,
 } from './dribble-progression.js';
@@ -72,6 +74,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly impactBursts: DribbleImpactBurst[] = [];
   private readonly comboPopups: DribbleComboPopup[] = [];
   private readonly activeTargets: DribbleTarget[] = [];
+  private readonly targetSpawnSwitchCounts = new WeakMap<DribbleTarget, number>();
   private readonly patternDirector = new DribblePatternDirector();
   private readonly tutorialDirector = new DribbleTutorialDirector();
   private tutorialActive = false;
@@ -92,6 +95,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly comfortableTargetGap = 3.15;
   private readonly centerRhythmLength = 8;
   private lastSpawnIntervalScale = 1;
+  private laneSwitchCount = 0;
 
   public handleLeftClick(): DribbleInputAction {
     if (this.gameState !== 'playing') return null;
@@ -100,6 +104,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const actionWorked = ballState?.side === 'left'
       ? this.ball?.boostLeft()
       : this.ball?.transferToLeft();
+    if (actionWorked && !isBoost) this.laneSwitchCount += 1;
     if (actionWorked && this.tutorialActive) {
       this.recordTutorialEvent(ballState?.side === 'left' ? 'boost-left' : 'switch-left');
     }
@@ -113,6 +118,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const actionWorked = ballState?.side === 'right'
       ? this.ball?.boostRight()
       : this.ball?.transferToRight();
+    if (actionWorked && !isBoost) this.laneSwitchCount += 1;
     if (actionWorked && this.tutorialActive) {
       this.recordTutorialEvent(ballState?.side === 'right' ? 'boost-right' : 'switch-right');
     }
@@ -166,6 +172,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.centerRhythmOpportunityCount = 0;
     this.lastSpawnWasCenterRhythm = false;
     this.lastSpawnIntervalScale = 1;
+    this.laneSwitchCount = 0;
     this.patternDirector.reset(this.gameMode);
     this.ball?.reset();
     this.setGameplayActive(true);
@@ -184,6 +191,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const world = this.getWorld();
     if (!world) return;
 
+    this.unlockAchievementAndSync('playTutorial');
+
     for (const target of this.activeTargets) target.destroy();
     this.activeTargets.length = 0;
     this.deactivateHitEffects();
@@ -198,6 +207,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.combo = 0;
     this.frenzyCharge = 0;
     this.frenzyTimeRemaining = 0;
+    this.laneSwitchCount = 0;
     this.patternDirector.cancel();
     this.tutorialDirector.reset();
     this.ball?.reset();
@@ -801,6 +811,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     });
     world.addActor(target);
     this.activeTargets.push(target);
+    this.targetSpawnSwitchCounts.set(target, this.laneSwitchCount);
     this.lastSpawnWasCenterRhythm = rhythmTarget;
     this.lastSpawnIntervalScale = patternStep?.intervalScale ?? 1;
     if (patternStep?.startsPattern) {
@@ -991,7 +1002,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       if (target.kind === 'score') {
         this.handleScoreHit(this.targetHitPosition, target.isRhythmTarget);
       } else if (target.kind === 'bonus') {
-        this.handleBonusHit(this.targetHitPosition);
+        const spawnSwitchCount = this.targetSpawnSwitchCounts.get(target);
+        this.handleBonusHit(
+          this.targetHitPosition,
+          spawnSwitchCount !== undefined && spawnSwitchCount === this.laneSwitchCount,
+        );
       } else if (target.kind === 'health') {
         this.handleHealthHit(this.targetHitPosition);
       } else {
@@ -1009,7 +1024,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.handleGoodHit(position, rhythmTarget ? 15 : 10, false, rhythmTarget);
   }
 
-  private handleBonusHit(position: THREE.Vector3): void {
+  private handleBonusHit(position: THREE.Vector3, collectedWithoutSwitching: boolean): void {
+    if (collectedWithoutSwitching) {
+      this.unlockAchievementAndSync('starWithoutSwitching');
+    }
     this.progression = awardStars(this.progression, 1);
     this.mainMenu?.setProgression(this.progression);
     this.updateScoreStarCounter();
@@ -1033,6 +1051,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     const points = basePoints * this.combo;
     this.score += points;
+    this.unlockAchievementAndSync('firstPoint');
+    if (this.score >= 10000) this.unlockAchievementAndSync('score10000');
     this.scoreDisplay?.setValue(this.score, true);
     this.spawnComboPopup();
     this.spawnImpactBurst(
@@ -1392,6 +1412,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       });
     }
     return this.progression;
+  }
+
+  private unlockAchievementAndSync(achievement: AchievementId): void {
+    const updatedProgression = unlockAchievement(this.progression, achievement);
+    if (updatedProgression === this.progression) return;
+    this.progression = updatedProgression;
+    this.mainMenu?.setProgression(this.progression);
   }
 
   private commitHighScore(): void {
