@@ -16,10 +16,22 @@
       </div>
     </header>
 
+    <div class="dribble-main-menu-profile" aria-label="Player progression">
+      <div>
+        <small>STARS</small>
+        <span><img src="@project/assets/textures/Star.png" alt=""> <b data-menu-stars>0</b></span>
+      </div>
+      <div>
+        <small>HIGH SCORE</small>
+        <strong data-menu-high-score>0</strong>
+      </div>
+    </div>
+
     <nav class="dribble-main-menu-panel dribble-main-menu-home" aria-label="Main menu">
       <div class="dribble-main-menu-action dribble-main-menu-play" data-menu-play-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-tutorial" data-menu-how-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-settings-action" data-menu-settings-slot></div>
+      <div class="dribble-main-menu-action dribble-main-menu-shop-action" data-menu-shop-slot></div>
     </nav>
 
     <section class="dribble-main-menu-panel dribble-main-menu-how" aria-label="How to play">
@@ -32,8 +44,43 @@
         <div><kbd>Right Click</kbd><p>Send the ball right, or power-bounce from the right hand.</p></div>
         <div><kbd>Esc</kbd><p>Pause the run.</p></div>
       </div>
-      <p class="dribble-main-menu-tip">Hit green targets, avoid red hazards, collect hearts, and use the timing meter for center-lane shots.</p>
+      <p class="dribble-main-menu-tip">Hit yellow targets, avoid red hazards, collect hearts, and use the timing meter for center-lane shots.</p>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-how-back-slot></div>
+    </section>
+
+    <section class="dribble-main-menu-panel dribble-main-menu-shop" aria-label="Ball shop">
+      <div class="dribble-main-menu-panel-heading dribble-shop-heading">
+        <div>
+          <span>SHOP</span>
+          <h2>Locker</h2>
+        </div>
+        <strong><img src="@project/assets/textures/Star.png" alt="Stars"> <b data-shop-stars>0</b></strong>
+      </div>
+      <div class="dribble-shop-inventory">
+        <div class="dribble-shop-item dribble-shop-item-classic">
+          <div class="dribble-shop-preview">
+            <img src="@project/assets/textures/classicball.png" alt="Classic Ball">
+          </div>
+          <div class="dribble-shop-copy">
+            <span data-shop-classic-status>OWNED</span>
+            <h3>Classic Ball</h3>
+            <p>Original court ball · Free</p>
+            <div class="dribble-main-menu-action dribble-shop-purchase" data-menu-classic-action-slot></div>
+          </div>
+        </div>
+        <div class="dribble-shop-item dribble-shop-item-epic">
+          <div class="dribble-shop-preview">
+            <img src="@project/assets/textures/blueball.png" alt="Epic Ball">
+          </div>
+          <div class="dribble-shop-copy">
+            <span data-shop-epic-status>LOCKED</span>
+            <h3>Epic Ball</h3>
+            <p>Electric blue finish · 1 Star</p>
+            <div class="dribble-main-menu-action dribble-shop-purchase" data-menu-epic-action-slot></div>
+          </div>
+        </div>
+      </div>
+      <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-shop-back-slot></div>
     </section>
 
     <section class="dribble-main-menu-panel dribble-main-menu-settings" aria-label="Settings">

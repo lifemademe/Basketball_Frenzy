@@ -2,12 +2,20 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { DribbleBallTrail } from './dribble-ball-trail.js';
+import { playBasketballBounce } from './dribble-bounce-audio.js';
+import type { BallCosmetic } from './dribble-progression.js';
+
+const ballModelPaths: Record<BallCosmetic | 'gold', string> = {
+  classic: '@project/assets/models/ball_runtime.glb',
+  epic: '@project/assets/models/ball2_runtime.glb',
+  gold: '@project/assets/models/goldball_runtime.glb',
+};
 
 function createFrenzyVfxDefinition(): ENGINE.VFXDefinition {
   const definition = new ENGINE.VFXDefinition();
   definition.name = 'DribbleFrenzyBallAura';
   definition.particles = [Object.assign(new ENGINE.VFXParticlesSettings(), {
-    nbParticles: 56,
+    nbParticles: 36,
     intensity: 2.4,
     renderMode: 'stretchBillboard' as const,
     stretchScale: 1.8,
@@ -23,7 +31,7 @@ function createFrenzyVfxDefinition(): ENGINE.VFXDefinition {
     particlesIndex: 0,
     loop: true,
     duration: 0.5,
-    nbParticles: 18,
+    nbParticles: 12,
     spawnMode: 'time' as const,
     particlesLifetime: [0.22, 0.48] as [number, number],
     startPositionMin: [-0.24, -0.24, -0.08] as [number, number, number],
@@ -66,10 +74,13 @@ export class DribbleBall extends ENGINE.Actor {
   private boostBouncePlayed = false;
   private gameplayActive = true;
   private trail: DribbleBallTrail | null = null;
+  private ballModel: ENGINE.ModelMeshComponent | null = null;
+  private equippedCosmetic: BallCosmetic = 'classic';
   private frenzyVfx: ENGINE.VFXComponent | null = null;
   private frenzyInnerRing: ENGINE.MeshComponent | null = null;
   private frenzyOuterRing: ENGINE.MeshComponent | null = null;
   private frenzyActive = false;
+  private frenzyPreloadTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyPhase = 0;
   private bounceCycle = 0;
   private transferBouncePlayed = false;
@@ -82,11 +93,19 @@ export class DribbleBall extends ENGINE.Actor {
     right: new THREE.Vector3(0.95, 0, -1.2),
   };
   private readonly scratchPosition = new THREE.Vector3();
+  private readonly ballState: DribbleBallState = {
+    side: 'left',
+    position: new THREE.Vector3(),
+    radius: this.radius,
+    isTransferring: false,
+    isBoosting: false,
+  };
 
   public override initialize(options?: ENGINE.ActorOptions): void {
     const ballModel = ENGINE.ModelMeshComponent.create({
       name: 'Ball Model',
-      modelUrl: '@project/assets/models/ball.glb',
+      modelUrl: ballModelPaths.classic,
+      castShadow: false,
       physicsOptions: { enabled: false },
     });
     const modelScale = (this.radius * 2) / 1.1889150142669678;
@@ -96,6 +115,7 @@ export class DribbleBall extends ENGINE.Actor {
       -0.5943385567499189 * modelScale,
       0.0017669298794641408 * modelScale,
     );
+    this.ballModel = ballModel;
 
     const frenzyMaterial = new THREE.MeshBasicMaterial({
       color: 0xffca3a,
@@ -135,13 +155,11 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   public getState(): DribbleBallState {
-    return {
-      side: this.side,
-      position: this.rootComponent.position.clone(),
-      radius: this.radius,
-      isTransferring: this.transferTime > 0,
-      isBoosting: this.boostTime > 0,
-    };
+    this.ballState.side = this.side;
+    this.ballState.position.copy(this.rootComponent.position);
+    this.ballState.isTransferring = this.transferTime > 0;
+    this.ballState.isBoosting = this.boostTime > 0;
+    return this.ballState;
   }
 
   public transferToRight(): boolean {
@@ -171,8 +189,17 @@ export class DribbleBall extends ENGINE.Actor {
     }
     this.frenzyActive = active;
     this.frenzyPhase = 0;
+    this.applyBallModel();
     this.trail?.setFrenzyActive(active);
     this.applyFrenzyVisualState();
+  }
+
+  public setEquippedCosmetic(cosmetic: BallCosmetic): void {
+    if (this.equippedCosmetic === cosmetic) {
+      return;
+    }
+    this.equippedCosmetic = cosmetic;
+    this.applyBallModel();
   }
 
   public reset(): void {
@@ -188,7 +215,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.boostBouncePlayed = false;
     this.rootComponent.scale.setScalar(1);
     this.updateBouncePosition(0);
-    this.trail?.clear(this.getWorldPosition());
+    this.trail?.clear(this.rootComponent.position);
   }
 
   protected override doBeginPlay(): void {
@@ -200,10 +227,19 @@ export class DribbleBall extends ENGINE.Actor {
     this.trail = DribbleBallTrail.create({ name: 'Dribble Ball Trail VFX' });
     world.addActor(this.trail);
     this.trail.setFrenzyActive(this.frenzyActive);
-    this.trail.record(this.getWorldPosition());
+    this.trail.record(this.rootComponent.position);
+    this.frenzyPreloadTimer = setTimeout(() => {
+      this.frenzyPreloadTimer = null;
+      void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(ballModelPaths.gold))
+        .catch(error => console.warn('Could not preload the frenzy basketball model', error));
+    }, 600);
   }
 
   protected override doEndPlay(): void {
+    if (this.frenzyPreloadTimer) {
+      clearTimeout(this.frenzyPreloadTimer);
+      this.frenzyPreloadTimer = null;
+    }
     this.trail?.destroy();
     this.trail = null;
     super.doEndPlay();
@@ -255,7 +291,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.updateBouncePosition(deltaTime);
     }
 
-    this.trail?.record(this.getWorldPosition());
+    this.trail?.record(this.rootComponent.position);
     this.updateFrenzyVisuals(deltaTime);
   }
 
@@ -265,6 +301,16 @@ export class DribbleBall extends ENGINE.Actor {
     if (this.frenzyOuterRing) this.frenzyOuterRing.visible = visible;
     if (visible) this.frenzyVfx?.startEmitting(false);
     else this.frenzyVfx?.stopEmitting();
+  }
+
+  private applyBallModel(): void {
+    const modelPath = this.frenzyActive ? ballModelPaths.gold : ballModelPaths[this.equippedCosmetic];
+    if (!this.ballModel || this.ballModel.modelUrl === modelPath) {
+      return;
+    }
+    void this.ballModel.loadModel(ENGINE.AssetPath.fromString(modelPath)).catch(error => {
+      console.warn(`Could not load basketball model: ${modelPath}`, error);
+    });
   }
 
   private updateFrenzyVisuals(deltaTime: number): void {
@@ -285,16 +331,28 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   private startTransfer(from: DribbleSide, to: DribbleSide): boolean {
-    if (this.transferTime > 0 || this.boostTime > 0 || this.side !== from) {
+    if (
+      this.transferTime > 0
+      || this.side !== from
+      || (this.boostTime > 0 && !this.isBoostReturningToHand())
+    ) {
       return false;
     }
 
     this.transferFrom = from;
     this.transferTo = to;
     this.transferTime = 0.001;
+    this.boostTime = 0;
     this.transferBouncePlayed = false;
     this.transferStart.copy(this.rootComponent.position);
     return true;
+  }
+
+  private isBoostReturningToHand(): boolean {
+    const boostProgress = this.boostTime / DribbleBall.boostDuration;
+    const handHeightTolerance = 0.2;
+    return boostProgress > 0.6
+      && Math.abs(this.rootComponent.position.y - this.handY) <= handHeightTolerance;
   }
 
   private startBoost(side: DribbleSide): boolean {
@@ -363,7 +421,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.rootComponent.scale.set(1 + squash * 0.18, 1 - squash * 0.28, 1 + squash * 0.18);
     } else {
       const arcProgress = (progress - 0.18) / 0.82;
-      const arc = Math.sin(arcProgress * Math.PI);
+      const arc = Math.pow(Math.sin(arcProgress * Math.PI), 0.88);
       this.rootComponent.position.set(
         lane.x,
         THREE.MathUtils.lerp(this.floorY, boostedY, arc),
@@ -377,29 +435,6 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   private playBounceSound(): void {
-    const world = this.getWorld();
-    const listener = world?.audioListener;
-    const context = listener?.context;
-    if (!world || !listener || !context || context.state !== 'running') {
-      return;
-    }
-
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    const now = context.currentTime;
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(112, now);
-    oscillator.frequency.exponentialRampToValueAtTime(58, now + 0.1);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.11, now + 0.006);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
-    oscillator.connect(gain);
-    gain.connect(world.globalAudioManager.getBus('SFX')?.getInput() ?? listener.getInput());
-    oscillator.onended = () => {
-      oscillator.disconnect();
-      gain.disconnect();
-    };
-    oscillator.start(now);
-    oscillator.stop(now + 0.12);
+    playBasketballBounce(this.getWorld());
   }
 }

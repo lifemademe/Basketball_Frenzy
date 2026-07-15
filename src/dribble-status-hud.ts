@@ -256,6 +256,9 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
 
   private rootElement: HTMLElement | null = null;
   private stateElement: HTMLElement | null = null;
+  private lastProgress = -1;
+  private lastActive: boolean | null = null;
+  private lastReady: boolean | null = null;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -288,17 +291,32 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
       return;
     }
     const clampedProgress = Math.max(0, Math.min(1, progress));
-    this.rootElement.style.setProperty('--timing-progress', `${clampedProgress * 100}%`);
-    this.rootElement.dataset.active = active ? 'true' : 'false';
-    this.rootElement.dataset.ready = ready ? 'true' : 'false';
+    if (Math.abs(clampedProgress - this.lastProgress) >= 0.0025) {
+      this.lastProgress = clampedProgress;
+      this.rootElement.style.setProperty('--timing-progress', `${clampedProgress * 100}%`);
+    }
+    if (active !== this.lastActive) {
+      this.lastActive = active;
+      this.rootElement.dataset.active = active ? 'true' : 'false';
+    }
+    if (ready !== this.lastReady) {
+      this.lastReady = ready;
+      this.rootElement.dataset.ready = ready ? 'true' : 'false';
+    }
     if (this.stateElement) {
-      this.stateElement.textContent = !active ? 'SCANNING' : ready ? 'SWITCH' : 'TRACKING';
+      const label = !active ? 'SCANNING' : ready ? 'SWITCH' : 'TRACKING';
+      if (this.stateElement.textContent !== label) {
+        this.stateElement.textContent = label;
+      }
     }
   }
 
   protected override onDestroy(): void {
     this.rootElement = null;
     this.stateElement = null;
+    this.lastProgress = -1;
+    this.lastActive = null;
+    this.lastReady = null;
   }
 }
 

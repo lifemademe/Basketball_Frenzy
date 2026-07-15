@@ -2,10 +2,21 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { DribbleBall, type DribbleBallState, type DribbleSide } from './dribble-ball.js';
+import { playBasketballBounce } from './dribble-bounce-audio.js';
+import { hideDribbleBootScreen } from './dribble-boot-screen.js';
 import { DribbleComboPopup } from './dribble-combo-popup.js';
 import { DribbleImpactBurst } from './dribble-impact-burst.js';
 import { DribbleMainMenu } from './dribble-main-menu.js';
 import { DribbleOverlay } from './dribble-overlay.js';
+import {
+  awardStars,
+  equipBall,
+  loadProgression,
+  purchaseEpicBall,
+  recordHighScore,
+  type BallCosmetic,
+  type DribbleProgressionState,
+} from './dribble-progression.js';
 import {
   DribbleJuiceHud,
   DribbleLivesDisplay,
@@ -13,7 +24,7 @@ import {
   DribbleSideHints,
   DribbleTimingMeter,
 } from './dribble-status-hud.js';
-import { DribbleTarget } from './dribble-target.js';
+import { DribbleTarget, type TargetKind } from './dribble-target.js';
 
 type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
 
@@ -29,7 +40,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private pauseButton: DribblePauseButton | null = null;
   private livesDisplay: DribbleLivesDisplay | null = null;
   private sideHints: DribbleSideHints | null = null;
-  private crosshair: ENGINE.Crosshair | null = null;
   private timingMeter: DribbleTimingMeter | null = null;
   private juiceHud: DribbleJuiceHud | null = null;
   private mainMenu: DribbleMainMenu | null = null;
@@ -37,21 +47,37 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private spawnTimer = 0.9;
   private elapsedTime = 0;
   private score = 0;
+  private progression: DribbleProgressionState = loadProgression();
   private lives = 3;
   private combo = 0;
   private frenzyCharge = 0;
   private frenzyTimeRemaining = 0;
+  private spawnsSinceHazard = 0;
+  private consecutiveHazards = 0;
+  private centerRhythmSpawnsRemaining = 0;
+  private centerRhythmNextKind: 'score' | 'hazard' = 'score';
+  private centerRhythmCooldown = 12;
+  private centerRhythmOpportunityCount = 0;
+  private lastSpawnWasCenterRhythm = false;
   private readonly handAnimations = new Map<DribbleSide, HandAnimationState>();
   private readonly referenceHandVisibility = new Map<ENGINE.SceneComponent, boolean>();
   private readonly impactBursts: DribbleImpactBurst[] = [];
   private readonly comboPopups: DribbleComboPopup[] = [];
+  private readonly activeTargets: DribbleTarget[] = [];
+  private readonly targetHitPosition = new THREE.Vector3();
+  private readonly comboPopupPosition = new THREE.Vector3();
   private gameState: DribbleGameState = 'menu';
   private impactBurstCursor = 0;
   private comboPopupCursor = 0;
   private previousGameCursor: string | null = null;
+  private scoreStarAssetUrl = '';
   private readonly lanes = [-0.95, 0, 0.95];
-  private readonly frenzyHitsRequired = 6;
-  private readonly frenzyDuration = 8;
+  private readonly frenzyHitsRequired = 14;
+  private readonly frenzyDuration = 5.5;
+  private readonly targetSpawnZ = -18;
+  private readonly minimumTargetGap = 2.35;
+  private readonly comfortableTargetGap = 3.15;
+  private readonly centerRhythmLength = 8;
 
   public handleLeftClick(): void {
     if (this.gameState !== 'playing') return;
@@ -85,9 +111,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
-    for (const target of world.getActors(DribbleTarget)) {
+    this.commitHighScore();
+
+    for (const target of this.activeTargets) {
       target.destroy();
     }
+    this.activeTargets.length = 0;
     this.deactivateHitEffects();
 
     this.gameState = 'playing';
@@ -98,6 +127,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.combo = 0;
     this.frenzyCharge = 0;
     this.frenzyTimeRemaining = 0;
+    this.spawnsSinceHazard = 0;
+    this.consecutiveHazards = 0;
+    this.centerRhythmSpawnsRemaining = 0;
+    this.centerRhythmNextKind = 'score';
+    this.centerRhythmCooldown = 12;
+    this.centerRhythmOpportunityCount = 0;
+    this.lastSpawnWasCenterRhythm = false;
     this.ball?.reset();
     this.setGameplayActive(true);
     this.scoreDisplay?.setValue(0, false);
@@ -118,22 +154,35 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     this.elapsedTime += deltaTime;
+    this.compactActiveTargets();
+    this.centerRhythmCooldown = Math.max(0, this.centerRhythmCooldown - deltaTime);
     this.updateFrenzy(deltaTime);
     this.spawnTimer -= deltaTime;
     if (this.spawnTimer <= 0) {
-      this.spawnTarget();
-      const baseInterval = Math.max(0.5, 1.08 - this.elapsedTime * 0.004);
-      this.spawnTimer = THREE.MathUtils.randFloat(baseInterval * 0.8, baseInterval * 1.15);
+      if (this.spawnTarget()) {
+        const difficulty = this.getDifficultyRamp();
+        const baseInterval = this.lastSpawnWasCenterRhythm
+          ? THREE.MathUtils.lerp(0.92, 0.7, difficulty)
+          : THREE.MathUtils.lerp(1.02, 0.54, difficulty);
+        const frenzyMultiplier = this.frenzyTimeRemaining > 0 && !this.lastSpawnWasCenterRhythm
+          ? 0.82
+          : 1;
+        this.spawnTimer = THREE.MathUtils.randFloat(
+          baseInterval * (this.lastSpawnWasCenterRhythm ? 0.97 : 0.9),
+          baseInterval * (this.lastSpawnWasCenterRhythm ? 1.03 : 1.1),
+        ) * frenzyMultiplier;
+      } else {
+        this.spawnTimer = 0.08;
+      }
     }
 
-    const world = this.getWorld();
     const ballState = this.ball?.getState();
-    if (world && ballState) {
-      const targets = world.getActors(DribbleTarget);
-      this.updateTimingMeter(ballState, targets);
-      this.checkBallTargetHits(ballState, targets);
+    if (ballState) {
+      this.updateTargetSpacing(this.activeTargets);
+      this.updateTimingMeter(ballState, this.activeTargets);
+      this.checkBallTargetHits(ballState, this.activeTargets);
+      this.updateHandAnimations(deltaTime, ballState);
     }
-    this.updateHandAnimations(deltaTime);
   }
 
   protected override doBeginPlay(): void {
@@ -141,7 +190,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setupArena();
     this.hideReferenceHands();
     void this.setupHandAnimations();
-    void this.setupHud();
+    void this.setupHud().catch(error => {
+      const gameContainer = this.getWorld()?.gameContainer;
+      if (gameContainer) hideDribbleBootScreen(gameContainer);
+      console.error('Could not initialize Basketball Frenzy UI', error);
+    });
   }
 
   protected override doEndPlay(): void {
@@ -149,7 +202,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.pauseButton?.destroy();
     this.livesDisplay?.destroy();
     this.sideHints?.destroy();
-    this.crosshair?.destroy();
     this.timingMeter?.destroy();
     this.juiceHud?.destroy();
     this.mainMenu?.destroy();
@@ -158,7 +210,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.pauseButton = null;
     this.livesDisplay = null;
     this.sideHints = null;
-    this.crosshair = null;
     this.timingMeter = null;
     this.juiceHud = null;
     this.mainMenu = null;
@@ -176,6 +227,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.handAnimations.clear();
     this.impactBursts.length = 0;
     this.comboPopups.length = 0;
+    this.activeTargets.length = 0;
     super.doEndPlay();
   }
 
@@ -231,14 +283,111 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }).setName(`Lane Guide ${laneX}`);
     }
 
-    this.addHand(world, 'Left Hand', '@project/assets/models/right_hand.glb');
-    this.addHand(world, 'Right Hand', '@project/assets/models/left_hand.glb');
+    this.configureRendererForPerformance(world);
+    this.configurePostProcessing(world);
+    this.configureSunsetLighting(world);
+    this.addHand(world, 'Left Hand', '@project/assets/models/right_hand_runtime.glb');
+    this.addHand(world, 'Right Hand', '@project/assets/models/left_hand_runtime.glb');
     this.addLights(world);
 
     this.ball = DribbleBall.create({ name: 'Dribble Ball' });
     world.addActor(this.ball);
+    this.ball.setEquippedCosmetic(this.progression.equippedBall);
     this.ball.setGameplayActive(false);
     this.createHitEffectPool(world);
+  }
+
+  private configureRendererForPerformance(world: ENGINE.World): void {
+    const renderer = world.getRenderer() as unknown as {
+      getPixelRatio?: () => number;
+      setPixelRatio?: (ratio: number) => void;
+      shadowMap?: { enabled: boolean };
+    } | null;
+    const currentPixelRatio = renderer?.getPixelRatio?.() ?? 1;
+    renderer?.setPixelRatio?.(Math.min(currentPixelRatio, 1));
+    if (renderer?.shadowMap) {
+      renderer.shadowMap.enabled = false;
+    }
+  }
+
+  private configurePostProcessing(world: ENGINE.World): void {
+    const configuration = world.getPostProcessConfiguration();
+    if (!configuration) {
+      return;
+    }
+
+    const effects = configuration.effects.map(effect => {
+      if (effect.type === 'bloom') {
+        return Object.assign({}, effect, { levels: 2 });
+      }
+      if (effect.type === 'ao') {
+        return Object.assign({}, effect, { enabled: false });
+      }
+      return effect;
+    });
+    world.setPostProcessConfiguration({ effects });
+  }
+
+  private configureSunsetLighting(world: ENGINE.World): void {
+    let hasSkyDriver = false;
+    for (const actor of world.getActors()) {
+      for (const sunLight of actor.getComponents(ENGINE.DirectionalLightComponent)) {
+        if (!sunLight.isSunLight) {
+          continue;
+        }
+
+        // This light drives only the procedural sky; the gameplay key below preserves object lighting.
+        sunLight.position.set(-30, 18, 12);
+        sunLight.rotation.set(0.15, -0.62, 0);
+        sunLight.color = new THREE.Color(1, 0.296138, 0.088656);
+        sunLight.intensity = 0;
+        sunLight.castShadow = false;
+        hasSkyDriver = true;
+      }
+
+      for (const sky of actor.getComponents(ENGINE.SkyComponent)) {
+        sky.turbidity = 10.5;
+        sky.rayleigh = 1.8;
+        sky.mieCoefficient = 0.0075;
+        sky.mieDirectionalG = 0.62;
+        sky.cloudCoverage = 0.4;
+        sky.cloudDensity = 0.46;
+        sky.cloudElevation = 0.3;
+        sky.showSunDisc = true;
+        sky.environmentMapIntensity = 0.85;
+      }
+
+      for (const hemisphere of actor.getComponents(ENGINE.HemisphereLightComponent)) {
+        hemisphere.color = new THREE.Color(0.155926, 0.168269, 0.584078);
+        hemisphere.groundColor = new THREE.Color(0.799103, 0.099899, 0.084376);
+        hemisphere.intensity = 1.6;
+      }
+
+      for (const ambient of actor.getComponents(ENGINE.AmbientLightComponent)) {
+        ambient.color = new THREE.Color(0.040915, 0.024158, 0.109462);
+        ambient.intensity = 0.35;
+      }
+    }
+
+    if (hasSkyDriver) {
+      world.addActor(ENGINE.Actor.create({
+        name: 'Gameplay Sunset Key Light',
+        rootComponent: ENGINE.DirectionalLightComponent.create({
+          color: new THREE.Color(1, 0.296138, 0.088656),
+          intensity: 5.5,
+          isSunLight: false,
+          castShadow: false,
+          shadowMapSize: 1024,
+          shadowBias: -0.001,
+          shadowCameraBottom: -15,
+          shadowCameraLeft: -30,
+          shadowCameraRight: 30,
+          shadowCameraTop: 25,
+          position: new THREE.Vector3(10, 50, -10),
+          rotation: new THREE.Euler(0.22, -0.35, 0),
+        }),
+      }));
+    }
   }
 
   private async setupHud(): Promise<void> {
@@ -247,8 +396,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
-    const scoreIconHtml = await ENGINE.resolveAssetPathsInText(
-      '<img src="@project/assets/textures/Star.png" alt="">',
+    this.scoreStarAssetUrl = await ENGINE.resolveAssetPathsInText(
+      '@project/assets/textures/Star.png',
     );
     const gameContainer = world.gameContainer;
     if (gameContainer) {
@@ -262,7 +411,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       label: '',
       initialValue: 0,
       animate: true,
-      iconHtml: scoreIconHtml,
+      iconHtml: this.createScoreIconHtml(),
     });
     this.pauseButton = new DribblePauseButton(world.uiManager, {
       visible: false,
@@ -277,13 +426,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.sideHints = new DribbleSideHints(world.uiManager, {
       visible: false,
     });
-    this.crosshair = new ENGINE.Crosshair(world.uiManager, {
-      ...ENGINE.Crosshair.presets.bracket,
-      visible: false,
-      size: 42,
-      color: '#d7ff43',
-      accentColor: '#ffffff',
-    });
     this.timingMeter = new DribbleTimingMeter(world.uiManager, {
       position: 'bottom-center',
       visible: false,
@@ -295,6 +437,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.mainMenu = new DribbleMainMenu(world.uiManager, {
       onPlay: () => this.restartRun(),
       onVolumeChange: volume => this.applyMasterVolume(volume),
+      onBallBounce: strength => playBasketballBounce(world, strength),
+      progression: this.progression,
+      onPurchaseEpicBall: () => this.purchaseEpicBall(),
+      onEquipBall: cosmetic => this.setEquippedBall(cosmetic),
     });
     this.overlay = new DribbleOverlay(world.uiManager, {
       onResume: () => this.resumeRun(),
@@ -307,7 +453,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.pauseButton.initialize(),
       this.livesDisplay.initialize(),
       this.sideHints.initialize(),
-      this.crosshair.initialize(),
       this.timingMeter.initialize(),
       this.juiceHud.initialize(),
       this.mainMenu.initialize(),
@@ -329,8 +474,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'border': '1px solid rgba(255, 255, 255, 0.14)',
       'border-radius': '8px',
       'background-color': 'rgba(7, 11, 18, 0.62)',
-      'backdrop-filter': 'blur(7px)',
-      '-webkit-backdrop-filter': 'blur(7px)',
+      'backdrop-filter': 'none',
+      '-webkit-backdrop-filter': 'none',
       'box-shadow': 'none',
       'margin': '0',
       'pointer-events': 'none',
@@ -353,6 +498,33 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'object-fit': 'contain',
     }, '.ui-number-display-icon img');
     this.scoreDisplay.setPosition({
+      'position': 'relative',
+      'display': 'block',
+      'width': '44px',
+      'height': '36px',
+    }, '.score-star-icon');
+    this.scoreDisplay.setPosition({
+      'position': 'absolute',
+      'left': '-4px',
+      'bottom': '-4px',
+      'display': 'grid',
+      'min-width': '17px',
+      'height': '17px',
+      'padding': '0 4px',
+      'box-sizing': 'border-box',
+      'place-items': 'center',
+      'border': '1px solid rgba(255, 255, 255, 0.88)',
+      'border-radius': '9px',
+      'background': '#101827',
+      'color': '#fff6a8',
+      'font-family': 'Boogaloo, sans-serif',
+      'font-size': '12px',
+      'font-weight': '700',
+      'line-height': '15px',
+      'text-shadow': '0 1px 2px rgba(0, 0, 0, 0.9)',
+      'z-index': '2',
+    }, '.score-star-balance');
+    this.scoreDisplay.setPosition({
       'font-weight': '700',
       'font-size': '36px',
       'line-height': '40px',
@@ -360,6 +532,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'letter-spacing': '0',
     }, '.ui-number-display-value');
     this.syncUiState();
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    if (gameContainer) hideDribbleBootScreen(gameContainer);
   }
 
   private addHand(world: ENGINE.World, name: string, modelUrl: string): void {
@@ -369,17 +543,20 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       : existing?.getComponent(ENGINE.ModelMeshComponent);
     if (existingModel?.modelUrl === modelUrl) {
       existingModel.replacePhysicsOptions({ enabled: false });
+      existingModel.castShadow = false;
       return;
     }
     existing?.destroy();
 
-    world.addActor(ENGINE.ModelMeshActor.create({
+    const hand = ENGINE.ModelMeshActor.create({
       name,
       modelUrl,
       position: new THREE.Vector3(0, 1.32, -1.08),
       scale: new THREE.Vector3(0.5, 0.5, 0.5),
       physicsOptions: { enabled: false },
-    }));
+    });
+    hand.rootComponent.castShadow = false;
+    world.addActor(hand);
   }
 
   private async setupHandAnimations(): Promise<void> {
@@ -413,12 +590,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.handAnimations.set(side, { action, mixer });
   }
 
-  private updateHandAnimations(deltaTime: number): void {
-    const ballState = this.ball?.getState();
-    if (!ballState) {
-      return;
-    }
-
+  private updateHandAnimations(deltaTime: number, ballState: DribbleBallState): void {
     this.sideHints?.setState(ballState.side, ballState.isTransferring);
 
     for (const [side, state] of this.handAnimations) {
@@ -461,26 +633,42 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     world.addActors(coralFill, blueFill);
   }
 
-  private spawnTarget(): void {
+  private spawnTarget(): boolean {
     const world = this.getWorld();
     if (!world) {
-      return;
+      return false;
     }
 
-    const bonusTarget = Math.random() < 0.065;
-    const kindRoll = Math.random();
-    const kind = bonusTarget
-      ? 'bonus'
-      : this.frenzyTimeRemaining > 0
-        ? 'score'
-      : this.lives < 3 && kindRoll < 0.12
-        ? 'health'
-        : kindRoll < 0.72
-          ? 'score'
-          : 'hazard';
+    const existingTargets = this.activeTargets;
+    const rearmostTarget = existingTargets[existingTargets.length - 1] ?? null;
+    const entryGap = rearmostTarget
+      ? rearmostTarget.rootComponent.position.z - this.targetSpawnZ
+      : Number.POSITIVE_INFINITY;
+    if (entryGap < this.minimumTargetGap) {
+      return false;
+    }
+
+    this.tryStartCenterRhythm(existingTargets);
+    const difficulty = this.getDifficultyRamp();
+    const rhythmTarget = this.centerRhythmSpawnsRemaining > 0;
+    const kind = rhythmTarget ? this.centerRhythmNextKind : this.selectTargetKind(difficulty);
+    if (!rhythmTarget) {
+      this.recordSpawnKind(kind);
+    }
     const availableLanes = kind === 'bonus' ? [this.lanes[0], this.lanes[2]] : this.lanes;
-    const laneX = availableLanes[Math.floor(Math.random() * availableLanes.length)];
-    const speedBonus = Math.min(2.6, this.elapsedTime * 0.025);
+    const laneX = rhythmTarget
+      ? 0
+      : availableLanes[Math.floor(Math.random() * availableLanes.length)];
+    const targetPace = THREE.MathUtils.lerp(4.1, 7.2, difficulty);
+    let speed = rhythmTarget ? targetPace : targetPace * THREE.MathUtils.randFloat(0.96, 1.04);
+    if (rearmostTarget) {
+      const timeToCollect = Math.max(
+        1,
+        (-1.85 - rearmostTarget.rootComponent.position.z) / Math.max(rearmostTarget.speed, 0.1),
+      );
+      const catchUpAllowance = Math.max(0, entryGap - this.minimumTargetGap) / timeToCollect * 0.45;
+      speed = Math.min(speed, rearmostTarget.speed + catchUpAllowance);
+    }
     const target = DribbleTarget.create({
       name: kind === 'score'
         ? 'Score Target'
@@ -491,14 +679,131 @@ export class DribbleGameplayManager extends ENGINE.Actor {
             : 'Hazard Target',
       kind,
       laneX,
-      speed: THREE.MathUtils.randFloat(3.2, 4.8) + speedBonus,
+      speed,
+      rhythmTarget,
       position: new THREE.Vector3(
         laneX,
-        kind === 'bonus' ? 2.45 : THREE.MathUtils.randFloat(0.24, 0.68),
-        -18,
+        kind === 'bonus' ? 2.45 : rhythmTarget ? 0.48 : THREE.MathUtils.randFloat(0.24, 0.68),
+        this.targetSpawnZ,
       ),
     });
     world.addActor(target);
+    this.activeTargets.push(target);
+    this.lastSpawnWasCenterRhythm = rhythmTarget;
+    if (rhythmTarget) {
+      this.centerRhythmSpawnsRemaining -= 1;
+      this.centerRhythmNextKind = kind === 'score' ? 'hazard' : 'score';
+      if (this.centerRhythmSpawnsRemaining === 0) {
+        this.centerRhythmCooldown = THREE.MathUtils.randFloat(26, 36);
+      }
+    }
+    return true;
+  }
+
+  private tryStartCenterRhythm(existingTargets: DribbleTarget[]): void {
+    if (
+      this.centerRhythmSpawnsRemaining > 0
+      || this.centerRhythmCooldown > 0
+      || this.frenzyTimeRemaining > 0
+      || this.elapsedTime < 14
+      || existingTargets.length > 3
+    ) {
+      return;
+    }
+
+    this.centerRhythmOpportunityCount += 1;
+    const startChance = Math.min(0.4, 0.075 + this.centerRhythmOpportunityCount * 0.04);
+    if (this.centerRhythmOpportunityCount < 8 && Math.random() >= startChance) {
+      return;
+    }
+
+    this.centerRhythmSpawnsRemaining = this.centerRhythmLength;
+    this.centerRhythmNextKind = 'score';
+    this.centerRhythmOpportunityCount = 0;
+    this.spawnsSinceHazard = 0;
+    this.consecutiveHazards = 0;
+    this.juiceHud?.showPraise('CENTER RHYTHM!', 'gold');
+    const world = this.getWorld();
+    if (world) {
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.34,
+        bus: 'SFX',
+      });
+    }
+  }
+
+  private updateTargetSpacing(targets: DribbleTarget[]): void {
+    const frontTarget = targets[0];
+    frontTarget?.setSpacingSpeedLimit(null);
+
+    for (let index = 1; index < targets.length; index += 1) {
+      const leader = targets[index - 1];
+      const follower = targets[index];
+      const gap = leader.rootComponent.position.z - follower.rootComponent.position.z;
+      if (gap >= this.comfortableTargetGap) {
+        follower.setSpacingSpeedLimit(null);
+        continue;
+      }
+
+      const spacingBlend = THREE.MathUtils.smoothstep(
+        gap,
+        this.minimumTargetGap,
+        this.comfortableTargetGap,
+      );
+      const leaderSpeed = leader.getApproachSpeed();
+      follower.setSpacingSpeedLimit(
+        THREE.MathUtils.lerp(leaderSpeed * 0.78, leaderSpeed, spacingBlend),
+      );
+    }
+  }
+
+  private getDifficultyRamp(): number {
+    return THREE.MathUtils.clamp((this.elapsedTime - 8) / 112, 0, 1);
+  }
+
+  private selectTargetKind(difficulty: number): TargetKind {
+    if (this.frenzyTimeRemaining > 0) {
+      return Math.random() < 0.01 ? 'bonus' : 'score';
+    }
+
+    if (Math.random() < 0.02) {
+      return 'bonus';
+    }
+
+    const safeSpawnLimit = difficulty < 0.18 ? 4 : 3;
+    const hazardDue = this.spawnsSinceHazard >= safeSpawnLimit;
+    const canSpawnHazard = this.consecutiveHazards < 3;
+    if (hazardDue && canSpawnHazard) {
+      return 'hazard';
+    }
+
+    const healthChance = this.lives < 3 ? 0.09 : 0;
+    const hazardChance = canSpawnHazard
+      ? THREE.MathUtils.lerp(0.64, 0.72, difficulty)
+      : 0;
+    const roll = Math.random();
+    if (roll < healthChance) {
+      return 'health';
+    }
+    if (roll < healthChance + hazardChance) {
+      return 'hazard';
+    }
+    return 'score';
+  }
+
+  private recordSpawnKind(kind: TargetKind): void {
+    if (this.frenzyTimeRemaining > 0) {
+      this.spawnsSinceHazard = 0;
+      this.consecutiveHazards = 0;
+      return;
+    }
+    if (kind === 'hazard') {
+      this.spawnsSinceHazard = 0;
+      this.consecutiveHazards += 1;
+      return;
+    }
+    this.spawnsSinceHazard += 1;
+    this.consecutiveHazards = 0;
   }
 
   private updateTimingMeter(ballState: DribbleBallState, targets: DribbleTarget[]): void {
@@ -515,7 +820,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     for (const target of targets) {
       if (target.kind !== 'score' || Math.abs(target.laneX) > 0.01) continue;
       const switchZ = centerBounceZ - target.getApproachSpeed() * transferToCenterTime;
-      const error = target.getWorldPosition().z - switchZ;
+      const error = target.rootComponent.position.z - switchZ;
       const magnitude = Math.abs(error);
       if (magnitude <= trackingSpan && magnitude < candidateMagnitude) {
         candidate = error;
@@ -535,8 +840,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private checkBallTargetHits(ballState: DribbleBallState, targets: DribbleTarget[]): void {
     for (const target of targets) {
-      const hitDistance = target.radius + ballState.radius;
-      if (target.getWorldPosition().distanceTo(ballState.position) > hitDistance) {
+      const targetPosition = target.rootComponent.position;
+      const depthDistance = Math.abs(targetPosition.z - ballState.position.z);
+      if (depthDistance > 0.48) {
+        continue;
+      }
+
+      const lateralRadius = target.radius + ballState.radius * 0.8;
+      const verticalRadius = target.radius + ballState.radius * 0.85;
+      const normalizedX = (targetPosition.x - ballState.position.x) / lateralRadius;
+      const normalizedY = (targetPosition.y - ballState.position.y) / verticalRadius;
+      if (normalizedX * normalizedX + normalizedY * normalizedY > 1) {
         continue;
       }
 
@@ -544,15 +858,15 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         continue;
       }
 
-      const hitPosition = target.getWorldPosition().clone();
+      this.targetHitPosition.copy(targetPosition);
       if (target.kind === 'score') {
-        this.handleScoreHit(hitPosition);
+        this.handleScoreHit(this.targetHitPosition, target.isRhythmTarget);
       } else if (target.kind === 'bonus') {
-        this.handleBonusHit(hitPosition);
+        this.handleBonusHit(this.targetHitPosition);
       } else if (target.kind === 'health') {
-        this.handleHealthHit(hitPosition);
+        this.handleHealthHit(this.targetHitPosition);
       } else {
-        this.handleHazardHit(hitPosition);
+        this.handleHazardHit(this.targetHitPosition);
       }
       target.destroy();
 
@@ -562,21 +876,29 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
   }
 
-  private handleScoreHit(position: THREE.Vector3): void {
-    this.handleGoodHit(position, 10, false);
+  private handleScoreHit(position: THREE.Vector3, rhythmTarget: boolean): void {
+    this.handleGoodHit(position, rhythmTarget ? 15 : 10, false, rhythmTarget);
   }
 
   private handleBonusHit(position: THREE.Vector3): void {
-    this.handleGoodHit(position, 50, true);
+    this.progression = awardStars(this.progression, 1);
+    this.mainMenu?.setProgression(this.progression);
+    this.updateScoreStarCounter();
+    this.handleGoodHit(position, 50, true, false);
   }
 
-  private handleGoodHit(position: THREE.Vector3, basePoints: number, bonus: boolean): void {
+  private handleGoodHit(
+    position: THREE.Vector3,
+    basePoints: number,
+    bonus: boolean,
+    rhythmTarget: boolean,
+  ): void {
     const world = this.getWorld();
     if (!world) {
       return;
     }
 
-    this.combo = Math.min(this.combo + 1, 8);
+    this.combo = Math.min(this.combo + 1, 12);
     if (this.frenzyTimeRemaining <= 0) {
       this.frenzyCharge += 1;
     }
@@ -584,11 +906,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.score += points;
     this.scoreDisplay?.setValue(this.score, true);
     this.spawnComboPopup();
-    this.spawnImpactBurst(position, bonus || this.frenzyTimeRemaining > 0 ? 0xffca3a : 0x59df86);
+    this.spawnImpactBurst(
+      position,
+      0xffca3a,
+    );
     if (this.frenzyCharge >= this.frenzyHitsRequired && this.frenzyTimeRemaining <= 0) {
       this.activateFrenzy();
     } else if (bonus) {
-      this.juiceHud?.showPraise('STAR POWER!', 'gold');
+      this.juiceHud?.showPraise('STAR +1!', 'gold');
+    } else if (rhythmTarget) {
+      this.juiceHud?.showPraise('ON BEAT!', 'gold');
     } else {
       this.showScorePraise();
     }
@@ -650,8 +977,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.comboPopupCursor = (this.comboPopupCursor + 1) % this.comboPopups.length;
+    this.comboPopupPosition.copy(ballState.position).y += 0.16;
     popup.play(
-      ballState.position.clone().add(new THREE.Vector3(0, 0.16, 0)),
+      this.comboPopupPosition,
       `COMBO x${this.combo}`,
       this.combo >= 5 ? '#ffca3a' : '#65e6a8',
     );
@@ -659,6 +987,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private activateFrenzy(): void {
     const world = this.getWorld();
+    this.centerRhythmSpawnsRemaining = 0;
+    this.centerRhythmNextKind = 'score';
+    this.centerRhythmCooldown = Math.max(this.centerRhythmCooldown, 14);
+    this.centerRhythmOpportunityCount = 0;
     this.frenzyCharge = 0;
     this.frenzyTimeRemaining = this.frenzyDuration;
     this.ball?.setFrenzyActive(true);
@@ -697,7 +1029,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       ? ['WOW!', 'UNREAL!', 'PERFECT!']
       : ['NICE!', 'COOL!', 'SWEET!', 'GREAT!'];
     const label = praise[Math.floor(Math.random() * praise.length)];
-    this.juiceHud?.showPraise(label, this.combo >= 3 ? 'gold' : 'green');
+    this.juiceHud?.showPraise(label, 'gold');
   }
 
   private applyMasterVolume(volume: number): void {
@@ -710,6 +1042,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
+    this.commitHighScore();
     this.gameState = 'menu';
     this.setGameplayActive(false);
     this.deactivateHitEffects();
@@ -749,20 +1082,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.gameState = 'gameOver';
+    this.commitHighScore();
     this.setGameplayActive(false);
     this.deactivateHitEffects();
     this.setHudVisible(false);
-    this.overlay?.showGameOver(this.score);
+    this.overlay?.showGameOver(this.score, this.progression.highScore);
     world.inputManager.exitPointerLock();
   }
 
   private setGameplayActive(active: boolean): void {
-    const world = this.getWorld();
     this.ball?.setGameplayActive(active);
-    if (!world) {
-      return;
-    }
-    for (const target of world.getActors(DribbleTarget)) {
+    for (const target of this.activeTargets) {
       target.setGameplayActive(active);
     }
     for (const burst of this.impactBursts) {
@@ -779,7 +1109,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.pauseButton,
       this.livesDisplay,
       this.sideHints,
-      this.crosshair,
       this.timingMeter,
       this.juiceHud,
     ];
@@ -811,6 +1140,72 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
   }
 
+  private purchaseEpicBall(): DribbleProgressionState {
+    const previouslyOwned = this.progression.epicBallOwned;
+    this.progression = purchaseEpicBall(this.progression);
+    this.ball?.setEquippedCosmetic(this.progression.equippedBall);
+    this.updateScoreStarCounter();
+    if (!previouslyOwned && this.progression.epicBallOwned) {
+      void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+        volume: 0.72,
+        bus: 'SFX',
+      });
+    }
+    return this.progression;
+  }
+
+  private commitHighScore(): void {
+    const updatedProgression = recordHighScore(this.progression, this.score);
+    if (updatedProgression === this.progression) {
+      return;
+    }
+    this.progression = updatedProgression;
+    this.mainMenu?.setProgression(this.progression);
+  }
+
+  private setEquippedBall(cosmetic: BallCosmetic): DribbleProgressionState {
+    const previousCosmetic = this.progression.equippedBall;
+    this.progression = equipBall(this.progression, cosmetic);
+    this.ball?.setEquippedCosmetic(this.progression.equippedBall);
+    if (previousCosmetic !== this.progression.equippedBall) {
+      void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.3,
+        bus: 'SFX',
+      });
+    }
+    return this.progression;
+  }
+
+  private compactActiveTargets(): void {
+    let writeIndex = 0;
+    let missedScoreTarget = false;
+    for (const target of this.activeTargets) {
+      if (!target.isRemovalPending()) {
+        this.activeTargets[writeIndex] = target;
+        writeIndex += 1;
+      } else if (target.didMissScoreTarget()) {
+        missedScoreTarget = true;
+      }
+    }
+    this.activeTargets.length = writeIndex;
+    if (missedScoreTarget && this.frenzyTimeRemaining <= 0) {
+      this.combo = 0;
+      this.frenzyCharge = 0;
+    }
+  }
+
+  private createScoreIconHtml(): string {
+    return `<span class="score-star-icon"><img src="${this.scoreStarAssetUrl}" alt="">`
+      + `<b class="score-star-balance">${this.progression.stars}</b></span>`;
+  }
+
+  private updateScoreStarCounter(): void {
+    const counter = this.scoreDisplay?.getElement()?.querySelector('.score-star-balance');
+    if (counter) {
+      counter.textContent = String(this.progression.stars);
+    }
+  }
+
   private syncUiState(): void {
     if (this.gameState === 'menu') {
       this.setGameplayActive(false);
@@ -824,7 +1219,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     } else if (this.gameState === 'gameOver') {
       this.mainMenu?.hide();
       this.setHudVisible(false);
-      this.overlay?.showGameOver(this.score);
+      this.overlay?.showGameOver(this.score, this.progression.highScore);
     } else {
       this.mainMenu?.hide();
       this.overlay?.hide();

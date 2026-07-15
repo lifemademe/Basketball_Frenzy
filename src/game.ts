@@ -5,6 +5,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
+import { showDribbleBootScreen } from './dribble-boot-screen.js';
 import { DribbleGameplayManager } from './dribble-gameplay.js';
 import { FirstPersonPlayer } from './player.js';
 
@@ -45,7 +46,13 @@ class FirstPersonGame extends ENGINE.BaseGameLoop {
 }
 
 export function main(container: HTMLElement, options?: Partial<ENGINE.BaseGameLoopOptions>): ENGINE.IGameLoop {
+  showDribbleBootScreen(container);
   container.addEventListener('contextmenu', event => event.preventDefault());
+  const screenPercentage = ENGINE.CVarManager.getValue('r.ScreenPercentage', 100);
+  if (screenPercentage === 100 && window.devicePixelRatio > 1) {
+    // Avoid multiplying the full post-process stack by the browser's display scaling.
+    ENGINE.CVarManager.setValue('r.ScreenPercentage', 99);
+  }
   const mergedOptions: Partial<ENGINE.BaseGameLoopOptions> = {
     ...options,
     defaultGameModeClass: FirstPersonGameMode,

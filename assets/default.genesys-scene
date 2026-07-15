@@ -1696,7 +1696,7 @@
         "name": "Left Hand",
         "rootComponent": {
           "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/right_hand.glb",
+          "modelUrl": "@project/assets/models/right_hand_runtime.glb",
           "name": "RootComponent",
           "physicsOptions": {
             "enabled": false
@@ -1737,7 +1737,7 @@
         "name": "Right Hand",
         "rootComponent": {
           "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/left_hand.glb",
+          "modelUrl": "@project/assets/models/left_hand_runtime.glb",
           "name": "RootComponent",
           "physicsOptions": {
             "enabled": false
@@ -1823,12 +1823,12 @@
       "46": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
-          "modelUrl": "@project/assets/models/Basketballscene.glb"
+          "modelUrl": "@project/assets/models/Basketballscene2.glb"
         },
-        "name": "Basketballscene",
+        "name": "Basketballscene 2",
         "rootComponent": {
           "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/Basketballscene.glb",
+          "modelUrl": "@project/assets/models/Basketballscene2_runtime.glb",
           "name": "RootComponent",
           "physicsOptions": {
             "enabled": false
@@ -1849,9 +1849,9 @@
               1.5
             ]
           },
-          "uuid": "70800e0d-08d4-4aa3-97de-ccaadcdb6cad"
+          "uuid": "37aef3e3-8bfd-4d0f-93ae-0e15716b182d"
         },
-        "uuid": "db730ce76aa0bf8f"
+        "uuid": "89fb724ffff7be8a"
       },
       "$length": 47
     },
@@ -2079,7 +2079,7 @@
             "nodeType": "actor"
           },
           {
-            "id": "db730ce76aa0bf8f",
+            "id": "89fb724ffff7be8a",
             "isExpanded": false,
             "nodeType": "actor"
           }

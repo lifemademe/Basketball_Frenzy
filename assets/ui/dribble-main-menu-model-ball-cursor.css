@@ -92,6 +92,65 @@
 
 .dribble-main-menu-brand {
   flex: 0 0 auto;
+  width: min(390px, 100%);
+}
+
+.dribble-main-menu-profile {
+  position: fixed;
+  z-index: 4;
+  top: clamp(20px, 3vh, 36px);
+  right: clamp(20px, 3vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  width: auto;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(4, 12, 26, 0.7);
+  backdrop-filter: blur(8px);
+  box-sizing: border-box;
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: none;
+}
+
+.dribble-main-menu-profile > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+
+.dribble-main-menu-profile small {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+.dribble-main-menu-profile span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dribble-main-menu-profile img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.dribble-main-menu-profile b,
+.dribble-main-menu-profile strong {
+  color: #ffffff;
+  font-size: 29px;
+  line-height: 31px;
+}
+
+.dribble-main-menu:not([data-panel='home']) .dribble-main-menu-profile {
+  display: none;
 }
 
 .dribble-main-menu-panel-heading span {
@@ -106,9 +165,11 @@
 
 .dribble-main-menu-logo {
   position: relative;
-  width: min(390px, 100%);
-  height: clamp(220px, 35vh, 300px);
+  left: 50%;
+  width: min(460px, 100%);
+  height: clamp(250px, 39vh, 340px);
   overflow: visible;
+  transform: translateX(-50%);
 }
 
 .dribble-main-menu-logo img {
@@ -118,6 +179,13 @@
   height: 100%;
   object-fit: contain;
   user-select: none;
+}
+
+.dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-logo,
+.dribble-main-menu[data-panel='settings'] .dribble-main-menu-logo,
+.dribble-main-menu[data-panel='shop'] .dribble-main-menu-logo {
+  width: min(390px, 100%);
+  height: clamp(150px, 22vh, 190px);
 }
 
 .dribble-logo-sparkle {
@@ -163,7 +231,8 @@
 
 .dribble-main-menu[data-panel='home'] .dribble-main-menu-home,
 .dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-how,
-.dribble-main-menu[data-panel='settings'] .dribble-main-menu-settings {
+.dribble-main-menu[data-panel='settings'] .dribble-main-menu-settings,
+.dribble-main-menu[data-panel='shop'] .dribble-main-menu-shop {
   display: block;
   animation: dribble-main-menu-enter 220ms ease-out both;
 }
@@ -194,7 +263,7 @@
 }
 
 .dribble-main-menu-home {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   width: min(390px, 100%);
 }
@@ -260,6 +329,14 @@
   filter: none;
 }
 
+.dribble-main-menu-shop-action .ui-button {
+  background-image: url('@project/assets/textures/Shop.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: none;
+}
+
 .dribble-main-menu-action .ui-button:hover,
 .dribble-main-menu-action .ui-button:focus-visible {
   border-color: #65d5ff;
@@ -293,6 +370,12 @@
 .dribble-main-menu .dribble-main-menu-settings-action .ui-button:hover,
 .dribble-main-menu .dribble-main-menu-settings-action .ui-button:focus-visible {
   background: transparent url('@project/assets/textures/Settings.png') center / contain no-repeat !important;
+  filter: brightness(1.12) saturate(1.08);
+}
+
+.dribble-main-menu .dribble-main-menu-shop-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-shop-action .ui-button:focus-visible {
+  background: transparent url('@project/assets/textures/Shop.png') center / contain no-repeat !important;
   filter: brightness(1.12) saturate(1.08);
 }
 
@@ -351,6 +434,233 @@
   display: block;
   margin-bottom: 22px;
   color: #ffffff;
+}
+
+.dribble-main-menu-settings {
+  min-height: 438px;
+  padding: 62px 54px 48px;
+  box-sizing: border-box;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
+.dribble-main-menu-shop {
+  min-height: 500px;
+  padding: 54px 52px 28px;
+  box-sizing: border-box;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
+.dribble-shop-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 2px 4px;
+}
+
+.dribble-shop-heading h2 {
+  margin-bottom: 4px;
+  font-size: 34px;
+  line-height: 38px;
+}
+
+.dribble-main-menu-shop .dribble-main-menu-panel-heading span {
+  margin-bottom: 2px;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 17px;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.9);
+}
+
+.dribble-shop-heading strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(4, 33, 91, 0.34);
+  color: #fff6a8;
+  font-size: 24px;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.9);
+}
+
+.dribble-shop-heading strong img {
+  width: 31px;
+  height: 31px;
+  object-fit: contain;
+}
+
+.dribble-shop-inventory {
+  display: grid;
+  gap: 6px;
+}
+
+.dribble-shop-item {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 116px;
+  padding: 5px 0 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.dribble-shop-preview {
+  position: relative;
+  display: grid;
+  width: 90px;
+  height: 90px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #020912;
+  place-items: center;
+}
+
+.dribble-shop-preview::before {
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  background: rgba(72, 201, 255, 0.18);
+  box-shadow: 0 0 24px rgba(72, 201, 255, 0.46);
+  content: '';
+}
+
+.dribble-shop-preview img {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 9px 8px rgba(0, 24, 78, 0.42));
+  transform: scale(1.36);
+}
+
+.dribble-shop-copy > span {
+  color: #65d5ff;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.dribble-shop-copy h3 {
+  margin: 1px 0 2px;
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 27px;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.9);
+}
+
+.dribble-shop-copy p {
+  margin: 0 0 6px;
+  color: #dff4ff;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.dribble-shop-purchase {
+  margin: 0;
+}
+
+.dribble-shop-purchase .ui-button {
+  min-height: 36px;
+  justify-content: center;
+  padding: 8px 15px;
+  border: 1px solid rgba(255, 246, 168, 0.72);
+  border-radius: 6px;
+  background: #166bc2;
+  color: #ffffff;
+  font-size: 17px;
+  text-shadow: 0 2px 3px rgba(0, 27, 88, 0.82);
+}
+
+.dribble-shop-purchase .ui-button:hover,
+.dribble-shop-purchase .ui-button:focus-visible {
+  background: #2388e8;
+  border-color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.dribble-shop-purchase .ui-button:disabled {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(18, 49, 87, 0.72);
+  color: rgba(255, 255, 255, 0.52);
+  transform: none;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-panel-heading span {
+  color: #dffaff;
+  text-shadow: 0 2px 5px rgba(0, 45, 128, 0.9);
+}
+
+.dribble-main-menu-settings .dribble-main-menu-panel-heading h2,
+.dribble-main-menu-settings .dribble-main-menu-setting b,
+.dribble-main-menu-settings .dribble-main-menu-toggle small {
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
+}
+
+.dribble-main-menu-settings .dribble-main-menu-setting output {
+  color: #fff6a8;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
+}
+
+.dribble-main-menu-settings .dribble-main-menu-back {
+  width: 190px;
+  margin: 12px auto 0;
+}
+
+.dribble-main-menu-shop .dribble-main-menu-back {
+  width: 145px;
+  margin: 4px auto 0;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
+  min-height: 112px;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent url('@project/assets/textures/Back.png') center / contain no-repeat;
+  color: transparent;
+  font-size: 0;
+  box-shadow: none;
+  filter: none;
+}
+
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
+  min-height: 82px;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button-label {
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  font-size: 0;
+}
+
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button-label {
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  font-size: 0;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
+  filter: brightness(1.1) saturate(1.08);
+  transform: translateY(-2px) scale(1.025);
 }
 
 .dribble-main-menu-setting > span {
@@ -478,19 +788,59 @@
     padding: 34px 0 20px;
   }
 
+  .dribble-main-menu-profile {
+    top: 16px;
+    right: 16px;
+    gap: 16px;
+    padding: 10px 12px;
+  }
+
+  .dribble-main-menu-profile small {
+    font-size: 13px;
+    line-height: 16px;
+  }
+
+  .dribble-main-menu-profile b,
+  .dribble-main-menu-profile strong {
+    font-size: 25px;
+    line-height: 27px;
+  }
+
   .dribble-menu-ball {
     width: 70px;
     height: 70px;
   }
 
   .dribble-main-menu-logo {
-    width: min(360px, 100%);
-    height: 210px;
+    width: min(390px, 100%);
+    height: 235px;
   }
 
   .dribble-main-menu-panel {
     width: min(360px, 100%);
     margin-top: 10px;
+  }
+
+  .dribble-main-menu-settings {
+    min-height: 410px;
+    padding: 54px 44px 42px;
+  }
+
+  .dribble-main-menu-shop {
+    min-height: 480px;
+    padding: 48px 46px 26px;
+  }
+
+  .dribble-shop-item {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 12px;
+    min-height: 108px;
+  }
+
+  .dribble-shop-preview,
+  .dribble-shop-preview img {
+    width: 78px;
+    height: 78px;
   }
 
   .dribble-main-menu-home .ui-button {

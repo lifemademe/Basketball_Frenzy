@@ -2,11 +2,22 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-type MainMenuPanel = 'home' | 'how-to-play' | 'settings';
+import {
+  createDefaultProgressionState,
+  epicBallPrice,
+  type BallCosmetic,
+  type DribbleProgressionState,
+} from './dribble-progression.js';
+
+type MainMenuPanel = 'home' | 'how-to-play' | 'settings' | 'shop';
 
 export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onPlay?: () => void;
   onVolumeChange?: (volume: number) => void;
+  onBallBounce?: (strength: number) => void;
+  progression?: DribbleProgressionState;
+  onPurchaseEpicBall?: () => DribbleProgressionState;
+  onEquipBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
 }
 
 export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptions> {
@@ -26,6 +37,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private volumeInput: HTMLInputElement | null = null;
   private volumeValue: HTMLElement | null = null;
   private fullscreenInput: HTMLInputElement | null = null;
+  private homeStarsElement: HTMLElement | null = null;
+  private highScoreElement: HTMLElement | null = null;
+  private shopStarsElement: HTMLElement | null = null;
+  private classicStatusElement: HTMLElement | null = null;
+  private epicStatusElement: HTMLElement | null = null;
+  private classicActionButton: ENGINE.Button | null = null;
+  private epicActionButton: ENGINE.Button | null = null;
+  private progression = createDefaultProgressionState();
   private menuBall: HTMLButtonElement | null = null;
   private menuBallCanvas: HTMLCanvasElement | null = null;
   private menuBallRenderer: THREE.WebGLRenderer | null = null;
@@ -147,6 +166,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       customStyles: {},
       onPlay: () => {},
       onVolumeChange: () => {},
+      onBallBounce: () => {},
+      progression: createDefaultProgressionState(),
+      onPurchaseEpicBall: () => createDefaultProgressionState(),
+      onEquipBall: () => createDefaultProgressionState(),
     };
   }
 
@@ -160,6 +183,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.volumeInput = this.layout.querySelector('[data-menu-volume]') as HTMLInputElement | null;
     this.volumeValue = this.layout.querySelector('[data-menu-volume-value]') as HTMLElement | null;
     this.fullscreenInput = this.layout.querySelector('[data-menu-fullscreen]') as HTMLInputElement | null;
+    this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
+    this.highScoreElement = this.layout.querySelector('[data-menu-high-score]') as HTMLElement | null;
+    this.shopStarsElement = this.layout.querySelector('[data-shop-stars]') as HTMLElement | null;
+    this.classicStatusElement = this.layout.querySelector('[data-shop-classic-status]') as HTMLElement | null;
+    this.epicStatusElement = this.layout.querySelector('[data-shop-epic-status]') as HTMLElement | null;
     this.menuBall = this.layout.querySelector('[data-menu-ball]') as HTMLButtonElement | null;
     this.menuBallCanvas = this.layout.querySelector('[data-menu-ball-canvas]') as HTMLCanvasElement | null;
   }
@@ -172,11 +200,18 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const playSlot = slot('play');
     const howSlot = slot('how');
     const settingsSlot = slot('settings');
+    const shopSlot = slot('shop');
     const howBackSlot = slot('how-back');
     const settingsBackSlot = slot('settings-back');
-    if (!playSlot || !howSlot || !settingsSlot || !howBackSlot || !settingsBackSlot) return;
+    const shopBackSlot = slot('shop-back');
+    const classicActionSlot = slot('classic-action');
+    const epicActionSlot = slot('epic-action');
+    if (
+      !playSlot || !howSlot || !settingsSlot || !shopSlot || !howBackSlot
+      || !settingsBackSlot || !shopBackSlot || !classicActionSlot || !epicActionSlot
+    ) return;
 
-    await Promise.all([
+    const mounted = await Promise.all([
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
         label: 'Play',
@@ -194,6 +229,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, settingsSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
+        label: 'Shop',
+        onClick: () => this.showPanel('shop'),
+      }, shopSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
         label: 'Back',
         onClick: () => this.showPanel('home'),
       }, howBackSlot),
@@ -202,7 +242,26 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: 'Back',
         onClick: () => this.showPanel('home'),
       }, settingsBackSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Back',
+        onClick: () => this.showPanel('home'),
+      }, shopBackSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: 'Equipped',
+        disabled: true,
+        onClick: () => this.handleClassicAction(),
+      }, classicActionSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: `Buy - ${epicBallPrice} Star`,
+        onClick: () => this.handleEpicAction(),
+      }, epicActionSlot),
     ]);
+    this.classicActionButton = mounted[mounted.length - 2];
+    this.epicActionButton = mounted[mounted.length - 1];
+    this.setProgression(this.options.progression);
 
     let volume = 0.8;
     try {
@@ -229,10 +288,43 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     document.addEventListener('fullscreenchange', this.handleFullscreenChange);
     this.handleFullscreenChange();
     this.showPanel('home');
+    await this.preloadCriticalMenuAssets();
     void this.setupMenuBallModel();
     requestAnimationFrame(() => {
       this.resetMenuBall();
       this.startBallPhysics();
+    });
+  }
+
+  private async preloadCriticalMenuAssets(): Promise<void> {
+    const logicalPaths = [
+      '@project/assets/textures/main-menu-background.png',
+      '@project/assets/textures/Basketball_frenzy_logo.png',
+      '@project/assets/textures/play_button_background.png',
+      '@project/assets/textures/Tutorial.png',
+      '@project/assets/textures/Settings.png',
+      '@project/assets/textures/Shop.png',
+      '@project/assets/textures/Star.png',
+      '@project/assets/textures/classicball.png',
+      '@project/assets/textures/blueball.png',
+      '@project/assets/textures/mouse.png',
+    ];
+    const resolvedPaths = await Promise.all(
+      logicalPaths.map(path => ENGINE.resolveAssetPathsInText(path)),
+    );
+    await Promise.all([
+      ...resolvedPaths.map(path => this.preloadImage(path)),
+      document.fonts?.load('32px Boogaloo').catch(() => []),
+    ]);
+  }
+
+  private preloadImage(path: string): Promise<void> {
+    return new Promise(resolve => {
+      const image = new Image();
+      image.onload = () => resolve();
+      image.onerror = () => resolve();
+      image.src = path;
+      if (image.complete) resolve();
     });
   }
 
@@ -243,10 +335,62 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   private showPanel(panel: MainMenuPanel): void {
     if (this.rootElement) this.rootElement.dataset.panel = panel;
+    if (panel === 'shop') this.refreshProgressionUi();
     if (panel === 'home') this.startBallPhysics();
     else {
       this.stopBallPhysics();
       this.cancelBallDrag();
+    }
+  }
+
+  public setProgression(progression: DribbleProgressionState): void {
+    this.progression = { ...progression };
+    this.refreshProgressionUi();
+  }
+
+  private handleClassicAction(): void {
+    this.setProgression(this.options.onEquipBall('classic'));
+  }
+
+  private handleEpicAction(): void {
+    if (!this.progression.epicBallOwned) {
+      this.setProgression(this.options.onPurchaseEpicBall());
+      return;
+    }
+    this.setProgression(this.options.onEquipBall('epic'));
+  }
+
+  private refreshProgressionUi(): void {
+    const { stars, highScore, epicBallOwned, equippedBall } = this.progression;
+    if (this.homeStarsElement) this.homeStarsElement.textContent = String(stars);
+    if (this.highScoreElement) this.highScoreElement.textContent = String(highScore);
+    if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
+    if (this.classicStatusElement) {
+      this.classicStatusElement.textContent = equippedBall === 'classic' ? 'EQUIPPED' : 'OWNED';
+    }
+    if (this.epicStatusElement) {
+      this.epicStatusElement.textContent = !epicBallOwned
+        ? 'LOCKED'
+        : equippedBall === 'epic'
+          ? 'EQUIPPED'
+          : 'OWNED';
+    }
+    if (this.rootElement) {
+      this.rootElement.dataset.epicOwned = epicBallOwned ? 'true' : 'false';
+      this.rootElement.dataset.epicEquipped = equippedBall === 'epic' ? 'true' : 'false';
+    }
+    this.classicActionButton?.setLabel(equippedBall === 'classic' ? 'Equipped' : 'Equip');
+    this.classicActionButton?.setDisabled(equippedBall === 'classic');
+    if (!this.epicActionButton) return;
+    if (!epicBallOwned) {
+      this.epicActionButton.setLabel(`Buy - ${epicBallPrice} Star`);
+      this.epicActionButton.setDisabled(stars < epicBallPrice);
+    } else if (equippedBall === 'epic') {
+      this.epicActionButton.setLabel('Equipped');
+      this.epicActionButton.setDisabled(true);
+    } else {
+      this.epicActionButton.setLabel('Equip');
+      this.epicActionButton.setDisabled(false);
     }
   }
 
@@ -310,8 +454,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         this.ballVelocityY = Math.abs(this.ballVelocityY) * 0.68;
       }
       if (this.ballY >= floorY) {
+        const impactVelocity = this.ballVelocityY;
         this.ballY = floorY;
-        if (this.ballVelocityY > 52) this.ballVelocityY *= -0.68;
+        if (this.ballVelocityY > 52) {
+          this.ballVelocityY *= -0.68;
+          if (impactVelocity >= 120) {
+            this.options.onBallBounce(THREE.MathUtils.clamp(impactVelocity / 1100, 0.18, 1));
+          }
+        }
         else if (this.ballVelocityY >= 0) this.ballVelocityY = 0;
         this.ballVelocityX *= Math.pow(0.76, deltaTime * 8);
         if (Math.abs(this.ballVelocityX) < 4) this.ballVelocityX = 0;
@@ -387,7 +537,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.renderMenuBall();
 
     try {
-      const modelUrl = await ENGINE.resolveAssetPathsInText('@project/assets/models/ball.glb');
+      const modelUrl = await ENGINE.resolveAssetPathsInText('@project/assets/models/ball_runtime.glb');
       const gltf = await new GLTFLoader().loadAsync(modelUrl);
       if (loadToken !== this.menuBallModelLoadToken || !this.menuBallScene) {
         this.disposeThreeObject(gltf.scene);
@@ -480,6 +630,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.volumeInput = null;
     this.volumeValue = null;
     this.fullscreenInput = null;
+    this.homeStarsElement = null;
+    this.highScoreElement = null;
+    this.shopStarsElement = null;
+    this.classicStatusElement = null;
+    this.epicStatusElement = null;
+    this.classicActionButton = null;
+    this.epicActionButton = null;
     this.menuBall = null;
     this.menuBallCanvas = null;
   }

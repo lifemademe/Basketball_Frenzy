@@ -29,6 +29,7 @@ export interface DribbleTargetOptions extends ENGINE.ActorOptions {
   kind?: TargetKind;
   laneX?: number;
   speed?: number;
+  rhythmTarget?: boolean;
 }
 
 @ENGINE.GameClass()
@@ -41,23 +42,29 @@ export class DribbleTarget extends ENGINE.Actor {
   public laneX = 0;
   public speed = 4;
   public radius = 0.55;
+  public isRhythmTarget = false;
 
   private hit = false;
   private gameplayActive = true;
   private removalRequested = false;
+  private missedScoreTarget = false;
   private glowShell: ENGINE.MeshComponent | null = null;
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
   private glowBaseOpacity = 0.24;
+  private rhythmMarker: ENGINE.MeshComponent | null = null;
+  private rhythmMarkerMaterial: THREE.MeshBasicMaterial | null = null;
+  private spacingSpeedLimit = Number.POSITIVE_INFINITY;
 
   public override initialize(options?: DribbleTargetOptions): void {
     this.kind = options?.kind ?? this.kind;
     this.laneX = options?.laneX ?? this.laneX;
     this.speed = options?.speed ?? this.speed;
+    this.isRhythmTarget = options?.rhythmTarget ?? false;
     this.radius = this.kind === 'bonus' ? 0.58 : 0.55;
 
     const color = this.kind === 'score'
-      ? 0x30d158
+      ? 0xffca3a
       : this.kind === 'health'
         ? 0x4de6b8
         : this.kind === 'bonus'
@@ -102,6 +109,24 @@ export class DribbleTarget extends ENGINE.Actor {
     });
     rootComponent.add(this.glowShell);
 
+    if (this.isRhythmTarget) {
+      this.rhythmMarkerMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffd65a,
+        transparent: true,
+        opacity: 0.48,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      });
+      this.rhythmMarker = ENGINE.MeshComponent.create({
+        name: 'Center Rhythm Marker',
+        geometry: new THREE.TorusGeometry(0.69, 0.025, 8, 32),
+        material: this.rhythmMarkerMaterial,
+        physicsOptions: { enabled: false },
+      });
+      rootComponent.add(this.rhythmMarker);
+    }
+
     if (this.kind === 'health') {
       rootComponent.add(ENGINE.MeshComponent.create({
         name: 'Health Crossbar',
@@ -110,20 +135,28 @@ export class DribbleTarget extends ENGINE.Actor {
         physicsOptions: { enabled: false },
       }));
     } else if (this.kind === 'bonus') {
-      rootComponent.add(ENGINE.PointLightComponent.create({
-        name: 'Bonus Star Glow',
-        color,
-        intensity: 1.8,
-        distance: 2.6,
-        decay: 2,
-        castShadow: false,
+      rootComponent.add(ENGINE.MeshComponent.create({
+        name: 'Bonus Star Contrast Outline',
+        geometry: geometry.clone(),
+        material: new THREE.MeshBasicMaterial({
+          color: 0x4a2800,
+          side: THREE.BackSide,
+          toneMapped: false,
+        }),
+        scale: new THREE.Vector3(1.075, 1.075, 1.075),
+        physicsOptions: { enabled: false },
       }));
     }
 
     super.initialize({
       ...options,
       rootComponent,
-      actorTags: [...(options?.actorTags ?? []), 'dribble-target', this.kind],
+      actorTags: [
+        ...(options?.actorTags ?? []),
+        'dribble-target',
+        this.kind,
+        ...(this.isRhythmTarget ? ['center-rhythm'] : []),
+      ],
     });
   }
 
@@ -134,11 +167,15 @@ export class DribbleTarget extends ENGINE.Actor {
     }
 
     this.rootComponent.position.z += this.getApproachSpeed() * deltaTime;
-    this.glowPhase += deltaTime * (this.kind === 'bonus' ? 7 : 4.5);
+    this.glowPhase += deltaTime * (this.isRhythmTarget ? 6.5 : this.kind === 'bonus' ? 7 : 4.5);
     const glowPulse = Math.sin(this.glowPhase);
     this.glowShell?.scale.setScalar(1.14 + glowPulse * 0.045);
     if (this.glowMaterial) {
       this.glowMaterial.opacity = this.glowBaseOpacity + glowPulse * 0.07;
+    }
+    this.rhythmMarker?.scale.setScalar(1 + glowPulse * 0.08);
+    if (this.rhythmMarkerMaterial) {
+      this.rhythmMarkerMaterial.opacity = 0.46 + glowPulse * 0.16;
     }
     if (this.kind === 'bonus') {
       this.rootComponent.rotation.y += deltaTime * 0.45;
@@ -149,6 +186,7 @@ export class DribbleTarget extends ENGINE.Actor {
     }
 
     if (this.rootComponent.position.z > 2.5) {
+      this.missedScoreTarget = this.kind === 'score';
       this.destroy();
     }
   }
@@ -172,6 +210,22 @@ export class DribbleTarget extends ENGINE.Actor {
   }
 
   public getApproachSpeed(): number {
+    return Math.min(this.getUnconstrainedApproachSpeed(), this.spacingSpeedLimit);
+  }
+
+  public setSpacingSpeedLimit(limit: number | null): void {
+    this.spacingSpeedLimit = limit ?? Number.POSITIVE_INFINITY;
+  }
+
+  public isRemovalPending(): boolean {
+    return this.removalRequested;
+  }
+
+  public didMissScoreTarget(): boolean {
+    return this.missedScoreTarget;
+  }
+
+  private getUnconstrainedApproachSpeed(): number {
     if (this.kind !== 'score' || Math.abs(this.laneX) > 0.01) {
       return this.speed;
     }

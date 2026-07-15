@@ -94,7 +94,7 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
       }, this.resumeSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
-        label: 'Restart Run',
+        label: 'Restart',
         onClick: () => this.options.onRestart(),
       }, restartSlot),
       this.mountChild(ENGINE.Button, {
@@ -122,12 +122,12 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.show();
   }
 
-  public showGameOver(score: number): void {
+  public showGameOver(score: number, highScore: number): void {
     this.setContent({
       mode: 'game-over',
       eyebrow: 'RUN COMPLETE',
       title: 'GAME OVER',
-      subtitle: 'Final score',
+      subtitle: `High score: ${highScore}`,
       scoreLabel: 'POINTS',
       score,
       showResume: false,
