@@ -57,7 +57,7 @@ For scene-visible or editor-authored changes, use Genesys MCP first when Connect
 
 | State owner | Use |
 | --- | --- |
-| **Scene / editor** | MCP first — per-scene or per-instance actor transform, hierarchy, component enabled state, component properties (`materialPath`, colours, mesh/model refs, light/camera settings), prefab instance overrides, active scene |
+| **Scene / editor** | MCP first — per-scene or per-instance actor transform, hierarchy, component enabled state, component properties (`material` on MeshComponent, colours, mesh/model refs, light/camera settings), prefab instance overrides, active scene |
 | **Runtime behaviour** | TypeScript — reusable gameplay logic, class defaults, constructors for new runtime objects, new actor/component classes, input, networking, UI logic, systems not already in the scene |
 | **Both** | Code first to build/register the capability, then MCP to place or configure it in the scene |
 
@@ -129,7 +129,7 @@ When planning mixed work, tag each step by state owner so scene edits are not mi
 - `[Asset]` — imported, moved, or generated asset files
 - `[Verify]` — build, lint, diagnostics, or editor re-query
 
-Example: `[MCP] Set MeshComponent materialPath on Floor actor` → `[Verify] Re-query actor and confirm scene saved`.
+Example: `[MCP] Set MeshComponent material on Floor actor` → `[Verify] Re-query actor and confirm scene saved`.
 # GENESYS-SDK-END
 
 # Add your custom AI instructions below.

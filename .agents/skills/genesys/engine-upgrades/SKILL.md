@@ -22,3 +22,4 @@ The editor bumps `@gnsx/genesys.js` in `package.json` when it opens the project,
 Reference files are named `references/<old>-<new>.md`, one per major bump:
 
 - [11 → 12](references/11-12.md)
+- [12 → 13](references/12-13.md)

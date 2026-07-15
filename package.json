@@ -18,7 +18,7 @@
   "type": "module",
   "dependencies": {
     "three": "npm:@gnsx/three@0.184.20",
-    "@gnsx/genesys.js": "12.3.6-staging"
+    "@gnsx/genesys.js": "13.0.2-staging"
   },
   "pnpm": {
     "onlyBuiltDependencies": []

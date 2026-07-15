@@ -2,12 +2,12 @@
 
 This reference shows a safe pattern for creating a custom game-side TSL node material shader asset that is editor-visible, serialization-safe, and resource-safe.
 
-## Property Metadata Guidance (Editor Exposure)
+## Property metadata guidance (editor exposure)
 
-- Always use explicit property metadata for editor-authored fields: `@ENGINE.property({ type, description, ... })`.
+- Always use explicit property metadata: `@ENGINE.property({ type, description, ... })`.
 - Use `type: 'texturePath'` for texture URL fields.
 - Use `type: 'number'` with `min`/`max`/`step` for numeric sliders and thresholds.
-- Use `type: 'boolean'` for toggle-style settings and `type: 'color'` for tint fields.
+- Use `type: 'boolean'` for toggles and `type: 'color'` for tint fields.
 - Always include a concise `description` so editor UI communicates intent clearly.
 
 ## 1) Define the material asset class and register specialization
@@ -72,7 +72,6 @@ export class PulseStripeNodeMaterialAsset extends ENGINE.NodeMaterialAsset(MeshS
   }
 
   override rebuild(): void {
-    // Never resurrect GPU resources on a disposed material (deferred editor callbacks).
     if (this._disposed) return;
     try {
       this.applyCommonMaterialState();
@@ -91,7 +90,6 @@ export class PulseStripeNodeMaterialAsset extends ENGINE.NodeMaterialAsset(MeshS
       this.needsUpdate = true;
     } catch (error) {
       console.error('[PulseStripeNodeMaterialAsset] rebuild failed', error);
-      // Safe fallback output to avoid runtime shader crashes.
       this.colorNode = TSL.vec3(1, 0, 1);
       this.needsUpdate = true;
     }
@@ -101,7 +99,7 @@ export class PulseStripeNodeMaterialAsset extends ENGINE.NodeMaterialAsset(MeshS
     this.serializeAuthoredFields(dumper);
   }
 
-  public static staticDeserialize(data: unknown, loader: ENGINE.ILoader): PulseStripeNodeMaterialAsset {
+  public static staticDeserialize(_data: unknown, loader: ENGINE.ILoader): PulseStripeNodeMaterialAsset {
     const instance = new PulseStripeNodeMaterialAsset();
     PulseStripeNodeMaterialAsset.loadAuthoredFields(instance, loader);
     instance.rebuild();
@@ -126,46 +124,65 @@ ENGINE.registerSpecialization({
 
 ## 2) Ensure module import executes
 
-- Import the asset module from your game startup path (`src/game.ts` or shared bootstrap).
-- Avoid maintaining a separate registration-only module for this material.
-- If that module is tree-shaken away, class decorators and specialization registration will not run.
-- `cdo: new YourAssetClass()` runs your constructor; keep constructor logic safe and side-effect free outside `rebuild()`.
+- Import the asset module from game startup (`src/game.ts` or shared bootstrap).
+- Do not maintain a separate registration-only module.
+- If the module is tree-shaken away, decorators and specialization registration will not run.
+- `cdo: new YourAssetClass()` runs your constructor; keep constructor logic safe outside `rebuild()`.
 
-## 3) Assign at runtime
+## 3) Build, register, and create the material asset
 
-Use it as a normal material:
+**With MCP (preferred when connected):**
+
+```text
+action_build(action="buildProject")
+→ query_editor(operation="getNodeMaterialClasses", filter="PulseStripe")
+→ run_script(mode="apply", groupUndo=true, approval={ operations: ["action_asset.createMaterial", "action_component.setProperties", "action_scene.save"] }, code=...)
+  → genesys.actionAsset({ action: "createMaterial", materialClassName: "GAME.PulseStripeNodeMaterialAsset", name: "M_PulseStripe", parentPath: "assets/materials" })
+  → genesys.actionComponent({ action: "setProperties", actorId: …, properties: { material: "@project/assets/materials/M_PulseStripe.material.json" } })
+  → genesys.actionScene({ action: "save" })
+```
+
+Do not batch `action_build` with create/assign in one script. Use `getNodeMaterialClasses`, not `getRegisteredClasses`, to verify node material registration.
+
+**Manual:** Asset Browser → New → Material → select **Pulse Stripe (Game)** under **Game FX**.
+
+Do not hand-author `.material.json`. The editor serialises materials with `ENGINE.createDumper`.
+
+## 4) Assign at runtime or in the scene
+
+Runtime:
 
 ```typescript
 const material = new PulseStripeNodeMaterialAsset();
 const mesh = ENGINE.MeshComponent.create({ geometry: new THREE.SphereGeometry(1, 32, 32), material });
 ```
 
+Scene/editor (MCP):
+
+```text
+action_component(action="setProperties", actorId=…, properties={ material: "@project/assets/materials/M_PulseStripe.material.json" })
+→ action_scene(action="save")
+```
+
+On `MeshComponent`, the editable property path is `material` (type `materialPath`), not a top-level `materialPath` key in `setProperties`.
+
 ## What breaks if specialization is missing
 
-- The class may still serialize through `serialize(...)` as a serializable object instance.
-- On load, without matching specialization, the loader can fall back to constructor + property population path.
-- In that fallback path, your graph may not be rebuilt unless you call `rebuild()` in `postLoad()` or implement custom `deserialize(...)`.
+- The class may still serialize as a generic serialisable object.
+- On load without matching specialization, the loader may skip `rebuild()` unless you implement `postLoad()` or custom `deserialize(...)`.
 
-## Deserialize/Rebuild Order (Recommended)
+## Deserialize/rebuild order (recommended)
 
-1. Construct instance (`new YourAssetClass()` — constructor runs an initial `rebuild()` with defaults).
+1. Construct instance (constructor runs initial `rebuild()` with defaults).
 2. Load authored fields (`loadAuthoredFields` inside `staticDeserialize`).
 3. Run exactly one rebuild from final authored values.
 4. Mark `needsUpdate = true` inside `rebuild()`.
-5. Optionally implement `postLoad()` only when you need a safety net for non-specialized load paths.
 
-## Naming and TSL Conventions
-
-- Prefix `toVar(...)` names (`pom*`, `stripe*`, etc.) to avoid graph collisions.
-- Avoid local variable shadowing of authored property names in `rebuild()`.
-- Clamp/sanitize values that affect loops or expensive branches.
-
-## Quick Validation Checklist
+## Quick validation checklist
 
 - Material class appears in New Material dialog under the configured group.
-- Authored fields are visible/editable in property editor.
-- Authored fields use correct editor control types and show description help text.
-- Editing fields updates visuals (`rebuild()` + `needsUpdate` path).
-- Scene save/load preserves authored values and restores expected look.
-- `.material.json` round-trip restores the same material behavior.
+- Authored fields are visible/editable in the property editor with correct control types.
+- Editing fields updates visuals (`rebuild()` + `needsUpdate`).
+- Scene save/load preserves authored values.
+- `.material.json` round-trip restores the same material behaviour.
 - Repeated rebuilds do not create unbounded texture/memory growth.

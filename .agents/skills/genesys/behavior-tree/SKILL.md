@@ -29,6 +29,5 @@ All APIs, built-in nodes, and JSON registries are defined in engine source — c
 | --- | --- |
 | Game project | `.engine/npc/behavior-tree/` |
 | Monorepo | `packages/engine/src/npc/behavior-tree/` |
-| Working demo | `packages/engine/demos/behavior-tree.ts` |
 
-Start with `BehaviorTreeComponent.ts` and `index.ts`, then open the subfolder that matches what you need (`behaviors/actions/`, `behaviors/conditions/`, `loader/`, etc.). The [overview](references/overview.md) source table maps topics to files.
+Start with `BehaviorTreeComponent.ts` and `index.ts`, then open the subfolder that matches your need. The [overview](references/overview.md) source table maps topics to files.

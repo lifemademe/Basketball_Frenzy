@@ -58,6 +58,7 @@ Guides for specific implementations:
 
 - [Sprint Movement](patterns/sprint-movement.md): Implementing sprinting with pawn and controller logic.
 - [Isometric Camera](patterns/isometric-camera.md): Setting up an orthographic camera that follows the player.
+- [Top-Down Camera](patterns/top-down-camera.md): RTS/strategy overhead pan, zoom, and input toggles.
 
 # Tips
 

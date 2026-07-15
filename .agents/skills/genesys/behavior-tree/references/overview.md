@@ -45,6 +45,5 @@ Paths below are relative to `.engine/npc/behavior-tree/` (game projects) or `pac
 | Built-in conditions | `behaviors/conditions/` (+ `behaviors/conditions/index.ts`) |
 | Blackboard | `blackboard/Blackboard.ts`, `blackboard/BlackboardKey.ts` |
 | JSON schema & type registry | `loader/BehaviorTreeLoader.ts` |
-| End-to-end examples | `packages/engine/demos/behavior-tree.ts` |
 
 Read the files above for constructor options, blackboard key names, JSON `type` strings, and custom registration (`registerNodeType`, `registerConditionType`).

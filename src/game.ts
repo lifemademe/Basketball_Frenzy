@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 import { showDribbleBootScreen } from './dribble-boot-screen.js';
 import { DribbleGameplayManager } from './dribble-gameplay.js';
-import { FirstPersonPlayer } from './player.js';
+import { FirstPersonPlayer, FirstPersonPlayerController } from './player.js';
 
 @ENGINE.GameClass()
 class FirstPersonGameMode extends ENGINE.GameMode {
@@ -19,6 +19,7 @@ class FirstPersonGameMode extends ENGINE.GameMode {
     super.initialize({
       ...options,
       pawnFactory: async () => FirstPersonPlayer.create(),
+      playerControllerFactory: async () => FirstPersonPlayerController.create(),
     });
   }
 

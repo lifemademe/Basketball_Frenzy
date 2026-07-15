@@ -30,6 +30,7 @@ import { DribbleTutorialDirector, type TutorialEvent } from './dribble-tutorial-
 import { DribbleTutorialHud } from './dribble-tutorial-hud.js';
 
 type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
+export type DribbleInputAction = 'boost' | 'transfer' | null;
 
 interface HandAnimationState {
   action: THREE.AnimationAction;
@@ -91,26 +92,30 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly centerRhythmLength = 8;
   private lastSpawnIntervalScale = 1;
 
-  public handleLeftClick(): void {
-    if (this.gameState !== 'playing') return;
+  public handleLeftClick(): DribbleInputAction {
+    if (this.gameState !== 'playing') return null;
     const ballState = this.ball?.getState();
+    const isBoost = ballState?.side === 'left';
     const actionWorked = ballState?.side === 'left'
       ? this.ball?.boostLeft()
       : this.ball?.transferToLeft();
     if (actionWorked && this.tutorialActive) {
       this.recordTutorialEvent(ballState?.side === 'left' ? 'boost-left' : 'switch-left');
     }
+    return actionWorked ? isBoost ? 'boost' : 'transfer' : null;
   }
 
-  public handleRightClick(): void {
-    if (this.gameState !== 'playing') return;
+  public handleRightClick(): DribbleInputAction {
+    if (this.gameState !== 'playing') return null;
     const ballState = this.ball?.getState();
+    const isBoost = ballState?.side === 'right';
     const actionWorked = ballState?.side === 'right'
       ? this.ball?.boostRight()
       : this.ball?.transferToRight();
     if (actionWorked && this.tutorialActive) {
       this.recordTutorialEvent(ballState?.side === 'right' ? 'boost-right' : 'switch-right');
     }
+    return actionWorked ? isBoost ? 'boost' : 'transfer' : null;
   }
 
   public togglePause(): void {
