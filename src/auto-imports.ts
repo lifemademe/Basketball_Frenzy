@@ -15,6 +15,7 @@ import './dribble-status-hud.ts';
 import './dribble-target.ts';
 import './dribble-tutorial-director.ts';
 import './dribble-tutorial-hud.ts';
+import './dribble-versus-hud.ts';
 import './dynamic-uv-material.ts';
 import './game-data.ts';
 import './player.ts';

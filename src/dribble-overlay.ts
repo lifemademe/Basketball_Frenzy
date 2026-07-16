@@ -135,12 +135,36 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.show();
   }
 
+  public showVersusPause(playerLosses: number, aiLosses: number): void {
+    this.setContent({
+      mode: 'pause',
+      title: 'PAUSED',
+      subtitle: 'Last Bounce match in progress.',
+      scoreLabel: 'ROUND LOSSES  ·  YOU / AI',
+      score: `${playerLosses} - ${aiLosses}`,
+      showResume: true,
+    });
+    this.show();
+  }
+
+  public showVersusGameOver(playerWon: boolean, playerLosses: number, aiLosses: number): void {
+    this.setContent({
+      mode: 'game-over',
+      title: playerWon ? 'VICTORY' : 'DEFEAT',
+      subtitle: playerWon ? 'You outplayed the left hand.' : 'The AI held its nerve.',
+      scoreLabel: 'ROUND LOSSES  ·  YOU / AI',
+      score: `${playerLosses} - ${aiLosses}`,
+      showResume: false,
+    });
+    this.show();
+  }
+
   private setContent(content: {
     mode: 'pause' | 'game-over';
     title: string;
     subtitle: string;
     scoreLabel: string;
-    score: number;
+    score: number | string;
     showResume: boolean;
   }): void {
     if (this.rootElement) this.rootElement.dataset.mode = content.mode;

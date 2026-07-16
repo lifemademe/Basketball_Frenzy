@@ -45,6 +45,123 @@
   user-select: none;
 }
 
+.dribble-name-entry {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(3, 8, 20, 0.64);
+  backdrop-filter: blur(8px);
+}
+
+.dribble-name-entry[data-active='true'] {
+  display: flex;
+  animation: dribble-name-entry-fade 260ms ease-out both;
+}
+
+.dribble-name-entry-card {
+  position: relative;
+  display: flex;
+  width: min(470px, calc(100vw - 40px));
+  min-height: 390px;
+  padding: 78px 66px 58px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 24px 34px rgba(0, 18, 74, 0.42));
+  text-align: center;
+  animation: dribble-name-entry-card 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dribble-name-entry-card h1 {
+  width: 100%;
+  margin: 0 0 28px;
+  color: #ffffff;
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 45px;
+  text-align: center;
+  text-shadow: 0 3px 0 rgba(11, 67, 165, 0.82);
+}
+
+.dribble-name-entry-card label {
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+  color: #bdefff;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: left;
+}
+
+.dribble-main-menu .dribble-name-input {
+  width: 100%;
+  height: 58px;
+  padding: 0 18px;
+  box-sizing: border-box;
+  border: 2px solid rgba(139, 224, 255, 0.72);
+  border-radius: 8px;
+  outline: 0;
+  background: rgba(3, 17, 58, 0.74);
+  color: #ffffff;
+  font: 400 28px/32px 'Boogaloo', 'Trebuchet MS', sans-serif;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: text !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.dribble-name-input:focus {
+  border-color: #ffda58;
+  background: rgba(5, 25, 76, 0.9);
+  box-shadow: 0 0 0 3px rgba(255, 202, 58, 0.2), 0 0 20px rgba(76, 203, 255, 0.22);
+}
+
+.dribble-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.dribble-name-status {
+  display: block;
+  min-height: 18px;
+  margin: 7px 0 5px;
+  color: #ffaaa5;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.dribble-name-confirm {
+  width: 160px;
+  height: 66px;
+  margin: 2px auto 0;
+}
+
+.dribble-name-confirm .ui-button {
+  width: 100%;
+  height: 66px;
+  padding: 0 24px;
+  border: 0;
+  background: transparent url('@project/assets/textures/achievementsbutton.png') center / 100% 100% no-repeat;
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 35px;
+  text-shadow: 0 2px 3px rgba(0, 38, 105, 0.72);
+}
+
+.dribble-name-confirm .ui-button:hover,
+.dribble-name-confirm .ui-button:focus-visible {
+  background-color: transparent;
+  filter: brightness(1.08);
+  transform: translateY(-2px) scale(1.02);
+}
+
 .dribble-menu-ball {
   position: absolute;
   z-index: 2;
@@ -309,8 +426,8 @@
 }
 
 .dribble-main-menu-mode-select {
-  min-height: 460px;
-  padding: 58px 50px 38px;
+  min-height: 548px;
+  padding: 52px 50px 34px;
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
@@ -329,7 +446,7 @@
 }
 
 .dribble-mode-heading h2 {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   color: #ffffff;
   font-size: 38px;
   line-height: 42px;
@@ -338,7 +455,7 @@
 
 .dribble-mode-options {
   display: grid;
-  gap: 12px;
+  gap: 9px;
 }
 
 .dribble-mode-option {
@@ -370,6 +487,12 @@
 .dribble-mode-hard .ui-button {
   background: rgba(156, 25, 44, 0.78);
   border-color: rgba(255, 207, 207, 0.72);
+}
+
+.dribble-mode-last-bounce .ui-button {
+  padding-right: 190px;
+  background: linear-gradient(90deg, rgba(12, 52, 128, 0.9), rgba(101, 32, 143, 0.9));
+  border-color: rgba(255, 215, 92, 0.78);
 }
 
 .dribble-mode-option .ui-button:hover,
@@ -405,6 +528,40 @@
   min-width: 40px;
   margin-left: 3px;
   text-align: right;
+}
+
+.dribble-mode-versus {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 16px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.dribble-mode-versus span:last-child {
+  max-width: 98px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dribble-mode-versus b {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffca3a;
+  color: #172454;
+  font-size: 12px;
+  text-shadow: none;
 }
 
 .dribble-main-menu-action {
@@ -1625,6 +1782,60 @@
   100% { left: 112%; opacity: 0; }
 }
 
+@keyframes dribble-name-entry-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dribble-name-entry-card {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button,
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button.size-large,
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:hover,
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:focus-visible,
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:active {
+  width: 100%;
+  height: 66px;
+  min-height: 66px;
+  padding: 0 12px !important;
+  justify-content: center;
+  border: 0;
+  background-color: transparent !important;
+  background-image: url('@project/assets/textures/achievementsbutton.png') !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+  box-shadow: none;
+  color: #ffffff;
+  font-size: 29px;
+  line-height: 32px;
+  text-align: center;
+  text-shadow: 0 2px 3px rgba(0, 38, 105, 0.72);
+}
+
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm {
+  width: 160px !important;
+  height: 66px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:hover,
+.dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:focus-visible {
+  filter: brightness(1.08);
+  transform: translateY(-2px) scale(1.02);
+}
+
 @media (max-width: 760px) {
   .dribble-main-menu-background img {
     object-position: 58% center;
@@ -1680,8 +1891,8 @@
   }
 
   .dribble-main-menu-mode-select {
-    min-height: 440px;
-    padding: 52px 42px 34px;
+    min-height: 520px;
+    padding: 48px 42px 30px;
   }
 
   .dribble-main-menu-settings,

@@ -20,7 +20,7 @@ import {
   type WristbandSide,
 } from './dribble-progression.js';
 
-export type DribbleGameMode = 'normal' | 'hard';
+export type DribbleGameMode = 'normal' | 'hard' | 'last-bounce';
 
 type MainMenuPanel = 'home' | 'mode-select' | 'how-to-play' | 'settings' | 'shop' | 'achievements' | 'reset';
 type ResetMenuTarget = ProgressionResetTarget | 'audio';
@@ -28,6 +28,7 @@ type ResetMenuTarget = ProgressionResetTarget | 'audio';
 const masterVolumeKey = 'basketball-frenzy-master-volume';
 const musicVolumeKey = 'basketball-frenzy-music-volume';
 const sfxVolumeKey = 'basketball-frenzy-sfx-volume';
+const playerNameKey = 'basketball-frenzy-player-name';
 const defaultMasterVolume = 0.8;
 const defaultMusicVolume = 0.55;
 const defaultSfxVolume = 0.8;
@@ -90,6 +91,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private resetNormalValueElement: HTMLElement | null = null;
   private resetHardValueElement: HTMLElement | null = null;
   private resetAchievementsValueElement: HTMLElement | null = null;
+  private nameEntryElement: HTMLElement | null = null;
+  private playerNameInput: HTMLInputElement | null = null;
+  private playerNameStatus: HTMLElement | null = null;
+  private modePlayerNameElement: HTMLElement | null = null;
+  private playerName = 'PLAYER';
   private pendingReset: ResetMenuTarget | null = null;
   private classicActionButton: ENGINE.Button | null = null;
   private epicActionButton: ENGINE.Button | null = null;
@@ -117,6 +123,21 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private ballLastPointerTime = 0;
   private ballLastFrameTime = 0;
   private ballHasPosition = false;
+
+  private readonly handlePlayerNameInput = (): void => {
+    if (!this.playerNameInput) return;
+    const sanitized = this.sanitizePlayerName(this.playerNameInput.value);
+    if (this.playerNameInput.value !== sanitized) this.playerNameInput.value = sanitized;
+    if (this.playerNameStatus) this.playerNameStatus.textContent = '';
+  };
+
+  private readonly handlePlayerNameKeyDown = (event: KeyboardEvent): void => {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.confirmPlayerName();
+    }
+  };
 
   private readonly handleBallPointerDown = (event: PointerEvent): void => {
     if (!this.menuBall || !this.rootElement || event.button !== 0) return;
@@ -319,6 +340,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.resetNormalValueElement = this.layout.querySelector('[data-reset-normal-value]') as HTMLElement | null;
     this.resetHardValueElement = this.layout.querySelector('[data-reset-hard-value]') as HTMLElement | null;
     this.resetAchievementsValueElement = this.layout.querySelector('[data-reset-achievements-value]') as HTMLElement | null;
+    this.nameEntryElement = this.layout.querySelector('[data-name-entry]') as HTMLElement | null;
+    this.playerNameInput = this.layout.querySelector('[data-player-name-input]') as HTMLInputElement | null;
+    this.playerNameStatus = this.layout.querySelector('[data-player-name-status]') as HTMLElement | null;
+    this.modePlayerNameElement = this.layout.querySelector('[data-mode-player-name]') as HTMLElement | null;
     this.menuBall = this.layout.querySelector('[data-menu-ball]') as HTMLButtonElement | null;
     this.menuBallCanvas = this.layout.querySelector('[data-menu-ball-canvas]') as HTMLCanvasElement | null;
   }
@@ -331,6 +356,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const playSlot = slot('play');
     const normalModeSlot = slot('normal-mode');
     const hardModeSlot = slot('hard-mode');
+    const lastBounceModeSlot = slot('last-bounce-mode');
+    const nameConfirmSlot = slot('name-confirm');
     const modeBackSlot = slot('mode-back');
     const howSlot = slot('how');
     const settingsSlot = slot('settings');
@@ -348,7 +375,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const discoActionSlot = slot('disco-action');
     const blackHoleActionSlot = slot('blackhole-action');
     if (
-      !playSlot || !normalModeSlot || !hardModeSlot || !modeBackSlot
+      !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot || !nameConfirmSlot || !modeBackSlot
       || !howSlot || !settingsSlot || !shopSlot || !resetSlot || !exitSlot || !achievementsSlot || !howBackSlot
       || !settingsBackSlot || !shopBackSlot || !achievementsBackSlot || !resetBackSlot
       || !classicActionSlot || !epicActionSlot
@@ -371,6 +398,16 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: 'Hard',
         onClick: () => this.options.onPlay('hard'),
       }, hardModeSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Last Bounce',
+        onClick: () => this.options.onPlay('last-bounce'),
+      }, lastBounceModeSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: "Let's go!",
+        onClick: () => this.confirmPlayerName(),
+      }, nameConfirmSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
         label: 'Back',
@@ -457,6 +494,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.epicActionButton = mounted[mounted.length - 3];
     this.discoActionButton = mounted[mounted.length - 2];
     this.blackHoleActionButton = mounted[mounted.length - 1];
+    this.playerName = this.loadPlayerName() ?? 'PLAYER';
+    this.refreshPlayerNameUi();
     this.setProgression(this.options.progression);
 
     const volume = this.loadVolume(masterVolumeKey, defaultMasterVolume);
@@ -482,6 +521,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onSfxVolumeChange(sfxVolume);
 
     this.fullscreenInput?.addEventListener('change', this.handleFullscreenInput);
+    this.playerNameInput?.addEventListener('input', this.handlePlayerNameInput);
+    this.playerNameInput?.addEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.addEventListener('click', this.handleResetConfirm);
     this.resetCancelButton?.addEventListener('click', this.handleResetCancel);
     for (const button of this.resetChoices) {
@@ -500,6 +541,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.handleFullscreenChange();
     this.showPanel('home');
     await this.preloadCriticalMenuAssets();
+    this.showPlayerNameEntryIfNeeded();
     void this.setupMenuBallModel();
     requestAnimationFrame(() => {
       this.resetMenuBall();
@@ -562,6 +604,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.show();
   }
 
+  public getPlayerName(): string {
+    return this.playerName;
+  }
+
   private showPanel(panel: MainMenuPanel): void {
     if (this.rootElement) this.rootElement.dataset.panel = panel;
     if (panel === 'shop' || panel === 'achievements' || panel === 'reset') this.refreshProgressionUi();
@@ -572,6 +618,55 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.stopBallPhysics();
       this.cancelBallDrag();
     }
+  }
+
+  private showPlayerNameEntryIfNeeded(): void {
+    if (this.loadPlayerName()) return;
+    if (this.nameEntryElement) this.nameEntryElement.dataset.active = 'true';
+    this.stopBallPhysics();
+    requestAnimationFrame(() => this.playerNameInput?.focus());
+  }
+
+  private confirmPlayerName(): void {
+    const name = this.sanitizePlayerName(this.playerNameInput?.value ?? '').trim();
+    if (name.length < 2) {
+      if (this.playerNameStatus) this.playerNameStatus.textContent = 'Enter at least 2 characters.';
+      this.playerNameInput?.focus();
+      return;
+    }
+    this.playerName = name;
+    try {
+      localStorage.setItem(playerNameKey, name);
+    } catch {
+      // The current session still uses the selected name when storage is unavailable.
+    }
+    this.refreshPlayerNameUi();
+    if (this.nameEntryElement) this.nameEntryElement.dataset.active = 'false';
+    this.startBallPhysics();
+  }
+
+  private sanitizePlayerName(value: string): string {
+    return value
+      .toUpperCase()
+      .replace(/[^A-Z0-9 _-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trimStart()
+      .slice(0, 14);
+  }
+
+  private loadPlayerName(): string | null {
+    try {
+      const stored = localStorage.getItem(playerNameKey);
+      if (!stored) return null;
+      const sanitized = this.sanitizePlayerName(stored).trim();
+      return sanitized.length >= 2 ? sanitized : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private refreshPlayerNameUi(): void {
+    if (this.modePlayerNameElement) this.modePlayerNameElement.textContent = this.playerName;
   }
 
   public setProgression(progression: DribbleProgressionState): void {
@@ -993,6 +1088,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.musicVolumeInput?.removeEventListener('input', this.handleMusicVolumeInput);
     this.sfxVolumeInput?.removeEventListener('input', this.handleSfxVolumeInput);
     this.fullscreenInput?.removeEventListener('change', this.handleFullscreenInput);
+    this.playerNameInput?.removeEventListener('input', this.handlePlayerNameInput);
+    this.playerNameInput?.removeEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.removeEventListener('click', this.handleResetConfirm);
     this.resetCancelButton?.removeEventListener('click', this.handleResetCancel);
     for (const button of this.resetChoices) {
@@ -1037,6 +1134,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.resetNormalValueElement = null;
     this.resetHardValueElement = null;
     this.resetAchievementsValueElement = null;
+    this.nameEntryElement = null;
+    this.playerNameInput = null;
+    this.playerNameStatus = null;
+    this.modePlayerNameElement = null;
     this.pendingReset = null;
     this.classicActionButton = null;
     this.epicActionButton = null;

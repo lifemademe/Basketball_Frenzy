@@ -39,6 +39,7 @@ export function showDribbleBootScreen(container: HTMLElement): void {
         width: min(470px, 76vw);
         height: min(310px, 38vh);
         object-fit: contain;
+        filter: grayscale(1) saturate(0) brightness(0.82);
         opacity: 0;
         transition: opacity 180ms ease;
       }

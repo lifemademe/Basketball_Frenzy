@@ -1,0 +1,248 @@
+@font-face {
+  font-family: 'Boogaloo';
+  src: url('@project/assets/fonts/Boogaloo-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.dribble-versus-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+  color: #ffffff;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  pointer-events: none;
+}
+
+.dribble-versus-scoreboard {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  display: grid;
+  grid-template-columns: 118px 124px 118px;
+  min-height: 54px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(5, 10, 24, 0.78);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  transform: translateX(-50%);
+}
+
+.dribble-versus-side,
+.dribble-versus-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dribble-versus-side {
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.dribble-versus-ai {
+  background: linear-gradient(90deg, rgba(255, 69, 58, 0.26), transparent);
+}
+
+.dribble-versus-player {
+  flex-direction: row-reverse;
+  background: linear-gradient(270deg, rgba(77, 166, 255, 0.3), transparent);
+}
+
+.dribble-versus-name {
+  font-size: 22px;
+  line-height: 24px;
+}
+
+.dribble-versus-rounds {
+  display: flex;
+  gap: 4px;
+}
+
+.dribble-versus-rounds i {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dribble-versus-rounds i[data-lost='true'] {
+  border-color: #ffca3a;
+  background: #ffca3a;
+  box-shadow: 0 0 9px rgba(255, 202, 58, 0.72);
+}
+
+.dribble-versus-title {
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dribble-versus-title small {
+  color: #ffca3a;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.dribble-versus-title strong {
+  font-size: 20px;
+  line-height: 22px;
+}
+
+.dribble-versus-possession {
+  position: absolute;
+  bottom: 34px;
+  left: 50%;
+  width: min(410px, calc(100vw - 48px));
+  padding: 9px 12px 11px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(5, 10, 24, 0.68);
+  transform: translateX(-50%);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.dribble-versus-owner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.dribble-versus-owner span {
+  color: #ff8b82;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.dribble-versus-hud[data-owner='player'] .dribble-versus-owner span {
+  color: #74c4ff;
+}
+
+.dribble-versus-owner b {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.dribble-versus-pressure {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(10% - 1px),
+      rgba(255, 255, 255, 0.14) calc(10% - 1px),
+      rgba(255, 255, 255, 0.14) 10%
+    ),
+    rgba(255, 255, 255, 0.1);
+}
+
+.dribble-versus-pressure i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #50b8ff 0%, #ffca3a 66%, #ff453a 100%);
+  box-shadow: 0 0 10px rgba(255, 202, 58, 0.45);
+  transition: width 90ms linear;
+}
+
+.dribble-versus-hud[data-pressure='warning'] .dribble-versus-possession {
+  border-color: rgba(255, 202, 58, 0.52);
+  box-shadow: 0 0 20px rgba(255, 202, 58, 0.13);
+}
+
+.dribble-versus-hud[data-pressure='critical'] .dribble-versus-possession {
+  border-color: rgba(255, 69, 58, 0.78);
+  background: rgba(30, 7, 14, 0.78);
+  animation: dribble-versus-pressure-pulse 620ms ease-in-out infinite alternate;
+}
+
+.dribble-versus-hud[data-pressure='critical'] .dribble-versus-owner span,
+.dribble-versus-hud[data-pressure='critical'] .dribble-versus-owner b {
+  color: #ff8b82;
+}
+
+.dribble-versus-hud[data-pressure='critical'] .dribble-versus-pressure i {
+  box-shadow: 0 0 14px rgba(255, 69, 58, 0.78);
+}
+
+.dribble-versus-callout {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  display: flex;
+  min-width: 260px;
+  padding: 13px 24px 15px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 219, 105, 0.58);
+  border-radius: 8px;
+  background: rgba(8, 12, 26, 0.82);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  transform: translate(-50%, -8px) scale(0.96);
+  transition: opacity 150ms ease, transform 180ms ease;
+}
+
+.dribble-versus-callout[data-active='true'] {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.dribble-versus-callout[data-tone='danger'] {
+  border-color: rgba(255, 69, 58, 0.72);
+}
+
+.dribble-versus-callout[data-tone='blue'] {
+  border-color: rgba(77, 166, 255, 0.72);
+}
+
+.dribble-versus-callout strong {
+  color: #ffca3a;
+  font-size: 35px;
+  line-height: 38px;
+}
+
+.dribble-versus-callout[data-tone='danger'] strong {
+  color: #ff6b62;
+}
+
+.dribble-versus-callout[data-tone='blue'] strong {
+  color: #6fc3ff;
+}
+
+.dribble-versus-callout span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 16px;
+  line-height: 19px;
+}
+
+@media (max-width: 680px) {
+  .dribble-versus-scoreboard {
+    grid-template-columns: 92px 110px 92px;
+  }
+
+  .dribble-versus-name {
+    font-size: 18px;
+  }
+}
+
+@keyframes dribble-versus-pressure-pulse {
+  from {
+    box-shadow: 0 0 12px rgba(255, 69, 58, 0.18);
+  }
+
+  to {
+    box-shadow: 0 0 25px rgba(255, 69, 58, 0.42);
+  }
+}

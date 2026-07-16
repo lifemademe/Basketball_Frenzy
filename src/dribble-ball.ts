@@ -94,6 +94,7 @@ export interface DribbleBallState {
   radius: number;
   isTransferring: boolean;
   isBoosting: boolean;
+  completedBounces: number;
 }
 
 @ENGINE.GameClass()
@@ -126,6 +127,7 @@ export class DribbleBall extends ENGINE.Actor {
   private modelAnimationMixer: THREE.AnimationMixer | null = null;
   private modelLoadToken = 0;
   private bounceCycle = 0;
+  private completedBounces = 0;
   private transferBouncePlayed = false;
   private readonly floorY = 0.08;
   private readonly handY = 1.26;
@@ -143,6 +145,7 @@ export class DribbleBall extends ENGINE.Actor {
     radius: this.radius,
     isTransferring: false,
     isBoosting: false,
+    completedBounces: 0,
   };
 
   public override initialize(options?: ENGINE.ActorOptions): void {
@@ -213,6 +216,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.ballState.position.copy(this.rootComponent.position);
     this.ballState.isTransferring = this.transferTime > 0;
     this.ballState.isBoosting = this.boostTime > 0;
+    this.ballState.completedBounces = this.completedBounces;
     return this.ballState;
   }
 
@@ -259,15 +263,16 @@ export class DribbleBall extends ENGINE.Actor {
     this.applyCosmeticVisualState();
   }
 
-  public reset(): void {
+  public reset(side: DribbleSide = 'left'): void {
     this.setFrenzyActive(false);
-    this.side = 'left';
+    this.side = side;
     this.phase = 0;
     this.transferTime = 0;
     this.boostTime = 0;
-    this.transferFrom = 'left';
-    this.transferTo = 'right';
+    this.transferFrom = side;
+    this.transferTo = side === 'left' ? 'right' : 'left';
     this.bounceCycle = 0;
+    this.completedBounces = 0;
     this.transferBouncePlayed = false;
     this.boostBouncePlayed = false;
     this.rootComponent.scale.setScalar(1);
@@ -340,6 +345,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.updateBoostPosition(boostProgress);
       if (boostProgress >= 0.18 && !this.boostBouncePlayed) {
         this.boostBouncePlayed = true;
+        this.completedBounces += 1;
         this.playBounceSound();
       }
       if (this.boostTime >= DribbleBall.boostDuration) {
@@ -352,6 +358,7 @@ export class DribbleBall extends ENGINE.Actor {
       const bounceCycle = Math.floor(this.phase / Math.PI);
       if (bounceCycle > this.bounceCycle) {
         this.bounceCycle = bounceCycle;
+        this.completedBounces += 1;
         this.playBounceSound();
       }
       this.updateBouncePosition(deltaTime);

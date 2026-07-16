@@ -39,6 +39,7 @@ import {
 import { DribbleTarget, type TargetKind } from './dribble-target.js';
 import { DribbleTutorialDirector, type TutorialEvent } from './dribble-tutorial-director.js';
 import { DribbleTutorialHud } from './dribble-tutorial-hud.js';
+import { DribbleVersusHud, type VersusOwner } from './dribble-versus-hud.js';
 
 type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
 export type DribbleInputAction = 'boost' | 'transfer' | null;
@@ -106,6 +107,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private mainMenu: DribbleMainMenu | null = null;
   private overlay: DribbleOverlay | null = null;
   private tutorialHud: DribbleTutorialHud | null = null;
+  private versusHud: DribbleVersusHud | null = null;
   private achievementToast: ENGINE.Achievement | null = null;
   private spawnTimer = 0.9;
   private elapsedTime = 0;
@@ -165,10 +167,38 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private difficultyStage = 0;
   private achievementToastTimer: ReturnType<typeof setTimeout> | null = null;
   private achievementToastActive = false;
+  private versusOwner: VersusOwner = 'ai';
+  private versusPlayerLosses = 0;
+  private versusAiLosses = 0;
+  private versusRound = 1;
+  private versusRoundActive = false;
+  private versusRoundResetTimer = 0;
+  private versusPossessionTime = 0;
+  private versusAiDecisionTimer = 0;
+  private versusLastStableSide: DribbleSide = 'left';
+  private versusSpawnCount = 0;
+  private versusLiableOwner: VersusOwner = 'ai';
+  private versusPendingLiabilityOwner: VersusOwner | null = null;
+  private versusLiabilityControlTime = 0;
+  private versusLiabilityDelay = 0.4;
+  private versusLiabilityMinimumTime = 0.12;
+  private versusLiabilityBounceBaseline = 0;
+  private versusDangerPass = false;
+  private versusQueuedAiAction: 'boost' | null = null;
+  private versusQueuedAiActionTimer = 0;
+  private versusPressureWarningStage = 0;
+  private readonly versusLossesToEndMatch = 3;
+  private readonly versusPressureDuration = 2.45;
 
   public handleLeftClick(): DribbleInputAction {
     if (this.gameState !== 'playing') return null;
     const ballState = this.ball?.getState();
+    if (this.gameMode === 'last-bounce') {
+      if (!this.versusRoundActive || ballState?.side !== 'right' || ballState.isTransferring) return null;
+      const actionWorked = this.ball?.transferToLeft();
+      if (actionWorked) this.beginVersusPass('player', 'ai');
+      return actionWorked ? 'transfer' : null;
+    }
     const isBoost = ballState?.side === 'left';
     const actionWorked = ballState?.side === 'left'
       ? this.ball?.boostLeft()
@@ -183,6 +213,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   public handleRightClick(): DribbleInputAction {
     if (this.gameState !== 'playing') return null;
     const ballState = this.ball?.getState();
+    if (this.gameMode === 'last-bounce') {
+      if (!this.versusRoundActive || ballState?.side !== 'right' || ballState.isTransferring) return null;
+      const actionWorked = this.ball?.boostRight();
+      return actionWorked ? 'boost' : null;
+    }
     const isBoost = ballState?.side === 'right';
     const actionWorked = ballState?.side === 'right'
       ? this.ball?.boostRight()
@@ -246,7 +281,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.laneSwitchCount = 0;
     this.difficultyStage = 0;
     this.patternDirector.reset(this.gameMode);
-    this.ball?.reset();
+    if (this.gameMode === 'last-bounce') {
+      this.startVersusMatch();
+    } else {
+      this.versusRoundActive = false;
+      this.ball?.reset();
+    }
     this.setGameplayActive(true);
     this.scoreDisplay?.setValue(0, false);
     this.scoreDisplay?.setTrend(null);
@@ -256,6 +296,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.mainMenu?.hide();
     this.overlay?.hide();
     this.setHudVisible(true);
+    if (this.gameMode === 'last-bounce') this.syncVersusHud();
     world.inputManager.exitPointerLock();
   }
 
@@ -315,6 +356,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         this.checkBallTargetHits(ballState, this.activeTargets);
         this.updateHandAnimations(deltaTime, ballState);
       }
+      return;
+    }
+    if (this.gameMode === 'last-bounce') {
+      this.updateVersusMode(deltaTime);
       return;
     }
     this.centerRhythmCooldown = Math.max(0, this.centerRhythmCooldown - deltaTime);
@@ -379,6 +424,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.juiceHud?.destroy();
     this.achievementToast?.destroy();
     this.tutorialHud?.destroy();
+    this.versusHud?.destroy();
     this.mainMenu?.destroy();
     this.overlay?.destroy();
     this.scoreDisplay = null;
@@ -389,6 +435,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.juiceHud = null;
     this.achievementToast = null;
     this.tutorialHud = null;
+    this.versusHud = null;
     this.mainMenu = null;
     this.overlay = null;
     this.restoreReferenceHands();
@@ -643,6 +690,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       visible: false,
       onExit: () => this.returnToMainMenu(),
     });
+    this.versusHud = new DribbleVersusHud(world.uiManager, {
+      visible: false,
+    });
 
     await Promise.all([
       this.scoreDisplay.initialize(),
@@ -653,6 +703,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.juiceHud.initialize(),
       this.achievementToast.initialize(),
       this.tutorialHud.initialize(),
+      this.versusHud.initialize(),
       this.mainMenu.initialize(),
       this.overlay.initialize(),
     ]);
@@ -1019,6 +1070,396 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     return true;
   }
 
+  private startVersusMatch(): void {
+    this.versusPlayerLosses = 0;
+    this.versusAiLosses = 0;
+    this.versusRound = 1;
+    this.versusSpawnCount = 0;
+    this.beginVersusRound();
+  }
+
+  private beginVersusRound(): void {
+    for (const target of this.activeTargets) target.destroy();
+    this.activeTargets.length = 0;
+    this.deactivateHitEffects();
+    this.versusRoundActive = true;
+    this.versusRoundResetTimer = 0;
+    this.versusPossessionTime = 0;
+    this.versusAiDecisionTimer = 0.42;
+    this.spawnTimer = 0.85;
+    const startingSide: DribbleSide = this.versusRound % 2 === 1 ? 'left' : 'right';
+    this.versusLastStableSide = startingSide;
+    this.versusOwner = startingSide === 'left' ? 'ai' : 'player';
+    this.versusLiableOwner = this.versusOwner;
+    this.versusPendingLiabilityOwner = null;
+    this.versusLiabilityControlTime = 0;
+    this.versusDangerPass = false;
+    this.versusQueuedAiAction = null;
+    this.versusQueuedAiActionTimer = 0;
+    this.versusPressureWarningStage = 0;
+    this.ball?.reset(startingSide);
+    this.ball?.setGameplayActive(true);
+    this.versusHud?.showCallout(
+      `ROUND ${this.versusRound}`,
+      this.versusOwner === 'player' ? 'You start with the ball' : 'AI starts with the ball',
+      this.versusOwner === 'player' ? 'blue' : 'gold',
+      1000,
+    );
+    this.syncVersusHud();
+  }
+
+  private updateVersusMode(deltaTime: number): void {
+    if (!this.versusRoundActive) {
+      this.versusRoundResetTimer = Math.max(0, this.versusRoundResetTimer - deltaTime);
+      if (this.versusRoundResetTimer <= 0 && this.gameState === 'playing') {
+        if (
+          this.versusPlayerLosses >= this.versusLossesToEndMatch
+          || this.versusAiLosses >= this.versusLossesToEndMatch
+        ) {
+          this.endVersusMatch();
+        } else {
+          this.versusRound += 1;
+          this.beginVersusRound();
+        }
+      }
+      return;
+    }
+
+    const difficulty = THREE.MathUtils.clamp(this.elapsedTime / 75, 0, 1);
+    this.versusPossessionTime += deltaTime;
+    this.spawnTimer -= deltaTime;
+    if (this.spawnTimer <= 0) {
+      if (this.spawnVersusHazard(difficulty)) {
+        const baseInterval = THREE.MathUtils.lerp(1.12, 0.62, difficulty);
+        this.spawnTimer = THREE.MathUtils.randFloat(baseInterval * 0.92, baseInterval * 1.08);
+      } else {
+        this.spawnTimer = 0.08;
+      }
+    }
+
+    const ballState = this.ball?.getState();
+    if (!ballState) return;
+    this.updateVersusPossession(ballState);
+    this.updateVersusLiability(deltaTime, ballState);
+    this.updateVersusAi(deltaTime, ballState, difficulty);
+    const pressure = THREE.MathUtils.clamp(
+      this.versusPossessionTime / this.versusPressureDuration,
+      0,
+      1,
+    );
+    this.updateVersusPressureFeedback(pressure);
+    this.updateTargetSpacing(this.activeTargets, deltaTime, difficulty, {
+      basePace: THREE.MathUtils.lerp(4.45, 7.15, difficulty),
+      pressureLaneX: this.versusOwner === 'ai' ? this.lanes[0] : this.lanes[2],
+      pressure,
+    });
+    this.checkBallTargetHits(ballState, this.activeTargets);
+    this.updateHandAnimations(deltaTime, ballState);
+    this.syncVersusHud(ballState);
+  }
+
+  private updateVersusPossession(ballState: DribbleBallState): void {
+    if (ballState.isTransferring || ballState.side === this.versusLastStableSide) return;
+    this.versusLastStableSide = ballState.side;
+    this.versusOwner = ballState.side === 'left' ? 'ai' : 'player';
+    this.versusPossessionTime = 0;
+    this.versusPressureWarningStage = 0;
+    this.versusAiDecisionTimer = THREE.MathUtils.randFloat(0.28, 0.46);
+    if (this.versusPendingLiabilityOwner === this.versusOwner) {
+      this.versusLiabilityControlTime = 0;
+      this.versusLiabilityBounceBaseline = ballState.completedBounces;
+    } else {
+      this.versusLiableOwner = this.versusOwner;
+    }
+    this.versusHud?.showCallout(
+      this.versusOwner === 'player' ? 'YOUR BALL' : 'AI BALL',
+      this.versusOwner === 'player' ? 'Pass or power-bounce' : 'Read the next move',
+      this.versusOwner === 'player' ? 'blue' : 'gold',
+      620,
+    );
+  }
+
+  private updateVersusAi(
+    deltaTime: number,
+    ballState: DribbleBallState,
+    difficulty: number,
+  ): void {
+    if (
+      this.versusOwner !== 'ai'
+      || ballState.side !== 'left'
+      || ballState.isTransferring
+      || ballState.isBoosting
+    ) {
+      return;
+    }
+
+    if (this.versusQueuedAiAction) {
+      this.versusQueuedAiActionTimer = Math.max(0, this.versusQueuedAiActionTimer - deltaTime);
+      if (this.versusQueuedAiActionTimer > 0) return;
+      const queuedAction = this.versusQueuedAiAction;
+      this.versusQueuedAiAction = null;
+      if (queuedAction === 'boost' && this.findVersusGroundThreat('left', 0.82)) {
+        if (this.ball?.boostLeft()) {
+          this.versusHud?.showCallout('AI REACTS', 'Power bounce queued', 'gold', 440);
+        }
+        return;
+      }
+    }
+
+    this.versusAiDecisionTimer -= deltaTime;
+    if (this.versusAiDecisionTimer > 0) return;
+    this.versusAiDecisionTimer = THREE.MathUtils.lerp(0.34, 0.2, difficulty)
+      + THREE.MathUtils.randFloat(0.02, 0.12);
+
+    const threat = this.findVersusThreat('left', 1.3);
+    const rightLaneSafe = this.findVersusThreat('right', 0.95) === null;
+    if (threat) {
+      const timeToContact = this.getTargetTimeToBall(threat);
+      if (timeToContact > 0.28 && timeToContact < 0.72) {
+        const isLow = threat.rootComponent.position.y < 0.9;
+        const errorChance = THREE.MathUtils.lerp(0.17, 0.07, difficulty);
+        if (Math.random() < errorChance) return;
+        if (isLow && (!rightLaneSafe || Math.random() < 0.58)) {
+          if (this.ball?.boostLeft()) {
+            this.versusHud?.showCallout('AI POWER', 'Low hazard avoided', 'gold', 460);
+          }
+        } else if (rightLaneSafe) {
+          if (this.ball?.transferToRight()) {
+            this.beginVersusPass('ai', 'player');
+            this.versusHud?.showCallout('INCOMING', 'AI passes to you', 'danger', 520);
+          }
+        }
+        return;
+      }
+    }
+
+    const pressureThreshold = THREE.MathUtils.lerp(2.45, 1.72, difficulty);
+    if (this.versusPossessionTime >= pressureThreshold && rightLaneSafe) {
+      if (this.ball?.transferToRight()) {
+        this.beginVersusPass('ai', 'player');
+        this.versusHud?.showCallout('INCOMING', 'Pressure pass', 'danger', 520);
+      }
+    }
+  }
+
+  private beginVersusPass(passer: VersusOwner, receiver: VersusOwner): void {
+    const receiverSide: DribbleSide = receiver === 'ai' ? 'left' : 'right';
+    const dangerPass = this.findVersusGroundThreat(
+      receiverSide,
+      DribbleBall.transferDuration + 0.62,
+    ) !== null;
+    this.versusLiableOwner = passer;
+    this.versusPendingLiabilityOwner = receiver;
+    this.versusLiabilityControlTime = 0;
+    this.versusLiabilityDelay = dangerPass ? 0.68 : 0.4;
+    this.versusLiabilityMinimumTime = dangerPass ? 0.42 : 0.12;
+    this.versusLiabilityBounceBaseline = this.ball?.getState().completedBounces ?? 0;
+    this.versusDangerPass = dangerPass;
+
+    if (receiver === 'ai') this.queueVersusAiReception(dangerPass);
+    if (!dangerPass) return;
+    this.versusHud?.showCallout(
+      'DANGER PASS',
+      'Passer remains liable',
+      'danger',
+      760,
+    );
+    void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+      volume: 0.48,
+      bus: 'SFX',
+    });
+  }
+
+  private updateVersusLiability(deltaTime: number, ballState: DribbleBallState): void {
+    const pendingOwner = this.versusPendingLiabilityOwner;
+    if (!pendingOwner || ballState.isTransferring || this.versusOwner !== pendingOwner) return;
+    this.versusLiabilityControlTime += deltaTime;
+    const completedControlledBounce = ballState.completedBounces > this.versusLiabilityBounceBaseline
+      && this.versusLiabilityControlTime >= this.versusLiabilityMinimumTime;
+    if (
+      this.versusLiabilityControlTime < this.versusLiabilityDelay
+      && !completedControlledBounce
+    ) {
+      return;
+    }
+    this.versusLiableOwner = pendingOwner;
+    this.versusPendingLiabilityOwner = null;
+    this.versusDangerPass = false;
+  }
+
+  private queueVersusAiReception(dangerPass: boolean): void {
+    this.versusQueuedAiAction = null;
+    this.versusQueuedAiActionTimer = 0;
+    const threat = this.findVersusGroundThreat(
+      'left',
+      DribbleBall.transferDuration + 0.72,
+    );
+    if (!threat) return;
+    const difficulty = THREE.MathUtils.clamp(this.elapsedTime / 75, 0, 1);
+    const reactionChance = THREE.MathUtils.lerp(0.66, 0.82, difficulty)
+      * (dangerPass ? 0.9 : 1);
+    if (Math.random() >= reactionChance) return;
+    this.versusQueuedAiAction = 'boost';
+    this.versusQueuedAiActionTimer = THREE.MathUtils.lerp(0.2, 0.11, difficulty)
+      + THREE.MathUtils.randFloat(0.02, 0.09);
+  }
+
+  private spawnVersusHazard(difficulty: number): boolean {
+    const world = this.getWorld();
+    if (!world) return false;
+    const rearmostTarget = this.activeTargets[this.activeTargets.length - 1] ?? null;
+    const entryGap = rearmostTarget
+      ? rearmostTarget.rootComponent.position.z - this.targetSpawnZ
+      : Number.POSITIVE_INFINITY;
+    if (entryGap < this.minimumTargetGap + 0.25) return false;
+
+    this.versusSpawnCount += 1;
+    const holderLane = this.versusOwner === 'ai' ? this.lanes[0] : this.lanes[2];
+    const opposingLane = this.versusOwner === 'ai' ? this.lanes[2] : this.lanes[0];
+    const holderPressureChance = THREE.MathUtils.lerp(0.58, 0.74, difficulty);
+    const laneX = Math.random() < holderPressureChance ? holderLane : opposingLane;
+    const forceHigh = this.versusSpawnCount % 5 === 0;
+    const high = forceHigh || Math.random() < THREE.MathUtils.lerp(0.3, 0.42, difficulty);
+    const speed = THREE.MathUtils.lerp(4.45, 7.15, difficulty);
+    const target = DribbleTarget.create({
+      name: high ? 'Last Bounce Air Hazard' : 'Last Bounce Ground Hazard',
+      kind: 'hazard',
+      laneX,
+      speed,
+      position: new THREE.Vector3(laneX, high ? 2.45 : 0.3, this.targetSpawnZ),
+      actorTags: [high ? 'versus-air-hazard' : 'versus-ground-hazard'],
+    });
+    world.addActor(target);
+    this.activeTargets.push(target);
+    this.targetPaceScales.set(target, 1);
+    return true;
+  }
+
+  private updateVersusPressureFeedback(pressure: number): void {
+    const nextStage = pressure >= 1 ? 2 : pressure >= 0.68 ? 1 : 0;
+    if (nextStage <= this.versusPressureWarningStage) return;
+    this.versusPressureWarningStage = nextStage;
+    const world = this.getWorld();
+    if (nextStage === 2) {
+      this.versusHud?.showCallout(
+        'MAX PRESSURE',
+        `${this.versusOwner === 'player' ? 'Your' : 'AI'} lane is in overdrive`,
+        'danger',
+        760,
+      );
+      if (world) {
+        void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+          volume: 0.52,
+          bus: 'SFX',
+        });
+      }
+      return;
+    }
+    this.versusHud?.showCallout(
+      'LANE HEATING UP',
+      'Hazards are accelerating',
+      'gold',
+      620,
+    );
+    if (world) {
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.25,
+        bus: 'SFX',
+      });
+    }
+  }
+
+  private findVersusThreat(side: DribbleSide, maximumTime: number): DribbleTarget | null {
+    const laneX = side === 'left' ? this.lanes[0] : this.lanes[2];
+    let nearest: DribbleTarget | null = null;
+    let nearestTime = Number.POSITIVE_INFINITY;
+    for (const target of this.activeTargets) {
+      if (Math.abs(target.laneX - laneX) > 0.05) continue;
+      const time = this.getTargetTimeToBall(target);
+      if (time >= 0 && time <= maximumTime && time < nearestTime) {
+        nearest = target;
+        nearestTime = time;
+      }
+    }
+    return nearest;
+  }
+
+  private findVersusGroundThreat(side: DribbleSide, maximumTime: number): DribbleTarget | null {
+    const laneX = side === 'left' ? this.lanes[0] : this.lanes[2];
+    let nearest: DribbleTarget | null = null;
+    let nearestTime = Number.POSITIVE_INFINITY;
+    for (const target of this.activeTargets) {
+      if (target.rootComponent.position.y >= 0.9 || Math.abs(target.laneX - laneX) > 0.05) continue;
+      const time = this.getTargetTimeToBall(target);
+      if (time >= 0 && time <= maximumTime && time < nearestTime) {
+        nearest = target;
+        nearestTime = time;
+      }
+    }
+    return nearest;
+  }
+
+  private getTargetTimeToBall(target: DribbleTarget): number {
+    const ballZ = this.ball?.getState().position.z ?? -1.2;
+    return (ballZ - target.rootComponent.position.z)
+      / Math.max(0.01, target.getApproachSpeed());
+  }
+
+  private resolveVersusRoundLoss(position: THREE.Vector3): void {
+    if (!this.versusRoundActive) return;
+    const loser = this.versusLiableOwner;
+    const passBackfired = this.versusPendingLiabilityOwner !== null
+      && loser !== this.versusPendingLiabilityOwner;
+    if (loser === 'player') this.versusPlayerLosses += 1;
+    else this.versusAiLosses += 1;
+    this.versusRoundActive = false;
+    this.versusRoundResetTimer = 1.55;
+    this.ball?.setGameplayActive(false);
+    for (const target of this.activeTargets) target.setGameplayActive(false);
+    this.spawnImpactBurst(position, 0xff453a);
+    this.versusHud?.showCallout(
+      passBackfired
+        ? 'DANGER PASS BACKFIRED'
+        : loser === 'player'
+          ? 'YOU GOT TAGGED'
+          : 'AI GOT TAGGED',
+      passBackfired
+        ? loser === 'player' ? 'You passed too late' : 'AI passed too late'
+        : loser === 'player' ? 'Round lost' : 'Round won',
+      loser === 'player' ? 'danger' : 'blue',
+      1350,
+    );
+    this.syncVersusHud();
+    void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/explosion.mp3', {
+      volume: 0.56,
+      bus: 'SFX',
+    });
+  }
+
+  private endVersusMatch(): void {
+    const world = this.getWorld();
+    if (!world) return;
+    const playerWon = this.versusAiLosses >= this.versusLossesToEndMatch;
+    this.gameState = 'gameOver';
+    this.musicDirector?.setPaused(true);
+    this.setGameplayActive(false);
+    this.setHudVisible(false);
+    this.overlay?.showVersusGameOver(playerWon, this.versusPlayerLosses, this.versusAiLosses);
+    world.inputManager.exitPointerLock();
+  }
+
+  private syncVersusHud(ballState = this.ball?.getState()): void {
+    this.versusHud?.setMatchState(
+      this.versusOwner,
+      this.versusRound,
+      this.versusPlayerLosses,
+      this.versusAiLosses,
+      this.versusPossessionTime / this.versusPressureDuration,
+      ballState?.isTransferring ?? false,
+      this.versusPendingLiabilityOwner !== null,
+    );
+  }
+
   private getPatternLaneX(lane: PatternLane): number {
     if (lane === 'left') return this.lanes[0];
     if (lane === 'right') return this.lanes[2];
@@ -1062,21 +1503,40 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     targets: DribbleTarget[],
     deltaTime: number,
     difficulty: number,
+    options?: {
+      basePace?: number;
+      pressureLaneX?: number;
+      pressure?: number;
+    },
   ): void {
-    const targetPace = this.getTargetPace(difficulty);
+    const targetPace = options?.basePace ?? this.getTargetPace(difficulty);
     const accelerationBlend = 1 - Math.exp(-deltaTime * 1.65);
     const frontTarget = targets[0];
     if (frontTarget) {
-      const desiredSpeed = targetPace * (this.targetPaceScales.get(frontTarget) ?? 1);
-      frontTarget.speed = THREE.MathUtils.lerp(frontTarget.speed, desiredSpeed, accelerationBlend);
+      const pressureMultiplier = this.getTargetPressureMultiplier(frontTarget, options);
+      const desiredSpeed = targetPace
+        * (this.targetPaceScales.get(frontTarget) ?? 1)
+        * pressureMultiplier;
+      const paceBlend = desiredSpeed < frontTarget.speed
+        ? 1 - Math.exp(-deltaTime * 5)
+        : accelerationBlend;
+      frontTarget.speed = THREE.MathUtils.lerp(frontTarget.speed, desiredSpeed, paceBlend);
+      frontTarget.setPressureLevel((pressureMultiplier - 1) / 0.3);
       frontTarget.setSpacingSpeedLimit(null);
     }
 
     for (let index = 1; index < targets.length; index += 1) {
       const leader = targets[index - 1];
       const follower = targets[index];
-      const desiredSpeed = targetPace * (this.targetPaceScales.get(follower) ?? 1);
-      follower.speed = THREE.MathUtils.lerp(follower.speed, desiredSpeed, accelerationBlend);
+      const pressureMultiplier = this.getTargetPressureMultiplier(follower, options);
+      const desiredSpeed = targetPace
+        * (this.targetPaceScales.get(follower) ?? 1)
+        * pressureMultiplier;
+      const paceBlend = desiredSpeed < follower.speed
+        ? 1 - Math.exp(-deltaTime * 5)
+        : accelerationBlend;
+      follower.speed = THREE.MathUtils.lerp(follower.speed, desiredSpeed, paceBlend);
+      follower.setPressureLevel((pressureMultiplier - 1) / 0.3);
       const gap = leader.rootComponent.position.z - follower.rootComponent.position.z;
       if (gap >= this.comfortableTargetGap) {
         follower.setSpacingSpeedLimit(null);
@@ -1093,6 +1553,31 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         THREE.MathUtils.lerp(leaderSpeed * 0.78, leaderSpeed, spacingBlend),
       );
     }
+  }
+
+  private getTargetPressureMultiplier(
+    target: DribbleTarget,
+    options?: {
+      pressureLaneX?: number;
+      pressure?: number;
+    },
+  ): number {
+    const pressure = options?.pressure ?? 0;
+    const pressureLaneX = options?.pressureLaneX;
+    if (
+      pressureLaneX === undefined
+      || pressure <= 0.5
+      || Math.abs(target.laneX - pressureLaneX) > 0.05
+    ) {
+      return 1;
+    }
+    const pressureRamp = THREE.MathUtils.smoothstep(pressure, 0.5, 1);
+    const fairDistanceRamp = 1 - THREE.MathUtils.smoothstep(
+      target.rootComponent.position.z,
+      -7,
+      -4.25,
+    );
+    return 1 + pressureRamp * fairDistanceRamp * 0.3;
   }
 
   private getDifficultyRamp(): number {
@@ -1253,7 +1738,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       } else if (target.kind === 'health') {
         this.handleHealthHit(this.targetHitPosition);
       } else {
-        this.handleHazardHit(this.targetHitPosition);
+        if (this.gameMode === 'last-bounce') {
+          this.resolveVersusRoundLoss(this.targetHitPosition);
+        } else {
+          this.handleHazardHit(this.targetHitPosition);
+        }
       }
       target.destroy();
 
@@ -1582,7 +2071,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setGameplayActive(false);
     this.setHudVisible(false);
     this.tutorialHud?.hide();
-    this.overlay?.showPause(this.score);
+    if (this.gameMode === 'last-bounce') {
+      this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
+    } else {
+      this.overlay?.showPause(this.score);
+    }
     world.inputManager.exitPointerLock();
   }
 
@@ -1615,7 +2108,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setGameplayActive(false);
     this.deactivateHitEffects();
     this.setHudVisible(false);
-    this.overlay?.showGameOver(this.score, getHighScore(this.progression, this.gameMode), this.gameMode);
+    if (this.gameMode !== 'last-bounce') {
+      this.overlay?.showGameOver(this.score, getHighScore(this.progression, this.gameMode), this.gameMode);
+    }
     world.inputManager.exitPointerLock();
   }
 
@@ -1633,6 +2128,26 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private setHudVisible(visible: boolean): void {
+    if (this.gameMode === 'last-bounce' && !this.tutorialActive) {
+      const standardComponents = [
+        this.scoreDisplay,
+        this.livesDisplay,
+        this.timingMeter,
+        this.juiceHud,
+      ];
+      for (const component of standardComponents) component?.hide();
+      if (visible) {
+        this.pauseButton?.show();
+        this.sideHints?.show();
+        this.versusHud?.show();
+      } else {
+        this.pauseButton?.hide();
+        this.sideHints?.hide();
+        this.versusHud?.hide();
+      }
+      return;
+    }
+    this.versusHud?.hide();
     const components = [
       this.scoreDisplay,
       this.pauseButton,
@@ -1739,6 +2254,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private commitHighScore(): void {
+    if (this.gameMode === 'last-bounce') return;
     const updatedProgression = recordHighScore(this.progression, this.score, this.gameMode);
     if (updatedProgression === this.progression) {
       return;
@@ -1820,11 +2336,23 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     } else if (this.gameState === 'paused') {
       this.mainMenu?.hide();
       this.setHudVisible(false);
-      this.overlay?.showPause(this.score);
+      if (this.gameMode === 'last-bounce') {
+        this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
+      } else {
+        this.overlay?.showPause(this.score);
+      }
     } else if (this.gameState === 'gameOver') {
       this.mainMenu?.hide();
       this.setHudVisible(false);
-      this.overlay?.showGameOver(this.score, getHighScore(this.progression, this.gameMode), this.gameMode);
+      if (this.gameMode === 'last-bounce') {
+        this.overlay?.showVersusGameOver(
+          this.versusAiLosses >= this.versusLossesToEndMatch,
+          this.versusPlayerLosses,
+          this.versusAiLosses,
+        );
+      } else {
+        this.overlay?.showGameOver(this.score, getHighScore(this.progression, this.gameMode), this.gameMode);
+      }
     } else {
       this.mainMenu?.hide();
       this.overlay?.hide();

@@ -2,6 +2,25 @@
   <div class="dribble-main-menu-background" aria-hidden="true">
     <img src="@project/assets/textures/main-menu-background.png" alt="">
   </div>
+  <section class="dribble-name-entry" data-name-entry data-active="false" aria-label="Create player profile">
+    <div class="dribble-name-entry-card">
+      <h1>Choose Your Player Name</h1>
+      <input
+        id="dribble-player-name"
+        class="dribble-name-input"
+        data-player-name-input
+        type="text"
+        aria-label="Player name"
+        maxlength="14"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Enter username..."
+        aria-describedby="dribble-name-status"
+      >
+      <span id="dribble-name-status" class="dribble-name-status" data-player-name-status></span>
+      <div class="dribble-main-menu-action dribble-name-confirm" data-menu-name-confirm-slot></div>
+    </div>
+  </section>
   <button class="dribble-menu-ball" data-menu-ball type="button" aria-label="Drag and bounce the basketball">
     <canvas data-menu-ball-canvas aria-hidden="true"></canvas>
   </button>
@@ -66,6 +85,12 @@
           <div class="dribble-mode-lives" aria-label="One life">
             <img src="@project/assets/textures/Heart.png" alt="">
             <span>1 LIFE</span>
+          </div>
+        </div>
+        <div class="dribble-mode-option dribble-mode-last-bounce">
+          <div class="dribble-main-menu-action" data-menu-last-bounce-mode-slot></div>
+          <div class="dribble-mode-versus" aria-label="AI versus player">
+            <span>AI</span><b>VS</b><span data-mode-player-name>PLAYER</span>
           </div>
         </div>
       </div>

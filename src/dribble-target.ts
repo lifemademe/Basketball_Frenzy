@@ -52,6 +52,9 @@ export class DribbleTarget extends ENGINE.Actor {
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
   private glowBaseOpacity = 0.24;
+  private baseEmissiveIntensity = 2.8;
+  private targetMaterial: THREE.MeshStandardMaterial | null = null;
+  private pressureLevel = 0;
   private rhythmMarker: ENGINE.MeshComponent | null = null;
   private rhythmMarkerMaterial: THREE.MeshBasicMaterial | null = null;
   private spacingSpeedLimit = Number.POSITIVE_INFINITY;
@@ -77,13 +80,15 @@ export class DribbleTarget extends ENGINE.Actor {
         : this.kind === 'bonus'
           ? createStarGeometry()
           : new THREE.OctahedronGeometry(0.55, 0);
+    this.baseEmissiveIntensity = this.kind === 'bonus' ? 4.2 : this.kind === 'health' ? 3.2 : 2.8;
     const material = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: this.kind === 'bonus' ? 4.2 : this.kind === 'health' ? 3.2 : 2.8,
+      emissiveIntensity: this.baseEmissiveIntensity,
       roughness: 0.3,
       metalness: 0.12,
     });
+    this.targetMaterial = material;
     const rootComponent = ENGINE.MeshComponent.create({
       name: 'Target Mesh',
       geometry,
@@ -168,11 +173,19 @@ export class DribbleTarget extends ENGINE.Actor {
     }
 
     this.rootComponent.position.z += this.getApproachSpeed() * deltaTime;
-    this.glowPhase += deltaTime * (this.isRhythmTarget ? 6.5 : this.kind === 'bonus' ? 7 : 4.5);
+    const pressureSpeed = 1 + this.pressureLevel * 1.15;
+    this.glowPhase += deltaTime
+      * (this.isRhythmTarget ? 6.5 : this.kind === 'bonus' ? 7 : 4.5)
+      * pressureSpeed;
     const glowPulse = Math.sin(this.glowPhase);
-    this.glowShell?.scale.setScalar(1.14 + glowPulse * 0.045);
+    this.glowShell?.scale.setScalar(1.14 + this.pressureLevel * 0.1 + glowPulse * 0.045);
     if (this.glowMaterial) {
-      this.glowMaterial.opacity = this.glowBaseOpacity + glowPulse * 0.07;
+      this.glowMaterial.opacity = this.glowBaseOpacity
+        + this.pressureLevel * 0.17
+        + glowPulse * (0.07 + this.pressureLevel * 0.03);
+    }
+    if (this.targetMaterial) {
+      this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity + this.pressureLevel * 2.2;
     }
     this.rhythmMarker?.scale.setScalar(1 + glowPulse * 0.08);
     if (this.rhythmMarkerMaterial) {
@@ -182,8 +195,11 @@ export class DribbleTarget extends ENGINE.Actor {
       this.rootComponent.rotation.y += deltaTime * 0.45;
       this.rootComponent.rotation.z += deltaTime * 2.2;
     } else {
-      this.rootComponent.rotation.x += deltaTime * 2.5;
-      this.rootComponent.rotation.y += deltaTime * (this.kind === 'score' ? 1.2 : this.kind === 'health' ? 1.7 : -2.0);
+      const rotationSpeed = 1 + this.pressureLevel * 0.85;
+      this.rootComponent.rotation.x += deltaTime * 2.5 * rotationSpeed;
+      this.rootComponent.rotation.y += deltaTime
+        * (this.kind === 'score' ? 1.2 : this.kind === 'health' ? 1.7 : -2.0)
+        * rotationSpeed;
     }
 
     if (this.rootComponent.position.z > 2.5) {
@@ -216,6 +232,10 @@ export class DribbleTarget extends ENGINE.Actor {
 
   public setSpacingSpeedLimit(limit: number | null): void {
     this.spacingSpeedLimit = limit ?? Number.POSITIVE_INFINITY;
+  }
+
+  public setPressureLevel(level: number): void {
+    this.pressureLevel = THREE.MathUtils.clamp(level, 0, 1);
   }
 
   public isRemovalPending(): boolean {
