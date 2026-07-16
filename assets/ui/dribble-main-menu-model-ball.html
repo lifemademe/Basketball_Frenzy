@@ -4,7 +4,8 @@
   </div>
   <section class="dribble-name-entry" data-name-entry data-active="false" aria-label="Create player profile">
     <div class="dribble-name-entry-card">
-      <h1>Choose Your Player Name</h1>
+      <h1>WELCOME!</h1>
+      <p class="dribble-name-entry-subtitle">Enter your username to get started</p>
       <input
         id="dribble-player-name"
         class="dribble-name-input"
@@ -171,7 +172,7 @@
           <div class="dribble-shop-copy">
             <span data-shop-epic-status>LOCKED</span>
             <h3>Epic Ball</h3>
-            <p>Electric blue finish · 1 Star</p>
+            <p>Electric blue finish · 5 Stars</p>
             <div class="dribble-main-menu-action dribble-shop-purchase" data-menu-epic-action-slot></div>
           </div>
         </div>
@@ -182,7 +183,7 @@
           <div class="dribble-shop-copy">
             <span data-shop-disco-status>LOCKED</span>
             <h3>Disco Ball</h3>
-            <p>Prismatic party finish &middot; 3 Stars</p>
+            <p>Prismatic party finish &middot; 15 Stars</p>
             <div class="dribble-main-menu-action dribble-shop-purchase" data-menu-disco-action-slot></div>
           </div>
         </div>
@@ -193,7 +194,7 @@
           <div class="dribble-shop-copy">
             <span data-shop-blackhole-status>LOCKED</span>
             <h3>Black Hole</h3>
-            <p>Gravity-warped legend &middot; 5 Stars</p>
+            <p>Gravity-warped legend &middot; 30 Stars</p>
             <div class="dribble-main-menu-action dribble-shop-purchase" data-menu-blackhole-action-slot></div>
           </div>
         </div>
@@ -240,11 +241,11 @@
           </div>
           <span class="dribble-achievement-state">LOCKED</span>
         </article>
-        <article class="dribble-achievement" data-achievement-id="firstPoint" data-unlocked="false">
+        <article class="dribble-achievement" data-achievement-id="highScore" data-unlocked="false">
           <div class="dribble-achievement-icon"><img src="@project/assets/textures/First point.png" alt=""></div>
           <div class="dribble-achievement-copy">
-            <h3>First Point</h3>
-            <p>Score your first point.</p>
+            <h3>High Score</h3>
+            <p>Complete your first run and set a personal best.</p>
           </div>
           <span class="dribble-achievement-state">LOCKED</span>
         </article>
@@ -272,11 +273,15 @@
           <span><b>Sound Settings</b><small>Restore the default mix</small></span>
           <strong aria-hidden="true">&rsaquo;</strong>
         </button>
+        <button class="dribble-reset-developer" type="button" data-reset-choice="freshStart" aria-pressed="false">
+          <span><b>DEV: Fresh Start</b><small>Erase all local player data on next launch</small></span>
+          <strong aria-hidden="true">&rsaquo;</strong>
+        </button>
       </div>
       <div class="dribble-reset-confirmation" data-reset-confirmation data-active="false" role="dialog" aria-modal="true" aria-labelledby="dribble-reset-confirm-title">
         <span class="dribble-reset-confirmation-label">Confirm Reset</span>
         <p id="dribble-reset-confirm-title" data-reset-confirm-title>Reset this setting?</p>
-        <small>Only this selection will be reset.</small>
+        <small data-reset-confirm-copy>Only this selection will be reset.</small>
         <div class="dribble-reset-confirmation-actions">
           <button type="button" data-reset-cancel>Cancel</button>
           <button type="button" data-reset-confirm>Confirm</button>

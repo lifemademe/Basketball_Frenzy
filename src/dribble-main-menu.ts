@@ -85,6 +85,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private resetChoices: HTMLButtonElement[] = [];
   private resetConfirmation: HTMLElement | null = null;
   private resetConfirmationTitle: HTMLElement | null = null;
+  private resetConfirmationCopy: HTMLElement | null = null;
   private resetConfirmButton: HTMLButtonElement | null = null;
   private resetCancelButton: HTMLButtonElement | null = null;
   private resetStatusElement: HTMLElement | null = null;
@@ -254,6 +255,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (this.resetConfirmationTitle) {
       this.resetConfirmationTitle.textContent = this.getResetConfirmationCopy(target);
     }
+    if (this.resetConfirmationCopy) {
+      this.resetConfirmationCopy.textContent = target === 'freshStart'
+        ? 'This clears the username, scores, stars, purchases, achievements, cosmetics, and sound settings.'
+        : 'Only this selection will be reset.';
+    }
     if (this.resetConfirmation) this.resetConfirmation.dataset.active = 'true';
     if (this.resetStatusElement) this.resetStatusElement.textContent = '';
   };
@@ -267,6 +273,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (!target) return;
     if (target === 'audio') {
       this.resetAudioSettings();
+    } else if (target === 'freshStart') {
+      this.setProgression(this.options.onResetProgression(target));
+      this.resetAudioSettings();
+      try {
+        localStorage.removeItem(playerNameKey);
+      } catch {
+        // The saved profile may remain when browser storage is unavailable.
+      }
     } else {
       this.setProgression(this.options.onResetProgression(target));
     }
@@ -334,6 +348,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.resetChoices = Array.from(this.layout.querySelectorAll('[data-reset-choice]')) as HTMLButtonElement[];
     this.resetConfirmation = this.layout.querySelector('[data-reset-confirmation]') as HTMLElement | null;
     this.resetConfirmationTitle = this.layout.querySelector('[data-reset-confirm-title]') as HTMLElement | null;
+    this.resetConfirmationCopy = this.layout.querySelector('[data-reset-confirm-copy]') as HTMLElement | null;
     this.resetConfirmButton = this.layout.querySelector('[data-reset-confirm]') as HTMLButtonElement | null;
     this.resetCancelButton = this.layout.querySelector('[data-reset-cancel]') as HTMLButtonElement | null;
     this.resetStatusElement = this.layout.querySelector('[data-reset-status]') as HTMLElement | null;
@@ -405,7 +420,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, lastBounceModeSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
-        label: "Let's go!",
+        label: 'Confirm',
         onClick: () => this.confirmPlayerName(),
       }, nameConfirmSlot),
       this.mountChild(ENGINE.Button, {
@@ -476,7 +491,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, classicActionSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
-        label: `Buy - ${epicBallPrice} Star`,
+        label: `Buy - ${epicBallPrice} Stars`,
         onClick: () => this.handleBallAction('epic'),
       }, epicActionSlot),
       this.mountChild(ENGINE.Button, {
@@ -1002,13 +1017,15 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     return value === 'normalHighScore'
       || value === 'hardHighScore'
       || value === 'achievements'
-      || value === 'audio';
+      || value === 'audio'
+      || value === 'freshStart';
   }
 
   private getResetConfirmationCopy(target: ResetMenuTarget): string {
     if (target === 'normalHighScore') return 'Reset your Normal best score?';
     if (target === 'hardHighScore') return 'Reset your Hard best score?';
     if (target === 'achievements') return 'Reset all achievement progress?';
+    if (target === 'freshStart') return 'Erase the entire local player profile?';
     return 'Restore the default sound mix?';
   }
 
@@ -1016,6 +1033,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (target === 'normalHighScore') return 'Normal best score reset.';
     if (target === 'hardHighScore') return 'Hard best score reset.';
     if (target === 'achievements') return 'Achievement progress reset.';
+    if (target === 'freshStart') return 'Fresh start armed. Reopen the game to begin again.';
     return 'Sound settings restored.';
   }
 
@@ -1128,6 +1146,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.resetChoices = [];
     this.resetConfirmation = null;
     this.resetConfirmationTitle = null;
+    this.resetConfirmationCopy = null;
     this.resetConfirmButton = null;
     this.resetCancelButton = null;
     this.resetStatusElement = null;

@@ -67,8 +67,8 @@
   position: relative;
   display: flex;
   width: min(470px, calc(100vw - 40px));
-  min-height: 390px;
-  padding: 78px 66px 58px;
+  min-height: 420px;
+  padding: 66px 58px 52px;
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
@@ -81,13 +81,24 @@
 
 .dribble-name-entry-card h1 {
   width: 100%;
-  margin: 0 0 28px;
+  margin: 0;
   color: #ffffff;
-  font-size: 42px;
+  font-size: 58px;
   font-weight: 400;
-  line-height: 45px;
+  line-height: 62px;
   text-align: center;
-  text-shadow: 0 3px 0 rgba(11, 67, 165, 0.82);
+  text-shadow: 0 4px 0 rgba(11, 67, 165, 0.86), 0 8px 18px rgba(0, 31, 112, 0.28);
+}
+
+.dribble-name-entry-subtitle {
+  width: 100%;
+  margin: 6px 0 26px;
+  color: #9eeaff;
+  font-size: 18px;
+  line-height: 22px;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 2px 6px rgba(0, 57, 142, 0.46);
 }
 
 .dribble-name-entry-card label {
@@ -102,18 +113,17 @@
 
 .dribble-main-menu .dribble-name-input {
   width: 100%;
-  height: 58px;
-  padding: 0 18px;
+  height: 66px;
+  padding: 0 22px;
   box-sizing: border-box;
   border: 2px solid rgba(139, 224, 255, 0.72);
   border-radius: 8px;
   outline: 0;
   background: rgba(3, 17, 58, 0.74);
   color: #ffffff;
-  font: 400 28px/32px 'Boogaloo', 'Trebuchet MS', sans-serif;
+  font: 400 27px/32px 'Boogaloo', 'Trebuchet MS', sans-serif;
   letter-spacing: 0;
-  text-align: center;
-  text-transform: uppercase;
+  text-align: left;
   cursor: text !important;
   transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
@@ -125,7 +135,7 @@
 }
 
 .dribble-name-input::placeholder {
-  color: rgba(255, 255, 255, 0.32);
+  color: rgba(190, 213, 255, 0.46);
 }
 
 .dribble-name-status {
@@ -138,21 +148,21 @@
 }
 
 .dribble-name-confirm {
-  width: 160px;
-  height: 66px;
+  width: 188px;
+  height: 70px;
   margin: 2px auto 0;
 }
 
 .dribble-name-confirm .ui-button {
   width: 100%;
-  height: 66px;
+  height: 70px;
   padding: 0 24px;
   border: 0;
   background: transparent url('@project/assets/textures/achievementsbutton.png') center / 100% 100% no-repeat;
   color: #ffffff;
-  font-size: 32px;
-  line-height: 35px;
-  text-shadow: 0 2px 3px rgba(0, 38, 105, 0.72);
+  font-size: 30px;
+  line-height: 34px;
+  text-shadow: none;
 }
 
 .dribble-name-confirm .ui-button:hover,
@@ -1002,6 +1012,33 @@
   --reset-accent: #bd91ff;
 }
 
+.dribble-reset-list > button.dribble-reset-developer {
+  --reset-accent: #ff7d88;
+  min-height: 44px;
+  margin: 2px 12px 0;
+  padding: 6px 10px 6px 12px;
+  border-style: dashed;
+  background: rgba(66, 4, 20, 0.32);
+}
+
+.dribble-reset-list > button.dribble-reset-developer b {
+  color: #ffb4ba;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.dribble-reset-list > button.dribble-reset-developer small {
+  color: rgba(255, 214, 218, 0.72);
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.dribble-reset-list > button.dribble-reset-developer strong {
+  width: 24px;
+  height: 24px;
+  font-size: 22px;
+}
+
 .dribble-reset-list > button:hover,
 .dribble-reset-list > button:focus-visible,
 .dribble-reset-list > button[aria-pressed='true'] {
@@ -1805,8 +1842,8 @@
 .dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:focus-visible,
 .dribble-main-menu .dribble-name-entry .dribble-name-confirm .ui-button:active {
   width: 100%;
-  height: 66px;
-  min-height: 66px;
+  height: 70px;
+  min-height: 70px;
   padding: 0 12px !important;
   justify-content: center;
   border: 0;
@@ -1817,15 +1854,15 @@
   background-size: 100% 100% !important;
   box-shadow: none;
   color: #ffffff;
-  font-size: 29px;
-  line-height: 32px;
+  font-size: 30px;
+  line-height: 34px;
   text-align: center;
-  text-shadow: 0 2px 3px rgba(0, 38, 105, 0.72);
+  text-shadow: none;
 }
 
 .dribble-main-menu .dribble-name-entry .dribble-name-confirm {
-  width: 160px !important;
-  height: 66px;
+  width: 188px !important;
+  height: 70px;
   margin-right: auto;
   margin-left: auto;
 }
@@ -1837,6 +1874,23 @@
 }
 
 @media (max-width: 760px) {
+  .dribble-name-entry-card {
+    width: min(430px, calc(100vw - 24px));
+    min-height: 400px;
+    padding: 60px 42px 46px;
+  }
+
+  .dribble-name-entry-card h1 {
+    font-size: 48px;
+    line-height: 52px;
+  }
+
+  .dribble-name-entry-subtitle {
+    margin-bottom: 22px;
+    font-size: 16px;
+    line-height: 20px;
+  }
+
   .dribble-main-menu-background img {
     object-position: 58% center;
   }

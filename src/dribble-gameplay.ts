@@ -13,11 +13,12 @@ import { DribblePatternDirector, type PatternLane } from './dribble-pattern-dire
 import {
   awardStars,
   equipBall,
+  getCompletedRunCount,
   getHighScore,
   isBallOwned,
   loadProgression,
   purchaseBall,
-  recordHighScore,
+  recordRunResult,
   resetProgression as resetSavedProgression,
   setWristbandColor as saveWristbandColor,
   unlockAchievement,
@@ -52,6 +53,15 @@ interface AchievementToastDefinition {
   rarity: 'rare' | 'epic' | 'legendary';
 }
 
+interface AchievementToastRequest {
+  title: string;
+  description: string;
+  iconUrl: string;
+  iconScale: number;
+  rarity: AchievementToastDefinition['rarity'];
+  duration: number;
+}
+
 const achievementToastDefinitions: Readonly<Record<AchievementId, AchievementToastDefinition>> = {
   score10000: {
     title: 'Five-Figure Run',
@@ -81,12 +91,12 @@ const achievementToastDefinitions: Readonly<Record<AchievementId, AchievementToa
     iconScale: 4.4,
     rarity: 'epic',
   },
-  firstPoint: {
-    title: 'First Point',
-    description: 'Score your first point.',
+  highScore: {
+    title: 'High Score',
+    description: 'Complete your first run and set a personal best.',
     iconPath: '@project/assets/textures/First point.png',
     iconScale: 3.2,
-    rarity: 'rare',
+    rarity: 'legendary',
   },
 };
 
@@ -134,7 +144,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly activeTargets: DribbleTarget[] = [];
   private readonly targetSpawnSwitchCounts = new WeakMap<DribbleTarget, number>();
   private readonly targetPaceScales = new WeakMap<DribbleTarget, number>();
-  private readonly achievementToastQueue: AchievementId[] = [];
+  private readonly achievementToastQueue: AchievementToastRequest[] = [];
   private readonly achievementIconUrls = new Map<AchievementId, string>();
   private readonly patternDirector = new DribblePatternDirector();
   private readonly tutorialDirector = new DribbleTutorialDirector();
@@ -167,6 +177,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private difficultyStage = 0;
   private achievementToastTimer: ReturnType<typeof setTimeout> | null = null;
   private achievementToastActive = false;
+  private runStartingHighScore = 0;
+  private runHadPriorResult = false;
+  private runHighScoreCelebrated = false;
+  private runResultCommitted = true;
   private versusOwner: VersusOwner = 'ai';
   private versusPlayerLosses = 0;
   private versusAiLosses = 0;
@@ -248,12 +262,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.musicDirector?.setState('gameplay');
     this.clearAchievementToasts();
 
-    if (!this.tutorialActive) this.commitHighScore();
+    if (!this.tutorialActive) this.commitRunResult(false);
     this.stopTutorial();
     if (mode) {
       this.gameMode = mode;
       this.maxLives = mode === 'hard' ? 1 : 3;
     }
+    this.prepareRunRecordTracking();
 
     for (const target of this.activeTargets) {
       target.destroy();
@@ -314,6 +329,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.tutorialTarget = null;
     this.tutorialLessonId = '';
     this.gameState = 'playing';
+    this.runResultCommitted = true;
+    this.runHighScoreCelebrated = false;
     this.elapsedTime = 0;
     this.score = 0;
     this.maxLives = 3;
@@ -1786,7 +1803,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     const points = basePoints * this.combo;
     this.score += points;
-    this.unlockAchievementAndSync('firstPoint');
+    const brokeHighScore = this.checkForNewHighScore();
     if (this.score >= 10000) this.unlockAchievementAndSync('score10000');
     this.scoreDisplay?.setValue(this.score, true);
     this.spawnComboPopup();
@@ -1802,6 +1819,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.juiceHud?.showPraise('ON BEAT!', 'gold');
     } else {
       this.showScorePraise();
+    }
+    if (brokeHighScore) {
+      this.juiceHud?.showPraise('NEW HIGH SCORE!', 'gold');
     }
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
       volume: bonus ? 0.86 : 0.62,
@@ -2038,7 +2058,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
-    if (!this.tutorialActive) this.commitHighScore();
+    if (!this.tutorialActive) this.commitRunResult(false);
     this.stopTutorial();
     this.clearAchievementToasts();
     this.gameState = 'menu';
@@ -2053,7 +2073,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private exitGame(): void {
-    this.commitHighScore();
+    this.commitRunResult(false);
     this.musicDirector?.stop();
     const closeGame = (): void => window.close();
     if (document.fullscreenElement) {
@@ -2107,7 +2127,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.gameState = 'gameOver';
     this.clearAchievementToasts();
     this.musicDirector?.setPaused(true);
-    this.commitHighScore();
+    this.commitRunResult(true);
     this.setGameplayActive(false);
     this.deactivateHitEffects();
     this.setHudVisible(false);
@@ -2205,32 +2225,60 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     return this.progression;
   }
 
-  private unlockAchievementAndSync(achievement: AchievementId): void {
+  private unlockAchievementAndSync(achievement: AchievementId, showToast = true): boolean {
     const updatedProgression = unlockAchievement(this.progression, achievement);
-    if (updatedProgression === this.progression) return;
+    if (updatedProgression === this.progression) return false;
     this.progression = updatedProgression;
     this.mainMenu?.setProgression(this.progression);
-    this.enqueueAchievementToast(achievement);
+    if (showToast) this.enqueueAchievementToast(achievement);
+    return true;
   }
 
   private enqueueAchievementToast(achievement: AchievementId): void {
-    this.achievementToastQueue.push(achievement);
+    const definition = achievementToastDefinitions[achievement];
+    this.achievementToastQueue.push({
+      ...definition,
+      iconUrl: this.achievementIconUrls.get(achievement) ?? '',
+      duration: 3000,
+    });
+    this.showNextAchievementToast();
+  }
+
+  private enqueueHighScoreToast(
+    event: 'established' | 'beaten',
+    achievementUnlocked = false,
+  ): void {
+    const modeLabel = this.gameMode === 'hard' ? 'Hard' : 'Normal';
+    const title = achievementUnlocked
+      ? 'HIGH SCORE ACHIEVEMENT!'
+      : event === 'established'
+        ? `${modeLabel.toUpperCase()} HIGH SCORE SET!`
+        : `NEW ${modeLabel.toUpperCase()} HIGH SCORE!`;
+    const description = event === 'established'
+      ? `${modeLabel} personal best: ${this.score}`
+      : `Previous best: ${this.runStartingHighScore}`;
+    this.achievementToastQueue.push({
+      title,
+      description,
+      iconUrl: this.achievementIconUrls.get('highScore') ?? '',
+      iconScale: achievementToastDefinitions.highScore.iconScale,
+      rarity: 'legendary',
+      duration: achievementUnlocked ? 3000 : 2700,
+    });
     this.showNextAchievementToast();
   }
 
   private showNextAchievementToast(): void {
     if (this.achievementToastActive || !this.achievementToast) return;
-    const achievement = this.achievementToastQueue.shift();
-    if (!achievement) return;
-    const definition = achievementToastDefinitions[achievement];
-    const iconUrl = this.achievementIconUrls.get(achievement) ?? '';
+    const toast = this.achievementToastQueue.shift();
+    if (!toast) return;
     this.achievementToastActive = true;
     this.achievementToast.show({
-      title: definition.title,
-      description: definition.description,
-      iconHtml: `<img src="${iconUrl}" alt="" style="width:100%;height:100%;max-width:none;object-fit:contain;transform:scale(${definition.iconScale});">`,
-      rarity: definition.rarity,
-      duration: 3000,
+      title: toast.title,
+      description: toast.description,
+      iconHtml: `<img src="${toast.iconUrl}" alt="" style="width:100%;height:100%;max-width:none;object-fit:contain;transform:scale(${toast.iconScale});">`,
+      rarity: toast.rarity,
+      duration: toast.duration,
     });
     const world = this.getWorld();
     if (world) {
@@ -2243,7 +2291,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.achievementToastTimer = null;
       this.achievementToastActive = false;
       this.showNextAchievementToast();
-    }, 3400);
+    }, toast.duration + 400);
   }
 
   private clearAchievementToasts(): void {
@@ -2256,13 +2304,51 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.achievementToast?.hide();
   }
 
-  private commitHighScore(): void {
-    if (this.gameMode === 'last-bounce') return;
-    const updatedProgression = recordHighScore(this.progression, this.score, this.gameMode);
-    if (updatedProgression === this.progression) {
+  private prepareRunRecordTracking(): void {
+    if (this.gameMode === 'last-bounce') {
+      this.runStartingHighScore = 0;
+      this.runHadPriorResult = false;
+      this.runHighScoreCelebrated = false;
+      this.runResultCommitted = true;
       return;
     }
-    this.progression = updatedProgression;
+    this.runStartingHighScore = getHighScore(this.progression, this.gameMode);
+    this.runHadPriorResult = getCompletedRunCount(this.progression, this.gameMode) > 0;
+    this.runHighScoreCelebrated = false;
+    this.runResultCommitted = false;
+  }
+
+  private checkForNewHighScore(): boolean {
+    if (
+      this.tutorialActive
+      || this.gameMode === 'last-bounce'
+      || !this.runHadPriorResult
+      || this.runHighScoreCelebrated
+      || this.score <= this.runStartingHighScore
+    ) {
+      return false;
+    }
+    this.runHighScoreCelebrated = true;
+    const achievementUnlocked = this.unlockAchievementAndSync('highScore', false);
+    this.enqueueHighScoreToast('beaten', achievementUnlocked);
+    return true;
+  }
+
+  private commitRunResult(completed: boolean): void {
+    if (
+      this.gameMode === 'last-bounce'
+      || this.tutorialActive
+      || this.runResultCommitted
+      || (this.gameState !== 'playing' && this.gameState !== 'paused' && this.gameState !== 'gameOver')
+    ) {
+      return;
+    }
+    this.runResultCommitted = true;
+    this.progression = recordRunResult(this.progression, this.score, this.gameMode, completed);
+    if (completed && !this.runHadPriorResult) {
+      const achievementUnlocked = this.unlockAchievementAndSync('highScore', false);
+      this.enqueueHighScoreToast('established', achievementUnlocked);
+    }
     this.mainMenu?.setProgression(this.progression);
   }
 
@@ -2293,6 +2379,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private resetProgression(target: ProgressionResetTarget): DribbleProgressionState {
     this.progression = resetSavedProgression(this.progression, target);
+    if (target === 'freshStart') {
+      this.ball?.setEquippedCosmetic(this.progression.equippedBall);
+      this.applyWristbandColor('left', this.progression.leftWristbandColor);
+      this.applyWristbandColor('right', this.progression.rightWristbandColor);
+      this.updateScoreStarCounter();
+    }
     return this.progression;
   }
 

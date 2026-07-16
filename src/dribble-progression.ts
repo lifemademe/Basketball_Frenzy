@@ -1,7 +1,11 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
 export type WristbandColor = 'orange' | 'blue' | 'lime' | 'pink' | 'white' | 'purple';
 export type WristbandSide = 'left' | 'right';
-export type ProgressionResetTarget = 'normalHighScore' | 'hardHighScore' | 'achievements';
+export type ProgressionResetTarget =
+  | 'normalHighScore'
+  | 'hardHighScore'
+  | 'achievements'
+  | 'freshStart';
 
 export const wristbandColors: readonly WristbandColor[] = [
   'orange',
@@ -25,19 +29,21 @@ export type AchievementId =
   | 'firstPurchase'
   | 'playTutorial'
   | 'starWithoutSwitching'
-  | 'firstPoint';
+  | 'highScore';
 
 export const achievementIds: readonly AchievementId[] = [
   'score10000',
   'firstPurchase',
   'playTutorial',
   'starWithoutSwitching',
-  'firstPoint',
+  'highScore',
 ];
 
 export interface DribbleProgressionState {
   normalHighScore: number;
   hardHighScore: number;
+  normalRunsCompleted: number;
+  hardRunsCompleted: number;
   stars: number;
   leftWristbandColor: WristbandColor;
   rightWristbandColor: WristbandColor;
@@ -49,9 +55,9 @@ export interface DribbleProgressionState {
   achievementMigrationVersion: number;
 }
 
-export const epicBallPrice = 1;
-export const discoBallPrice = 3;
-export const blackHoleBallPrice = 5;
+export const epicBallPrice = 5;
+export const discoBallPrice = 15;
+export const blackHoleBallPrice = 30;
 
 const storageKey = 'basketball-frenzy-progression-v1';
 
@@ -59,6 +65,8 @@ export function createDefaultProgressionState(): DribbleProgressionState {
   return {
     normalHighScore: 0,
     hardHighScore: 0,
+    normalRunsCompleted: 0,
+    hardRunsCompleted: 0,
     stars: 0,
     leftWristbandColor: 'orange',
     rightWristbandColor: 'blue',
@@ -67,7 +75,7 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     blackHoleBallOwned: false,
     equippedBall: 'classic',
     achievements: createDefaultAchievements(),
-    achievementMigrationVersion: 1,
+    achievementMigrationVersion: 3,
   };
 }
 
@@ -84,6 +92,8 @@ export function loadProgression(): DribbleProgressionState {
     const loaded: DribbleProgressionState = {
       normalHighScore: Math.max(sanitizeCount(parsed.normalHighScore), legacyHighScore),
       hardHighScore: sanitizeCount(parsed.hardHighScore),
+      normalRunsCompleted: sanitizeCount(parsed.normalRunsCompleted),
+      hardRunsCompleted: sanitizeCount(parsed.hardRunsCompleted),
       stars: sanitizeCount(parsed.stars),
       leftWristbandColor: isWristbandColor(parsed.leftWristbandColor) ? parsed.leftWristbandColor : 'orange',
       rightWristbandColor: isWristbandColor(parsed.rightWristbandColor) ? parsed.rightWristbandColor : 'blue',
@@ -92,19 +102,26 @@ export function loadProgression(): DribbleProgressionState {
       blackHoleBallOwned,
       equippedBall: isBallCosmetic(parsed.equippedBall) ? parsed.equippedBall : 'classic',
       achievements: loadAchievements(parsed.achievements),
-      achievementMigrationVersion: 1,
+      achievementMigrationVersion: 3,
     };
+    if (loaded.normalRunsCompleted === 0 && loaded.normalHighScore > 0) loaded.normalRunsCompleted = 1;
+    if (loaded.hardRunsCompleted === 0 && loaded.hardHighScore > 0) loaded.hardRunsCompleted = 1;
     if (!isBallOwned(loaded, loaded.equippedBall)) loaded.equippedBall = 'classic';
     if (sanitizeCount(parsed.achievementMigrationVersion) < 1) {
       const bestScore = Math.max(loaded.normalHighScore, loaded.hardHighScore);
-      if (bestScore > 0) loaded.achievements.firstPoint = true;
       if (bestScore >= 10000) loaded.achievements.score10000 = true;
       if (loaded.epicBallOwned || loaded.discoBallOwned || loaded.blackHoleBallOwned) {
         loaded.achievements.firstPurchase = true;
       }
-      return persist(loaded);
     }
-    return loaded;
+    if (sanitizeCount(parsed.achievementMigrationVersion) < 2) {
+      loaded.achievements.highScore = false;
+    }
+    if (sanitizeCount(parsed.achievementMigrationVersion) < 3) {
+      loaded.achievements.highScore = loaded.normalRunsCompleted > 0
+        || loaded.hardRunsCompleted > 0;
+    }
+    return persist(loaded);
   } catch {
     return fallback;
   }
@@ -117,14 +134,21 @@ export function awardStars(state: DribbleProgressionState, amount: number): Drib
   });
 }
 
-export function recordHighScore(
+export function recordRunResult(
   state: DribbleProgressionState,
   score: number,
   mode: 'normal' | 'hard',
+  completed: boolean,
 ): DribbleProgressionState {
+  if (!completed) return state;
   const key = mode === 'hard' ? 'hardHighScore' : 'normalHighScore';
+  const runsKey = mode === 'hard' ? 'hardRunsCompleted' : 'normalRunsCompleted';
   const highScore = Math.max(state[key], sanitizeCount(score));
-  return highScore === state[key] ? state : persist({ ...state, [key]: highScore });
+  return persist({
+    ...state,
+    [key]: highScore,
+    [runsKey]: state[runsKey] + 1,
+  });
 }
 
 export function getHighScore(
@@ -134,20 +158,30 @@ export function getHighScore(
   return mode === 'hard' ? state.hardHighScore : state.normalHighScore;
 }
 
+export function getCompletedRunCount(
+  state: DribbleProgressionState,
+  mode: 'normal' | 'hard',
+): number {
+  return mode === 'hard' ? state.hardRunsCompleted : state.normalRunsCompleted;
+}
+
 export function resetProgression(
   state: DribbleProgressionState,
   target: ProgressionResetTarget,
 ): DribbleProgressionState {
+  if (target === 'freshStart') {
+    return persist(createDefaultProgressionState());
+  }
   if (target === 'normalHighScore') {
-    return persist({ ...state, normalHighScore: 0 });
+    return persist({ ...state, normalHighScore: 0, normalRunsCompleted: 0 });
   }
   if (target === 'hardHighScore') {
-    return persist({ ...state, hardHighScore: 0 });
+    return persist({ ...state, hardHighScore: 0, hardRunsCompleted: 0 });
   }
   return persist({
     ...state,
     achievements: createDefaultAchievements(),
-    achievementMigrationVersion: 1,
+    achievementMigrationVersion: 3,
   });
 }
 
@@ -243,7 +277,7 @@ function createDefaultAchievements(): Record<AchievementId, boolean> {
     firstPurchase: false,
     playTutorial: false,
     starWithoutSwitching: false,
-    firstPoint: false,
+    highScore: false,
   };
 }
 
@@ -256,7 +290,7 @@ function loadAchievements(value: unknown): Record<AchievementId, boolean> {
     firstPurchase: stored.firstPurchase === true,
     playTutorial: stored.playTutorial === true,
     starWithoutSwitching: stored.starWithoutSwitching === true,
-    firstPoint: stored.firstPoint === true,
+    highScore: stored.highScore === true,
   };
 }
 
