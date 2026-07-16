@@ -230,30 +230,33 @@
         <h2>Reset Options</h2>
       </div>
       <div class="dribble-reset-list" role="group" aria-label="Choose data to reset">
-        <button type="button" data-reset-choice="normalHighScore">
+        <button type="button" data-reset-choice="normalHighScore" aria-pressed="false">
           <span><b>Normal Best</b><small data-reset-normal-value>0 points</small></span>
-          <strong>RESET</strong>
+          <strong aria-hidden="true">&rsaquo;</strong>
         </button>
-        <button type="button" data-reset-choice="hardHighScore">
+        <button type="button" data-reset-choice="hardHighScore" aria-pressed="false">
           <span><b>Hard Best</b><small data-reset-hard-value>0 points</small></span>
-          <strong>RESET</strong>
+          <strong aria-hidden="true">&rsaquo;</strong>
         </button>
-        <button type="button" data-reset-choice="achievements">
+        <button type="button" data-reset-choice="achievements" aria-pressed="false">
           <span><b>Achievements</b><small data-reset-achievements-value>0 of 5 complete</small></span>
-          <strong>RESET</strong>
+          <strong aria-hidden="true">&rsaquo;</strong>
         </button>
-        <button type="button" data-reset-choice="audio">
+        <button type="button" data-reset-choice="audio" aria-pressed="false">
           <span><b>Sound Settings</b><small>Restore the default mix</small></span>
-          <strong>RESET</strong>
+          <strong aria-hidden="true">&rsaquo;</strong>
         </button>
       </div>
-      <div class="dribble-reset-confirmation" data-reset-confirmation data-active="false">
-        <p data-reset-confirm-title>Reset this setting?</p>
-        <div>
+      <div class="dribble-reset-confirmation" data-reset-confirmation data-active="false" role="dialog" aria-modal="true" aria-labelledby="dribble-reset-confirm-title">
+        <span class="dribble-reset-confirmation-label">Confirm Reset</span>
+        <p id="dribble-reset-confirm-title" data-reset-confirm-title>Reset this setting?</p>
+        <small>Only this selection will be reset.</small>
+        <div class="dribble-reset-confirmation-actions">
           <button type="button" data-reset-cancel>Cancel</button>
           <button type="button" data-reset-confirm>Confirm</button>
         </div>
       </div>
+      <div class="dribble-reset-confirmation-shade" aria-hidden="true"></div>
       <p class="dribble-reset-status" data-reset-status aria-live="polite"></p>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-reset-back-slot></div>
     </section>

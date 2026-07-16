@@ -225,6 +225,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const button = event.currentTarget as HTMLButtonElement;
     const target = button.dataset.resetChoice;
     if (!this.isResetMenuTarget(target)) return;
+    for (const choice of this.resetChoices) {
+      choice.setAttribute('aria-pressed', String(choice === button));
+    }
     this.pendingReset = target;
     if (this.resetConfirmationTitle) {
       this.resetConfirmationTitle.textContent = this.getResetConfirmationCopy(target);
@@ -501,6 +504,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       '@project/assets/textures/main-menu-background.png',
       '@project/assets/textures/Basketball_frenzy_logo.png',
       '@project/assets/textures/play_button_background.png',
+      '@project/assets/textures/Confirm_button.png',
+      '@project/assets/textures/pause-menu-background.png',
+      '@project/assets/textures/resumebutton.png',
+      '@project/assets/textures/menu_button.png',
       '@project/assets/textures/Tutorial.png',
       '@project/assets/textures/Settings.png',
       '@project/assets/textures/Shop.png',
@@ -911,6 +918,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private closeResetConfirmation(): void {
     this.pendingReset = null;
     if (this.resetConfirmation) this.resetConfirmation.dataset.active = 'false';
+    for (const choice of this.resetChoices) {
+      choice.setAttribute('aria-pressed', 'false');
+    }
   }
 
   private resetAudioSettings(): void {

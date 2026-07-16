@@ -43,6 +43,52 @@ import { DribbleTutorialHud } from './dribble-tutorial-hud.js';
 type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
 export type DribbleInputAction = 'boost' | 'transfer' | null;
 
+interface AchievementToastDefinition {
+  title: string;
+  description: string;
+  iconPath: string;
+  iconScale: number;
+  rarity: 'rare' | 'epic' | 'legendary';
+}
+
+const achievementToastDefinitions: Readonly<Record<AchievementId, AchievementToastDefinition>> = {
+  score10000: {
+    title: 'Five-Figure Run',
+    description: 'Score 10,000 points in one game.',
+    iconPath: '@project/assets/textures/10000pointsinonegame.png',
+    iconScale: 3.2,
+    rarity: 'legendary',
+  },
+  firstPurchase: {
+    title: 'First Purchase',
+    description: 'Buy your first ball from the shop.',
+    iconPath: '@project/assets/textures/First purchase.png',
+    iconScale: 3.2,
+    rarity: 'epic',
+  },
+  playTutorial: {
+    title: 'Training Day',
+    description: 'Play the tutorial.',
+    iconPath: '@project/assets/textures/play tutorial.png',
+    iconScale: 3.2,
+    rarity: 'rare',
+  },
+  starWithoutSwitching: {
+    title: 'Hold Your Ground',
+    description: 'Collect a star without switching lanes.',
+    iconPath: '@project/assets/textures/Star without switching lanes.png',
+    iconScale: 4.4,
+    rarity: 'epic',
+  },
+  firstPoint: {
+    title: 'First Point',
+    description: 'Score your first point.',
+    iconPath: '@project/assets/textures/First point.png',
+    iconScale: 3.2,
+    rarity: 'rare',
+  },
+};
+
 interface HandAnimationState {
   action: THREE.AnimationAction;
   mixer: THREE.AnimationMixer;
@@ -60,6 +106,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private mainMenu: DribbleMainMenu | null = null;
   private overlay: DribbleOverlay | null = null;
   private tutorialHud: DribbleTutorialHud | null = null;
+  private achievementToast: ENGINE.Achievement | null = null;
   private spawnTimer = 0.9;
   private elapsedTime = 0;
   private score = 0;
@@ -85,6 +132,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly activeTargets: DribbleTarget[] = [];
   private readonly targetSpawnSwitchCounts = new WeakMap<DribbleTarget, number>();
   private readonly targetPaceScales = new WeakMap<DribbleTarget, number>();
+  private readonly achievementToastQueue: AchievementId[] = [];
+  private readonly achievementIconUrls = new Map<AchievementId, string>();
   private readonly patternDirector = new DribblePatternDirector();
   private readonly tutorialDirector = new DribbleTutorialDirector();
   private tutorialActive = false;
@@ -114,6 +163,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private lastSpawnIntervalScale = 1;
   private laneSwitchCount = 0;
   private difficultyStage = 0;
+  private achievementToastTimer: ReturnType<typeof setTimeout> | null = null;
+  private achievementToastActive = false;
 
   public handleLeftClick(): DribbleInputAction {
     if (this.gameState !== 'playing') return null;
@@ -161,6 +212,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.musicDirector?.setState('gameplay');
+    this.clearAchievementToasts();
 
     if (!this.tutorialActive) this.commitHighScore();
     this.stopTutorial();
@@ -211,7 +263,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const world = this.getWorld();
     if (!world) return;
     this.musicDirector?.setState('gameplay');
-
+    this.clearAchievementToasts();
     this.unlockAchievementAndSync('playTutorial');
 
     for (const target of this.activeTargets) target.destroy();
@@ -315,6 +367,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   protected override doEndPlay(): void {
+    this.clearAchievementToasts();
     this.scoreDisplay?.destroy();
     this.musicDirector?.stop();
     this.musicDirector = null;
@@ -324,6 +377,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.sideHints?.destroy();
     this.timingMeter?.destroy();
     this.juiceHud?.destroy();
+    this.achievementToast?.destroy();
     this.tutorialHud?.destroy();
     this.mainMenu?.destroy();
     this.overlay?.destroy();
@@ -333,6 +387,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.sideHints = null;
     this.timingMeter = null;
     this.juiceHud = null;
+    this.achievementToast = null;
     this.tutorialHud = null;
     this.mainMenu = null;
     this.overlay = null;
@@ -525,6 +580,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.scoreStarAssetUrl = await ENGINE.resolveAssetPathsInText(
       '@project/assets/textures/Star.png',
     );
+    await this.resolveAchievementIconUrls();
     const gameContainer = world.gameContainer;
     if (gameContainer) {
       this.previousGameCursor = gameContainer.style.cursor;
@@ -560,6 +616,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       position: 'top-center',
       visible: false,
     });
+    this.achievementToast = new ENGINE.Achievement(world.uiManager, {
+      position: 'top-right',
+      visible: false,
+    });
     this.mainMenu = new DribbleMainMenu(world.uiManager, {
       onPlay: mode => this.restartRun(mode),
       onTutorial: () => this.startTutorial(),
@@ -590,6 +650,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.sideHints.initialize(),
       this.timingMeter.initialize(),
       this.juiceHud.initialize(),
+      this.achievementToast.initialize(),
       this.tutorialHud.initialize(),
       this.mainMenu.initialize(),
       this.overlay.initialize(),
@@ -667,9 +728,67 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'color': '#ffffff',
       'letter-spacing': '0',
     }, '.ui-number-display-value');
+    this.configureAchievementToast();
     this.syncUiState();
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     if (gameContainer) hideDribbleBootScreen(gameContainer);
+  }
+
+  private async resolveAchievementIconUrls(): Promise<void> {
+    const ids = Object.keys(achievementToastDefinitions) as AchievementId[];
+    const resolvedUrls = await Promise.all(ids.map(id => (
+      ENGINE.resolveAssetPathsInText(achievementToastDefinitions[id].iconPath)
+    )));
+    for (let index = 0; index < ids.length; index += 1) {
+      this.achievementIconUrls.set(ids[index], resolvedUrls[index]);
+    }
+  }
+
+  private configureAchievementToast(): void {
+    this.achievementToast?.setPosition({
+      'position': 'fixed',
+      'z-index': '14500',
+      'top': 'clamp(88px, 10vh, 108px)',
+      'right': 'max(16px, env(safe-area-inset-right))',
+      'bottom': 'auto',
+      'left': 'auto',
+      'width': 'min(330px, calc(100vw - 32px))',
+      'min-width': '0',
+      'max-width': '330px',
+      'padding': '10px 12px',
+      'gap': '10px',
+      'box-sizing': 'border-box',
+      'border': '2px solid #ffd34f',
+      'border-radius': '8px',
+      'background-color': 'rgba(5, 24, 67, 0.94)',
+      'box-shadow': '0 8px 20px rgba(0, 15, 55, 0.38)',
+      'font-family': 'Boogaloo, sans-serif',
+      'pointer-events': 'none',
+    }, '.ui-achievement');
+    this.achievementToast?.setPosition({
+      'width': '52px',
+      'height': '52px',
+      'border-radius': '7px',
+      'background': 'rgba(24, 111, 210, 0.38)',
+    }, '.ui-achievement-icon');
+    this.achievementToast?.setPosition({
+      'gap': '1px',
+    }, '.ui-achievement-body');
+    this.achievementToast?.setPosition({
+      'color': '#ffffff',
+      'font-family': 'Boogaloo, sans-serif',
+      'font-size': '21px',
+      'font-weight': '400',
+      'line-height': '24px',
+      'letter-spacing': '0',
+    }, '.ui-achievement-title');
+    this.achievementToast?.setPosition({
+      'color': '#cce8ff',
+      'font-family': 'Boogaloo, sans-serif',
+      'font-size': '14px',
+      'line-height': '18px',
+      'letter-spacing': '0',
+    }, '.ui-achievement-description');
   }
 
   private addHand(world: ENGINE.World, name: string, modelUrl: string): void {
@@ -1421,6 +1540,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     if (!this.tutorialActive) this.commitHighScore();
     this.stopTutorial();
+    this.clearAchievementToasts();
     this.gameState = 'menu';
     this.musicDirector?.setState('menu');
     this.setGameplayActive(false);
@@ -1438,6 +1558,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.gameState = 'paused';
+    this.clearAchievementToasts();
     this.musicDirector?.setPaused(true);
     this.setGameplayActive(false);
     this.setHudVisible(false);
@@ -1469,6 +1590,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.gameState = 'gameOver';
+    this.clearAchievementToasts();
     this.musicDirector?.setPaused(true);
     this.commitHighScore();
     this.setGameplayActive(false);
@@ -1530,6 +1652,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private purchaseBall(cosmetic: BallCosmetic): DribbleProgressionState {
     const previouslyOwned = isBallOwned(this.progression, cosmetic);
+    const firstPurchaseWasUnlocked = this.progression.achievements.firstPurchase;
     this.progression = purchaseBall(this.progression, cosmetic);
     this.ball?.setEquippedCosmetic(this.progression.equippedBall);
     this.updateScoreStarCounter();
@@ -1539,6 +1662,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         bus: 'SFX',
       });
     }
+    if (!firstPurchaseWasUnlocked && this.progression.achievements.firstPurchase) {
+      this.enqueueAchievementToast('firstPurchase');
+    }
     return this.progression;
   }
 
@@ -1547,6 +1673,50 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (updatedProgression === this.progression) return;
     this.progression = updatedProgression;
     this.mainMenu?.setProgression(this.progression);
+    this.enqueueAchievementToast(achievement);
+  }
+
+  private enqueueAchievementToast(achievement: AchievementId): void {
+    this.achievementToastQueue.push(achievement);
+    this.showNextAchievementToast();
+  }
+
+  private showNextAchievementToast(): void {
+    if (this.achievementToastActive || !this.achievementToast) return;
+    const achievement = this.achievementToastQueue.shift();
+    if (!achievement) return;
+    const definition = achievementToastDefinitions[achievement];
+    const iconUrl = this.achievementIconUrls.get(achievement) ?? '';
+    this.achievementToastActive = true;
+    this.achievementToast.show({
+      title: definition.title,
+      description: definition.description,
+      iconHtml: `<img src="${iconUrl}" alt="" style="width:100%;height:100%;max-width:none;object-fit:contain;transform:scale(${definition.iconScale});">`,
+      rarity: definition.rarity,
+      duration: 3000,
+    });
+    const world = this.getWorld();
+    if (world) {
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.2,
+        bus: 'SFX',
+      });
+    }
+    this.achievementToastTimer = setTimeout(() => {
+      this.achievementToastTimer = null;
+      this.achievementToastActive = false;
+      this.showNextAchievementToast();
+    }, 3400);
+  }
+
+  private clearAchievementToasts(): void {
+    if (this.achievementToastTimer !== null) {
+      clearTimeout(this.achievementToastTimer);
+      this.achievementToastTimer = null;
+    }
+    this.achievementToastQueue.length = 0;
+    this.achievementToastActive = false;
+    this.achievementToast?.hide();
   }
 
   private commitHighScore(): void {

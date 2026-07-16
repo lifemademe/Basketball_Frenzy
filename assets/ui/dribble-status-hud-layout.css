@@ -88,19 +88,20 @@
 
 .dribble-timing {
   --timing-progress: 0%;
-  width: min(360px, calc(100vw - 360px));
-  min-width: 220px;
-  padding: 10px 13px 13px;
+  width: min(410px, calc(100vw - 360px));
+  min-width: 240px;
+  padding: 11px 15px 15px;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 220, 106, 0.24);
   border-radius: 8px;
-  background: rgba(15, 19, 23, 0.62);
+  background: linear-gradient(180deg, rgba(17, 22, 31, 0.76), rgba(7, 11, 18, 0.66));
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   color: #e8eaed;
   font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
   pointer-events: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
 }
 
 .dribble-timing.top-center {
@@ -112,10 +113,10 @@
 
 .dribble-timing.bottom-center {
   position: fixed;
-  bottom: 24px;
+  bottom: 22px;
   left: 50%;
   transform: translateX(-50%);
-  opacity: 0.86;
+  opacity: 0.9;
 }
 
 .dribble-timing-header {
@@ -123,57 +124,129 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 9px;
+  margin-bottom: 10px;
+  color: #d9e2ed;
+  font-size: 12px;
+  line-height: 15px;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.72);
 }
 
 .dribble-timing-header strong {
-  color: #6b7280;
+  min-width: 72px;
+  padding: 2px 7px;
+  border: 1px solid rgba(143, 160, 180, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #8f9bab;
   font-size: 11px;
+  line-height: 14px;
   letter-spacing: 0;
+  text-align: center;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .dribble-timing-track {
   position: relative;
-  height: 10px;
+  height: 13px;
   overflow: visible;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(205, 220, 235, 0.2);
+  border-radius: 7px;
+  background:
+    linear-gradient(90deg, transparent 24.7%, rgba(255, 255, 255, 0.1) 25%, transparent 25.3%, transparent 74.7%, rgba(255, 255, 255, 0.1) 75%, transparent 75.3%),
+    linear-gradient(180deg, #2c3540, #151b22);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.58), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dribble-timing-track::after {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  width: 24%;
   border-radius: 5px;
-  background: #292f34;
+  background: linear-gradient(90deg, transparent, rgba(116, 207, 255, 0.34), transparent);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dribble-timing[data-active='false'] .dribble-timing-track::after {
+  animation: dribble-timing-scan 1.8s ease-in-out infinite;
 }
 
 .dribble-timing-perfect {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 44%;
-  width: 12%;
-  background: rgba(89, 223, 134, 0.32);
+  top: 1px;
+  bottom: 1px;
+  left: 43%;
+  width: 14%;
+  border-right: 1px solid rgba(255, 224, 111, 0.58);
+  border-left: 1px solid rgba(255, 224, 111, 0.58);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255, 190, 30, 0.16), rgba(255, 225, 105, 0.5), rgba(255, 190, 30, 0.16));
+  box-shadow: 0 0 9px rgba(255, 199, 40, 0.22), inset 0 0 5px rgba(255, 242, 177, 0.22);
+  transition: background 120ms ease, box-shadow 120ms ease;
 }
 
 .dribble-timing-center-line {
   position: absolute;
-  top: -4px;
-  bottom: -4px;
+  top: -5px;
+  bottom: -5px;
   left: 50%;
   width: 2px;
-  background: #59df86;
+  border-radius: 2px;
+  background: #fff4be;
   transform: translateX(-1px);
-  box-shadow: 0 0 8px rgba(89, 223, 134, 0.65);
+  box-shadow: 0 0 7px rgba(255, 211, 68, 0.78);
+}
+
+.dribble-timing-center-line::before,
+.dribble-timing-center-line::after {
+  position: absolute;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(255, 226, 111, 0.9);
+  background: #ffd34f;
+  content: '';
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 0 0 7px rgba(255, 205, 49, 0.62);
+}
+
+.dribble-timing-center-line::before {
+  top: -5px;
+}
+
+.dribble-timing-center-line::after {
+  bottom: -5px;
 }
 
 .dribble-timing-marker {
   position: absolute;
   top: 50%;
   left: var(--timing-progress);
-  width: 16px;
-  height: 16px;
+  z-index: 2;
+  display: grid;
+  width: 19px;
+  height: 19px;
   box-sizing: border-box;
-  border: 3px solid #f4f7f8;
+  border: 3px solid #f7fbff;
   border-radius: 50%;
-  background: #ff5d57;
+  background: #ff665f;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.72), 0 0 0 2px rgba(255, 102, 95, 0.18);
   opacity: 0;
   transform: translate(-50%, -50%);
-  transition: left 40ms linear, background-color 90ms ease, box-shadow 90ms ease, opacity 120ms ease;
+  place-items: center;
+  transition: left 40ms linear, background-color 90ms ease, box-shadow 90ms ease, opacity 120ms ease, transform 100ms ease;
+}
+
+.dribble-timing-marker i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.9);
 }
 
 .dribble-timing[data-active='true'] .dribble-timing-marker {
@@ -181,12 +254,26 @@
 }
 
 .dribble-timing[data-ready='true'] .dribble-timing-marker {
-  background: #59df86;
-  box-shadow: 0 0 12px rgba(89, 223, 134, 0.9);
+  background: #ffd34f;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.58), 0 0 10px #ffd34f, 0 0 20px rgba(255, 190, 20, 0.78);
+  animation: dribble-timing-marker-ready 440ms ease-in-out infinite alternate;
 }
 
 .dribble-timing[data-ready='true'] .dribble-timing-header strong {
-  color: #59df86;
+  border-color: rgba(255, 221, 95, 0.75);
+  background: rgba(142, 94, 0, 0.42);
+  color: #fff3bd;
+  box-shadow: 0 0 10px rgba(255, 199, 40, 0.35);
+}
+
+.dribble-timing[data-ready='true'] {
+  border-color: rgba(255, 220, 86, 0.68);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 0 16px rgba(255, 190, 25, 0.22), inset 0 1px 0 rgba(255, 248, 204, 0.14);
+}
+
+.dribble-timing[data-ready='true'] .dribble-timing-perfect {
+  background: linear-gradient(90deg, rgba(255, 190, 30, 0.28), rgba(255, 239, 159, 0.72), rgba(255, 190, 30, 0.28));
+  box-shadow: 0 0 12px rgba(255, 199, 40, 0.58), inset 0 0 6px rgba(255, 249, 213, 0.44);
 }
 
 .dribble-juice-hud {
@@ -351,6 +438,18 @@
   animation: dribble-score-praise 760ms cubic-bezier(0.18, 0.82, 0.25, 1) both;
 }
 
+@keyframes dribble-timing-scan {
+  0% { opacity: 0; transform: translateX(-20%); }
+  18% { opacity: 0.5; }
+  82% { opacity: 0.5; }
+  100% { opacity: 0; transform: translateX(418%); }
+}
+
+@keyframes dribble-timing-marker-ready {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to { transform: translate(-50%, -50%) scale(1.16); }
+}
+
 @keyframes dribble-lives-hit {
   0% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
@@ -426,5 +525,12 @@
 
   .dribble-score-praise {
     font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dribble-timing[data-active='false'] .dribble-timing-track::after,
+  .dribble-timing[data-ready='true'] .dribble-timing-marker {
+    animation: none;
   }
 }

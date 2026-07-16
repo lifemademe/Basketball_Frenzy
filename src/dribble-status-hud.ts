@@ -293,7 +293,7 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
   }
 
   protected override getInitialData(): Record<string, string> {
-    return { label: 'CENTER TARGET', state: 'SCANNING' };
+    return { label: 'CENTER SWITCH', state: 'SCANNING' };
   }
 
   protected override cacheElements(): void {
@@ -307,9 +307,11 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
       return;
     }
     const clampedProgress = Math.max(0, Math.min(1, progress));
+    const stateChanged = active !== this.lastActive || ready !== this.lastReady;
     if (Math.abs(clampedProgress - this.lastProgress) >= 0.0025) {
       this.lastProgress = clampedProgress;
       this.rootElement.style.setProperty('--timing-progress', `${clampedProgress * 100}%`);
+      this.rootElement.setAttribute('aria-valuenow', String(Math.round(clampedProgress * 100)));
     }
     if (active !== this.lastActive) {
       this.lastActive = active;
@@ -319,11 +321,17 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
       this.lastReady = ready;
       this.rootElement.dataset.ready = ready ? 'true' : 'false';
     }
-    if (this.stateElement) {
-      const label = !active ? 'SCANNING' : ready ? 'SWITCH' : 'TRACKING';
+    if (stateChanged && this.stateElement) {
+      const label = !active ? 'SCANNING' : ready ? 'SWITCH NOW' : 'TRACKING';
       if (this.stateElement.textContent !== label) {
         this.stateElement.textContent = label;
       }
+    }
+    if (stateChanged) {
+      this.rootElement.setAttribute(
+        'aria-valuetext',
+        !active ? 'Scanning for a center target' : ready ? 'Switch now' : 'Tracking center target',
+      );
     }
   }
 

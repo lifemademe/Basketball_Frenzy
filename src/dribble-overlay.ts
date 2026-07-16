@@ -20,7 +20,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   };
 
   private rootElement: HTMLElement | null = null;
-  private eyebrowElement: HTMLElement | null = null;
   private titleElement: HTMLElement | null = null;
   private subtitleElement: HTMLElement | null = null;
   private scoreLabelElement: HTMLElement | null = null;
@@ -35,6 +34,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   private readonly handleClose = (event: MouseEvent): void => {
     event.preventDefault();
     event.stopPropagation();
+    if (this.rootElement?.dataset.mode === 'game-over') {
+      this.options.onMainMenu();
+      return;
+    }
     this.options.onResume();
   };
 
@@ -59,7 +62,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
 
   protected override getInitialData(): Record<string, string> {
     return {
-      eyebrow: 'RUN PAUSED',
       title: 'PAUSED',
       subtitle: 'Take a breath. The court is waiting.',
       scoreLabel: 'CURRENT SCORE',
@@ -70,7 +72,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   protected override cacheElements(): void {
     if (!this.layout) return;
     this.rootElement = this.layout.querySelector('[data-dribble-overlay]') as HTMLElement | null;
-    this.eyebrowElement = this.layout.querySelector('[data-overlay-eyebrow]') as HTMLElement | null;
     this.titleElement = this.layout.querySelector('[data-overlay-title]') as HTMLElement | null;
     this.subtitleElement = this.layout.querySelector('[data-overlay-subtitle]') as HTMLElement | null;
     this.scoreLabelElement = this.layout.querySelector('[data-overlay-score-label]') as HTMLElement | null;
@@ -112,7 +113,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   public showPause(score: number): void {
     this.setContent({
       mode: 'pause',
-      eyebrow: 'RUN PAUSED',
       title: 'PAUSED',
       subtitle: 'Take a breath. The court is waiting.',
       scoreLabel: 'CURRENT SCORE',
@@ -126,7 +126,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     const modeLabel = mode === 'hard' ? 'Hard' : 'Normal';
     this.setContent({
       mode: 'game-over',
-      eyebrow: 'RUN COMPLETE',
       title: 'GAME OVER',
       subtitle: `${modeLabel} best: ${highScore}`,
       scoreLabel: 'POINTS',
@@ -138,7 +137,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
 
   private setContent(content: {
     mode: 'pause' | 'game-over';
-    eyebrow: string;
     title: string;
     subtitle: string;
     scoreLabel: string;
@@ -146,7 +144,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     showResume: boolean;
   }): void {
     if (this.rootElement) this.rootElement.dataset.mode = content.mode;
-    if (this.eyebrowElement) this.eyebrowElement.textContent = content.eyebrow;
+    this.closeButton?.setAttribute(
+      'aria-label',
+      content.mode === 'game-over' ? 'Go to main menu' : 'Resume game',
+    );
     if (this.titleElement) this.titleElement.textContent = content.title;
     if (this.subtitleElement) this.subtitleElement.textContent = content.subtitle;
     if (this.scoreLabelElement) this.scoreLabelElement.textContent = content.scoreLabel;
@@ -159,7 +160,6 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.closeButton?.removeEventListener('mousedown', this.stopPointerEvent);
     this.closeButton?.removeEventListener('click', this.handleClose);
     this.rootElement = null;
-    this.eyebrowElement = null;
     this.titleElement = null;
     this.subtitleElement = null;
     this.scoreLabelElement = null;

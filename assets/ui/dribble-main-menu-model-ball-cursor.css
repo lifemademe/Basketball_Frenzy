@@ -732,7 +732,7 @@
 }
 
 .dribble-main-menu-reset {
-  padding-bottom: 132px;
+  padding-bottom: 124px;
 }
 
 .dribble-reset-heading span {
@@ -742,39 +742,57 @@
 }
 
 .dribble-reset-heading h2 {
-  margin-bottom: 13px;
+  margin: 0 0 16px;
   color: #ffffff;
-  font-size: 34px;
-  line-height: 38px;
-  text-shadow: 0 3px 0 #0b43a5;
+  font-size: 38px;
+  line-height: 40px;
+  text-align: center;
+  text-shadow: 0 3px 0 #0b43a5, 0 6px 14px rgba(0, 26, 89, 0.42);
 }
 
 .dribble-reset-list {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .dribble-reset-list > button {
+  --reset-accent: #63d8ff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 56px;
-  padding: 8px 12px 8px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  min-height: 59px;
+  padding: 8px 11px 8px 17px;
+  border: 1px solid rgba(162, 218, 255, 0.34);
   border-radius: 7px;
-  background: rgba(4, 45, 119, 0.52);
+  background: linear-gradient(90deg, rgba(5, 49, 126, 0.72), rgba(7, 77, 166, 0.48));
+  box-shadow: inset 3px 0 0 var(--reset-accent), 0 5px 12px rgba(0, 24, 79, 0.14);
   color: #ffffff;
   font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
   text-align: left;
-  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.dribble-reset-list > button[data-reset-choice='hardHighScore'] {
+  --reset-accent: #ff7587;
+}
+
+.dribble-reset-list > button[data-reset-choice='achievements'] {
+  --reset-accent: #ffd24d;
+}
+
+.dribble-reset-list > button[data-reset-choice='audio'] {
+  --reset-accent: #bd91ff;
 }
 
 .dribble-reset-list > button:hover,
-.dribble-reset-list > button:focus-visible {
-  border-color: #ffffff;
+.dribble-reset-list > button:focus-visible,
+.dribble-reset-list > button[aria-pressed='true'] {
+  border-color: var(--reset-accent);
   outline: none;
-  background: rgba(14, 91, 190, 0.74);
+  background: linear-gradient(90deg, rgba(10, 74, 164, 0.88), rgba(21, 120, 214, 0.7));
+  box-shadow: inset 4px 0 0 var(--reset-accent), 0 0 0 2px color-mix(in srgb, var(--reset-accent) 24%, transparent), 0 8px 16px rgba(0, 30, 96, 0.22);
   transform: translateX(3px);
 }
 
@@ -784,9 +802,9 @@
 }
 
 .dribble-reset-list > button b {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 400;
-  line-height: 22px;
+  line-height: 23px;
 }
 
 .dribble-reset-list > button small {
@@ -800,13 +818,17 @@
 
 .dribble-reset-list > button strong {
   flex: 0 0 auto;
-  padding: 5px 9px;
-  border: 1px solid rgba(255, 171, 171, 0.58);
-  border-radius: 5px;
-  background: rgba(145, 28, 42, 0.62);
-  color: #ffe4e4;
-  font-size: 12px;
-  line-height: 15px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--reset-accent) 62%, white);
+  border-radius: 50%;
+  background: rgba(0, 29, 85, 0.48);
+  color: var(--reset-accent);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 25px;
+  place-items: center;
 }
 
 .dribble-reset-confirmation {
@@ -815,14 +837,26 @@
   top: 50%;
   left: 50%;
   display: none;
-  width: min(310px, calc(100% - 92px));
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  width: min(356px, calc(100% - 66px));
+  padding: 25px 23px 18px;
+  border: 1px solid rgba(114, 205, 255, 0.58);
   border-radius: 8px;
-  background: rgba(4, 18, 55, 0.96);
-  box-shadow: 0 16px 30px rgba(0, 8, 34, 0.58);
+  background: linear-gradient(180deg, rgba(8, 50, 123, 0.99), rgba(3, 19, 61, 0.99));
+  box-shadow: 0 22px 44px rgba(0, 6, 31, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   box-sizing: border-box;
   transform: translate(-50%, -50%);
+}
+
+.dribble-reset-confirmation::before {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  width: 76%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: #ffd34f;
+  box-shadow: 0 0 12px rgba(255, 204, 49, 0.72);
+  content: '';
 }
 
 .dribble-reset-confirmation[data-active='true'] {
@@ -830,48 +864,96 @@
   animation: dribble-reset-confirmation-enter 160ms ease-out both;
 }
 
+.dribble-reset-confirmation-label {
+  display: block;
+  margin-bottom: 7px;
+  color: #ffd34f;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .dribble-reset-confirmation p {
-  margin: 0 0 15px;
+  margin: 0 0 4px;
   color: #ffffff;
-  font-size: 22px;
-  line-height: 26px;
+  font-size: 25px;
+  line-height: 28px;
+  text-align: center;
+  text-shadow: 0 3px 8px rgba(0, 14, 55, 0.72);
+}
+
+.dribble-reset-confirmation > small {
+  display: block;
+  margin-bottom: 8px;
+  color: #bcdcff;
+  font-size: 13px;
+  line-height: 16px;
   text-align: center;
 }
 
-.dribble-reset-confirmation > div {
+.dribble-reset-confirmation-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: 2px;
 }
 
 .dribble-reset-confirmation button {
-  min-height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: 6px;
-  background: #176ec7;
+  min-width: 0;
+  min-height: 66px;
+  border: 0;
+  border-radius: 0;
+  background: transparent url('@project/assets/textures/play_button_background.png') center / 100% 100% no-repeat;
   color: #ffffff;
-  font: 400 18px/22px 'Boogaloo', 'Trebuchet MS', sans-serif;
+  font: 400 22px/24px 'Boogaloo', 'Trebuchet MS', sans-serif;
+  text-shadow: 0 2px 0 rgba(0, 41, 122, 0.82), 0 3px 7px rgba(0, 21, 70, 0.62);
+  cursor: pointer;
+  filter: drop-shadow(0 6px 6px rgba(0, 17, 65, 0.28));
+  transition: filter 130ms ease, transform 130ms ease;
 }
 
 .dribble-reset-confirmation button[data-reset-confirm] {
-  border-color: rgba(255, 184, 184, 0.7);
-  background: #a6293b;
+  background-image: url('@project/assets/textures/Confirm_button.png');
+  text-shadow: 0 2px 0 rgba(109, 5, 22, 0.82), 0 3px 7px rgba(64, 0, 10, 0.62);
 }
 
 .dribble-reset-confirmation button:hover,
 .dribble-reset-confirmation button:focus-visible {
   outline: none;
-  filter: brightness(1.15);
-  transform: translateY(-1px);
+  filter: brightness(1.12) saturate(1.08) drop-shadow(0 8px 7px rgba(0, 16, 64, 0.38));
+  transform: translateY(-2px) scale(1.025);
+}
+
+.dribble-reset-confirmation-shade {
+  position: absolute;
+  z-index: 4;
+  inset: 5.5%;
+  display: none;
+  border-radius: 20px;
+  background: rgba(0, 8, 35, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+.dribble-reset-confirmation[data-active='true'] + .dribble-reset-confirmation-shade {
+  display: block;
+  animation: dribble-reset-shade-enter 140ms ease-out both;
 }
 
 .dribble-reset-status {
-  min-height: 18px;
-  margin: 10px 2px 0;
+  min-height: 17px;
+  margin: 9px 2px 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(105, 255, 158, 0.28);
+  border-radius: 5px;
+  background: rgba(9, 94, 73, 0.28);
   color: #86ffac;
   font-size: 14px;
-  line-height: 18px;
+  line-height: 17px;
   text-align: center;
+}
+
+.dribble-reset-status:empty {
+  visibility: hidden;
 }
 
 .dribble-main-menu-achievements {
@@ -889,8 +971,8 @@
 .dribble-achievements-close {
   position: absolute;
   z-index: 2;
-  top: 7.4%;
-  right: 10.2%;
+  top: 5%;
+  right: 6.5%;
   width: 48px;
   height: 48px;
   margin: 0;
@@ -899,15 +981,33 @@
 .dribble-achievements-close .ui-button,
 .dribble-achievements-close .ui-button:hover,
 .dribble-achievements-close .ui-button:focus-visible {
+  display: grid;
   width: 48px;
+  height: 48px;
   min-height: 48px;
+  max-height: 48px;
   padding: 0;
+  box-sizing: border-box;
   border: 0;
-  background: transparent url('@project/assets/textures/close.png') center / 42px 36px no-repeat !important;
+  background: transparent url('@project/assets/textures/close.png') center / 42px auto no-repeat !important;
   color: transparent;
   font-size: 0;
   filter: none;
+  justify-content: center;
+  place-items: center;
   transform: none;
+  transition: filter 130ms ease, transform 130ms ease;
+}
+
+.dribble-main-menu .dribble-achievements-close .ui-button:hover,
+.dribble-main-menu .dribble-achievements-close .ui-button:focus-visible {
+  filter: brightness(1.15) saturate(1.1);
+  transform: scale(1.1) rotate(3deg);
+}
+
+.dribble-main-menu .dribble-achievements-close .ui-button:active {
+  filter: brightness(0.94);
+  transform: scale(0.96);
 }
 
 .dribble-achievements-summary {
@@ -973,7 +1073,7 @@
 }
 
 .dribble-achievement[data-achievement-id='starWithoutSwitching'] .dribble-achievement-icon {
-  background: transparent url('@project/assets/textures/Star without switching lanes.png') center / 440% auto no-repeat;
+  background: transparent url('@project/assets/textures/Star without switching lanes.png') center / 330% auto no-repeat;
 }
 
 .dribble-achievement[data-achievement-id='starWithoutSwitching'][data-unlocked='false'] .dribble-achievement-icon {
@@ -1447,6 +1547,11 @@
   to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
+@keyframes dribble-reset-shade-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes dribble-logo-sparkle {
   0%, 58%, 100% { opacity: 0; transform: scale(0.25) rotate(0); }
   68% { opacity: 1; transform: scale(1.25) rotate(38deg); }
@@ -1530,7 +1635,25 @@
   }
 
   .dribble-main-menu-reset {
-    padding-bottom: 122px;
+    padding-bottom: 116px;
+  }
+
+  .dribble-reset-heading h2 {
+    margin-bottom: 12px;
+    font-size: 34px;
+    line-height: 37px;
+  }
+
+  .dribble-reset-list {
+    gap: 6px;
+  }
+
+  .dribble-reset-list > button {
+    min-height: 54px;
+  }
+
+  .dribble-reset-confirmation {
+    width: min(340px, calc(100% - 54px));
   }
 
   .dribble-main-menu-achievements {
@@ -1541,8 +1664,8 @@
   }
 
   .dribble-achievements-close {
-    top: 7.4%;
-    right: 10.2%;
+    top: 5%;
+    right: 6.5%;
     transform: none;
   }
 
