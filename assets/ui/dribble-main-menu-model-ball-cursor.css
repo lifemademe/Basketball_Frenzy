@@ -413,6 +413,7 @@
 
 .dribble-main-menu[data-panel='home'] .dribble-main-menu-home,
 .dribble-main-menu[data-panel='mode-select'] .dribble-main-menu-mode-select,
+.dribble-main-menu[data-panel='tutorial-select'] .dribble-main-menu-tutorial-select,
 .dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-how,
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-settings,
 .dribble-main-menu[data-panel='shop'] .dribble-main-menu-shop,
@@ -428,6 +429,7 @@
 }
 
 .dribble-main-menu-mode-select,
+.dribble-main-menu-tutorial-select,
 .dribble-main-menu-how,
 .dribble-main-menu-settings,
 .dribble-main-menu-shop,
@@ -441,6 +443,44 @@
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
+.dribble-main-menu-tutorial-select {
+  position: relative;
+  min-height: 548px;
+  padding: 62px 50px 34px;
+  box-sizing: border-box;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
+.dribble-tutorial-options {
+  gap: 18px;
+}
+
+.dribble-tutorial-mode-copy {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 16px;
+  display: flex;
+  width: 170px;
+  flex-direction: column;
+  color: #ffffff;
+  text-align: right;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.dribble-tutorial-mode-copy strong {
+  color: #ffdc63;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.dribble-tutorial-mode-copy span {
+  color: rgba(255, 255, 255, 0.82);
+  font: 700 11px/14px Arial, sans-serif;
 }
 
 .dribble-mode-heading {
@@ -935,6 +975,30 @@
   color: #ffffff;
 }
 
+.dribble-shop-heading small {
+  display: block;
+  margin-top: 2px;
+  color: #dff7ff;
+  font-size: 12px;
+  line-height: 15px;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.76);
+}
+
+.dribble-main-menu-settings .dribble-main-menu-setting {
+  margin-bottom: 10px;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-toggle {
+  min-height: 40px;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-toggle > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 18px;
+}
+
 .dribble-main-menu-settings,
 .dribble-main-menu-shop,
 .dribble-main-menu-reset {
@@ -948,6 +1012,7 @@
 }
 
 .dribble-main-menu[data-panel='mode-select'] .dribble-main-menu-brand,
+.dribble-main-menu[data-panel='tutorial-select'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='shop'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='achievements'] .dribble-main-menu-brand,
@@ -1656,6 +1721,9 @@
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button,
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-tutorial-select .dribble-main-menu-back .ui-button,
+.dribble-main-menu-tutorial-select .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-tutorial-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible,
@@ -1687,12 +1755,35 @@
 .dribble-main-menu-how .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-tutorial-select .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-tutorial-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-reset .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-reset .dribble-main-menu-back .ui-button:focus-visible {
   filter: brightness(1.1) saturate(1.08);
   transform: translateY(-2px) scale(1.025);
+}
+
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:active,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:active {
+  outline: none !important;
+  background: transparent url('@project/assets/textures/Back.png') center / contain no-repeat !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-settings .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
+  transform: translateY(-2px) scale(1.018);
 }
 
 .dribble-main-menu-setting > span {
@@ -2080,4 +2171,14 @@
     animation: none;
     transition: none;
   }
+}
+
+[data-reduced-motion='true'] .dribble-name-entry-card,
+[data-reduced-motion='true'] .dribble-main-menu-panel,
+[data-reduced-motion='true'] .dribble-logo-sparkle,
+[data-reduced-motion='true'] .dribble-menu-ball,
+[data-reduced-motion='true'] .dribble-main-menu-action .ui-button,
+[data-reduced-motion='true'] .dribble-main-menu-toggle i::after {
+  animation: none !important;
+  transition: none !important;
 }

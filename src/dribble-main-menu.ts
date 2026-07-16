@@ -21,24 +21,29 @@ import {
 } from './dribble-progression.js';
 
 export type DribbleGameMode = 'normal' | 'hard' | 'last-bounce';
+export type DribbleTutorialSelection = 'classic' | 'last-bounce';
 
-type MainMenuPanel = 'home' | 'mode-select' | 'how-to-play' | 'settings' | 'shop' | 'achievements' | 'reset';
+type MainMenuPanel = 'home' | 'mode-select' | 'tutorial-select' | 'how-to-play' | 'settings' | 'shop' | 'achievements' | 'reset';
 type ResetMenuTarget = ProgressionResetTarget | 'audio';
 
 const masterVolumeKey = 'basketball-frenzy-master-volume';
 const musicVolumeKey = 'basketball-frenzy-music-volume';
 const sfxVolumeKey = 'basketball-frenzy-sfx-volume';
 const playerNameKey = 'basketball-frenzy-player-name';
+export const reducedMotionKey = 'basketball-frenzy-reduced-motion';
+export const reducedFlashesKey = 'basketball-frenzy-reduced-flashes';
 const defaultMasterVolume = 0.8;
 const defaultMusicVolume = 0.55;
 const defaultSfxVolume = 0.8;
 
 export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onPlay?: (mode: DribbleGameMode) => void;
-  onTutorial?: () => void;
+  onTutorial?: (mode: DribbleTutorialSelection) => void;
   onVolumeChange?: (volume: number) => void;
   onMusicVolumeChange?: (volume: number) => void;
   onSfxVolumeChange?: (volume: number) => void;
+  onReducedMotionChange?: (enabled: boolean) => void;
+  onReducedFlashesChange?: (enabled: boolean) => void;
   onBallBounce?: (strength: number) => void;
   onExit?: () => void;
   progression?: DribbleProgressionState;
@@ -68,11 +73,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private musicVolumeValue: HTMLElement | null = null;
   private sfxVolumeInput: HTMLInputElement | null = null;
   private sfxVolumeValue: HTMLElement | null = null;
-  private fullscreenInput: HTMLInputElement | null = null;
+  private reducedMotionInput: HTMLInputElement | null = null;
+  private reducedFlashesInput: HTMLInputElement | null = null;
   private homeStarsElement: HTMLElement | null = null;
   private normalHighScoreElement: HTMLElement | null = null;
   private hardHighScoreElement: HTMLElement | null = null;
   private shopStarsElement: HTMLElement | null = null;
+  private shopGoalElement: HTMLElement | null = null;
   private classicStatusElement: HTMLElement | null = null;
   private epicStatusElement: HTMLElement | null = null;
   private discoStatusElement: HTMLElement | null = null;
@@ -228,12 +235,16 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onSfxVolumeChange(volume);
   };
 
-  private readonly handleFullscreenChange = (): void => {
-    if (this.fullscreenInput) this.fullscreenInput.checked = document.fullscreenElement !== null;
+  private readonly handleReducedMotionInput = (): void => {
+    const enabled = this.reducedMotionInput?.checked ?? false;
+    this.storeBoolean(reducedMotionKey, enabled);
+    this.options.onReducedMotionChange(enabled);
   };
 
-  private readonly handleFullscreenInput = (): void => {
-    void this.toggleFullscreen();
+  private readonly handleReducedFlashesInput = (): void => {
+    const enabled = this.reducedFlashesInput?.checked ?? false;
+    this.storeBoolean(reducedFlashesKey, enabled);
+    this.options.onReducedFlashesChange(enabled);
   };
 
   private readonly handleWristbandClick = (event: Event): void => {
@@ -276,8 +287,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     } else if (target === 'freshStart') {
       this.setProgression(this.options.onResetProgression(target));
       this.resetAudioSettings();
+      if (this.reducedMotionInput) this.reducedMotionInput.checked = false;
+      if (this.reducedFlashesInput) this.reducedFlashesInput.checked = false;
+      this.options.onReducedMotionChange(false);
+      this.options.onReducedFlashesChange(false);
       try {
         localStorage.removeItem(playerNameKey);
+        localStorage.removeItem(reducedMotionKey);
+        localStorage.removeItem(reducedFlashesKey);
       } catch {
         // The saved profile may remain when browser storage is unavailable.
       }
@@ -308,6 +325,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onVolumeChange: () => {},
       onMusicVolumeChange: () => {},
       onSfxVolumeChange: () => {},
+      onReducedMotionChange: () => {},
+      onReducedFlashesChange: () => {},
       onBallBounce: () => {},
       onExit: () => {},
       progression: createDefaultProgressionState(),
@@ -331,11 +350,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.musicVolumeValue = this.layout.querySelector('[data-menu-music-volume-value]') as HTMLElement | null;
     this.sfxVolumeInput = this.layout.querySelector('[data-menu-sfx-volume]') as HTMLInputElement | null;
     this.sfxVolumeValue = this.layout.querySelector('[data-menu-sfx-volume-value]') as HTMLElement | null;
-    this.fullscreenInput = this.layout.querySelector('[data-menu-fullscreen]') as HTMLInputElement | null;
+    this.reducedMotionInput = this.layout.querySelector('[data-menu-reduced-motion]') as HTMLInputElement | null;
+    this.reducedFlashesInput = this.layout.querySelector('[data-menu-reduced-flashes]') as HTMLInputElement | null;
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
     this.normalHighScoreElement = this.layout.querySelector('[data-menu-normal-high-score]') as HTMLElement | null;
     this.hardHighScoreElement = this.layout.querySelector('[data-menu-hard-high-score]') as HTMLElement | null;
     this.shopStarsElement = this.layout.querySelector('[data-shop-stars]') as HTMLElement | null;
+    this.shopGoalElement = this.layout.querySelector('[data-shop-goal]') as HTMLElement | null;
     this.classicStatusElement = this.layout.querySelector('[data-shop-classic-status]') as HTMLElement | null;
     this.epicStatusElement = this.layout.querySelector('[data-shop-epic-status]') as HTMLElement | null;
     this.discoStatusElement = this.layout.querySelector('[data-shop-disco-status]') as HTMLElement | null;
@@ -372,8 +393,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const normalModeSlot = slot('normal-mode');
     const hardModeSlot = slot('hard-mode');
     const lastBounceModeSlot = slot('last-bounce-mode');
+    const classicTutorialSlot = slot('classic-tutorial');
+    const lastBounceTutorialSlot = slot('last-bounce-tutorial');
     const nameConfirmSlot = slot('name-confirm');
     const modeBackSlot = slot('mode-back');
+    const tutorialBackSlot = slot('tutorial-back');
     const howSlot = slot('how');
     const settingsSlot = slot('settings');
     const shopSlot = slot('shop');
@@ -390,7 +414,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const discoActionSlot = slot('disco-action');
     const blackHoleActionSlot = slot('blackhole-action');
     if (
-      !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot || !nameConfirmSlot || !modeBackSlot
+      !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot
+      || !classicTutorialSlot || !lastBounceTutorialSlot
+      || !nameConfirmSlot || !modeBackSlot || !tutorialBackSlot
       || !howSlot || !settingsSlot || !shopSlot || !resetSlot || !exitSlot || !achievementsSlot || !howBackSlot
       || !settingsBackSlot || !shopBackSlot || !achievementsBackSlot || !resetBackSlot
       || !classicActionSlot || !epicActionSlot
@@ -420,6 +446,16 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, lastBounceModeSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
+        label: 'Classic',
+        onClick: () => this.options.onTutorial('classic'),
+      }, classicTutorialSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Last Bounce',
+        onClick: () => this.options.onTutorial('last-bounce'),
+      }, lastBounceTutorialSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
         label: 'Confirm',
         onClick: () => this.confirmPlayerName(),
       }, nameConfirmSlot),
@@ -430,8 +466,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, modeBackSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
+        label: 'Back',
+        onClick: () => this.showPanel('home'),
+      }, tutorialBackSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
         label: 'Tutorial',
-        onClick: () => this.options.onTutorial(),
+        onClick: () => this.showPanel('tutorial-select'),
       }, howSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
@@ -534,8 +575,15 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onVolumeChange(volume);
     this.options.onMusicVolumeChange(musicVolume);
     this.options.onSfxVolumeChange(sfxVolume);
+    const reducedMotion = this.loadBoolean(reducedMotionKey);
+    const reducedFlashes = this.loadBoolean(reducedFlashesKey);
+    if (this.reducedMotionInput) this.reducedMotionInput.checked = reducedMotion;
+    if (this.reducedFlashesInput) this.reducedFlashesInput.checked = reducedFlashes;
+    this.options.onReducedMotionChange(reducedMotion);
+    this.options.onReducedFlashesChange(reducedFlashes);
 
-    this.fullscreenInput?.addEventListener('change', this.handleFullscreenInput);
+    this.reducedMotionInput?.addEventListener('change', this.handleReducedMotionInput);
+    this.reducedFlashesInput?.addEventListener('change', this.handleReducedFlashesInput);
     this.playerNameInput?.addEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.addEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.addEventListener('click', this.handleResetConfirm);
@@ -552,8 +600,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       button.addEventListener('click', this.handleWristbandClick);
     }
     window.addEventListener('resize', this.handleMenuResize);
-    document.addEventListener('fullscreenchange', this.handleFullscreenChange);
-    this.handleFullscreenChange();
     this.showPanel('home');
     await this.preloadCriticalMenuAssets();
     this.showPlayerNameEntryIfNeeded();
@@ -707,6 +753,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (this.normalHighScoreElement) this.normalHighScoreElement.textContent = String(normalHighScore);
     if (this.hardHighScoreElement) this.hardHighScoreElement.textContent = String(hardHighScore);
     if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
+    this.refreshShopGoal();
     if (this.classicStatusElement) {
       this.classicStatusElement.textContent = equippedBall === 'classic' ? 'EQUIPPED' : 'OWNED';
     }
@@ -725,6 +772,25 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.refreshAchievementsUi();
     this.refreshWristbandUi();
     this.refreshResetUi();
+  }
+
+  private refreshShopGoal(): void {
+    if (!this.shopGoalElement) return;
+    const next = !this.progression.epicBallOwned
+      ? { name: 'Epic Ball', price: epicBallPrice }
+      : !this.progression.discoBallOwned
+        ? { name: 'Disco Ball', price: discoBallPrice }
+        : !this.progression.blackHoleBallOwned
+          ? { name: 'Black Hole', price: blackHoleBallPrice }
+          : null;
+    if (!next) {
+      this.shopGoalElement.textContent = 'Collection complete';
+      return;
+    }
+    const remaining = Math.max(0, next.price - this.progression.stars);
+    this.shopGoalElement.textContent = remaining === 0
+      ? `${next.name} ready to unlock`
+      : `${remaining} stars to ${next.name}`;
   }
 
   private refreshResetUi(): void {
@@ -1004,15 +1070,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.ballPointerId = null;
   }
 
-  private async toggleFullscreen(): Promise<void> {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await document.documentElement.requestFullscreen();
-    } catch {
-      this.handleFullscreenChange();
-    }
-  }
-
   private isResetMenuTarget(value: string | undefined): value is ResetMenuTarget {
     return value === 'normalHighScore'
       || value === 'hardHighScore'
@@ -1101,11 +1158,28 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     }
   }
 
+  private loadBoolean(key: string): boolean {
+    try {
+      return localStorage.getItem(key) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  private storeBoolean(key: string, enabled: boolean): void {
+    try {
+      localStorage.setItem(key, String(enabled));
+    } catch {
+      // Accessibility preferences remain active for the current session.
+    }
+  }
+
   protected override onDestroy(): void {
     this.volumeInput?.removeEventListener('input', this.handleVolumeInput);
     this.musicVolumeInput?.removeEventListener('input', this.handleMusicVolumeInput);
     this.sfxVolumeInput?.removeEventListener('input', this.handleSfxVolumeInput);
-    this.fullscreenInput?.removeEventListener('change', this.handleFullscreenInput);
+    this.reducedMotionInput?.removeEventListener('change', this.handleReducedMotionInput);
+    this.reducedFlashesInput?.removeEventListener('change', this.handleReducedFlashesInput);
     this.playerNameInput?.removeEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.removeEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.removeEventListener('click', this.handleResetConfirm);
@@ -1122,7 +1196,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       button.removeEventListener('click', this.handleWristbandClick);
     }
     window.removeEventListener('resize', this.handleMenuResize);
-    document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     this.stopBallPhysics();
     this.cancelBallDrag();
     this.disposeMenuBallModel();
@@ -1133,11 +1206,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.musicVolumeValue = null;
     this.sfxVolumeInput = null;
     this.sfxVolumeValue = null;
-    this.fullscreenInput = null;
+    this.reducedMotionInput = null;
+    this.reducedFlashesInput = null;
     this.homeStarsElement = null;
     this.normalHighScoreElement = null;
     this.hardHighScoreElement = null;
     this.shopStarsElement = null;
+    this.shopGoalElement = null;
     this.classicStatusElement = null;
     this.epicStatusElement = null;
     this.wristbandButtons = [];

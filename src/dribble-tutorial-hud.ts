@@ -1,4 +1,5 @@
 import * as ENGINE from '@gnsx/genesys.js';
+import type { DribbleTutorialMode } from './dribble-tutorial-director.js';
 
 export interface DribbleTutorialHudOptions extends ENGINE.BaseUIComponentOptions {
   onExit?: () => void;
@@ -81,12 +82,22 @@ export class DribbleTutorialHud extends ENGINE.BaseUIComponent<DribbleTutorialHu
     }
   }
 
-  public showComplete(): void {
+  public setMode(mode: DribbleTutorialMode): void {
+    if (this.rootElement) this.rootElement.dataset.mode = mode;
+  }
+
+  public setControl(control: string): void {
+    if (this.controlElement) this.controlElement.textContent = control;
+  }
+
+  public showComplete(mode: DribbleTutorialMode = 'classic'): void {
     if (this.rootElement) this.rootElement.dataset.complete = 'true';
     if (this.stepElement) this.stepElement.textContent = 'TRAINING COMPLETE';
     if (this.titleElement) this.titleElement.textContent = 'Court Ready!';
     if (this.instructionElement) {
-      this.instructionElement.textContent = 'You know every move. Build clean streaks and control all three lanes.';
+      this.instructionElement.textContent = mode === 'last-bounce'
+        ? 'You are ready to outplay the AI. Protect your Risk Cards, read both hazard heights, and use recovery gates wisely.'
+        : 'You know every move. Build clean streaks and control all three lanes.';
     }
     if (this.controlElement) this.controlElement.textContent = 'EXIT TUTORIAL';
     if (this.progressElement) this.progressElement.style.setProperty('--tutorial-progress', '1');

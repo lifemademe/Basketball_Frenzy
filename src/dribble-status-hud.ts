@@ -275,6 +275,7 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
   private lastProgress = -1;
   private lastActive: boolean | null = null;
   private lastReady: boolean | null = null;
+  private lastPerfect: boolean | null = null;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -302,12 +303,14 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
     this.stateElement = this.layout.querySelector('[data-timing-state]') as HTMLElement | null;
   }
 
-  public setTiming(progress: number, active: boolean, ready: boolean): void {
+  public setTiming(progress: number, active: boolean, ready: boolean, perfect = false): void {
     if (!this.rootElement) {
       return;
     }
     const clampedProgress = Math.max(0, Math.min(1, progress));
-    const stateChanged = active !== this.lastActive || ready !== this.lastReady;
+    const stateChanged = active !== this.lastActive
+      || ready !== this.lastReady
+      || perfect !== this.lastPerfect;
     if (Math.abs(clampedProgress - this.lastProgress) >= 0.0025) {
       this.lastProgress = clampedProgress;
       this.rootElement.style.setProperty('--timing-progress', `${clampedProgress * 100}%`);
@@ -321,8 +324,12 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
       this.lastReady = ready;
       this.rootElement.dataset.ready = ready ? 'true' : 'false';
     }
+    if (perfect !== this.lastPerfect) {
+      this.lastPerfect = perfect;
+      this.rootElement.dataset.perfect = perfect ? 'true' : 'false';
+    }
     if (stateChanged && this.stateElement) {
-      const label = !active ? 'SCANNING' : ready ? 'SWITCH NOW' : 'TRACKING';
+      const label = !active ? 'SCANNING' : perfect ? 'PERFECT!' : ready ? 'SWITCH NOW' : 'TRACKING';
       if (this.stateElement.textContent !== label) {
         this.stateElement.textContent = label;
       }
@@ -330,7 +337,13 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
     if (stateChanged) {
       this.rootElement.setAttribute(
         'aria-valuetext',
-        !active ? 'Scanning for a center target' : ready ? 'Switch now' : 'Tracking center target',
+        !active
+          ? 'Scanning for a center target'
+          : perfect
+            ? 'Perfect switch timing'
+            : ready
+              ? 'Switch now'
+              : 'Tracking center target',
       );
     }
   }
@@ -341,6 +354,7 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
     this.lastProgress = -1;
     this.lastActive = null;
     this.lastReady = null;
+    this.lastPerfect = null;
   }
 }
 

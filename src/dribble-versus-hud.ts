@@ -1,7 +1,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 export type VersusOwner = 'player' | 'ai';
-export type VersusCalloutTone = 'gold' | 'danger' | 'blue';
+export type VersusCalloutTone = 'gold' | 'danger' | 'blue' | 'recovery';
 
 export interface DribbleVersusHudOptions extends ENGINE.BaseUIComponentOptions {}
 
@@ -25,12 +25,16 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private pressureElement: HTMLElement | null = null;
   private playerRoundsElement: HTMLElement | null = null;
   private aiRoundsElement: HTMLElement | null = null;
+  private playerRiskCardsElement: HTMLElement | null = null;
+  private aiRiskCardsElement: HTMLElement | null = null;
   private calloutElement: HTMLElement | null = null;
   private calloutTitleElement: HTMLElement | null = null;
   private calloutSubtitleElement: HTMLElement | null = null;
   private calloutTimer: ReturnType<typeof setTimeout> | null = null;
   private renderedPlayerLosses = -1;
   private renderedAiLosses = -1;
+  private renderedPlayerRiskCards = -1;
+  private renderedAiRiskCards = -1;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -60,6 +64,8 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.pressureElement = this.layout?.querySelector('[data-versus-pressure]') as HTMLElement | null;
     this.playerRoundsElement = this.layout?.querySelector('[data-versus-player-rounds]') as HTMLElement | null;
     this.aiRoundsElement = this.layout?.querySelector('[data-versus-ai-rounds]') as HTMLElement | null;
+    this.playerRiskCardsElement = this.layout?.querySelector('[data-versus-player-risk-cards]') as HTMLElement | null;
+    this.aiRiskCardsElement = this.layout?.querySelector('[data-versus-ai-risk-cards]') as HTMLElement | null;
     this.calloutElement = this.layout?.querySelector('[data-versus-callout]') as HTMLElement | null;
     this.calloutTitleElement = this.layout?.querySelector('[data-versus-callout-title]') as HTMLElement | null;
     this.calloutSubtitleElement = this.layout?.querySelector('[data-versus-callout-subtitle]') as HTMLElement | null;
@@ -74,12 +80,17 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     receiving: boolean,
     catching: boolean,
     returnLocked: boolean,
+    playerRiskCards: number,
+    aiRiskCards: number,
   ): void {
     const clampedPressure = Math.max(0, Math.min(1, pressure));
+    const ownerRiskCards = owner === 'player' ? playerRiskCards : aiRiskCards;
     if (this.rootElement) {
       this.rootElement.dataset.owner = owner;
       this.rootElement.dataset.catching = catching ? 'true' : 'false';
       this.rootElement.dataset.returnLocked = returnLocked ? 'true' : 'false';
+      this.rootElement.dataset.playerRisk = playerRiskCards === 0 ? 'empty' : 'ready';
+      this.rootElement.dataset.aiRisk = aiRiskCards === 0 ? 'empty' : 'ready';
       this.rootElement.dataset.pressure = clampedPressure >= 1
         ? 'critical'
         : clampedPressure >= 0.68
@@ -97,6 +108,8 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
             : owner === 'player'
               ? 'CATCH WINDOW - LEFT: RETURN'
               : 'AI RETURN WINDOW'
+          : ownerRiskCards === 0
+            ? 'NO RISK CARDS - CLEAN PASSES ONLY'
           : clampedPressure >= 1
             ? 'LANE OVERDRIVE - PASS OR POWER'
             : owner === 'player'
@@ -114,6 +127,18 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
       this.renderedAiLosses = aiLosses;
       this.renderLosses(this.aiRoundsElement, aiLosses);
     }
+    if (playerRiskCards !== this.renderedPlayerRiskCards) {
+      this.renderedPlayerRiskCards = playerRiskCards;
+      this.renderRiskCards(this.playerRiskCardsElement, playerRiskCards);
+    }
+    if (aiRiskCards !== this.renderedAiRiskCards) {
+      this.renderedAiRiskCards = aiRiskCards;
+      this.renderRiskCards(this.aiRiskCardsElement, aiRiskCards);
+    }
+  }
+
+  public setTutorialLayout(active: boolean): void {
+    if (this.rootElement) this.rootElement.dataset.tutorial = active ? 'true' : 'false';
   }
 
   public showCallout(
@@ -145,6 +170,18 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     }
   }
 
+  private renderRiskCards(element: HTMLElement | null, available: number): void {
+    if (!element) return;
+    while (element.children.length < 3) {
+      const card = document.createElement('i');
+      element.append(card);
+    }
+    for (let index = 0; index < 3; index += 1) {
+      const card = element.children.item(index) as HTMLElement | null;
+      if (card) card.dataset.available = String(index < available);
+    }
+  }
+
   protected override onDestroy(): void {
     if (this.calloutTimer !== null) clearTimeout(this.calloutTimer);
     this.calloutTimer = null;
@@ -155,10 +192,14 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.pressureElement = null;
     this.playerRoundsElement = null;
     this.aiRoundsElement = null;
+    this.playerRiskCardsElement = null;
+    this.aiRiskCardsElement = null;
     this.calloutElement = null;
     this.calloutTitleElement = null;
     this.calloutSubtitleElement = null;
     this.renderedPlayerLosses = -1;
     this.renderedAiLosses = -1;
+    this.renderedPlayerRiskCards = -1;
+    this.renderedAiRiskCards = -1;
   }
 }

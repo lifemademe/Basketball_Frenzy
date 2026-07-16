@@ -2,6 +2,7 @@ import type { DribbleSide } from './dribble-ball.js';
 import type { TargetKind } from './dribble-target.js';
 
 export type TutorialLane = 'left' | 'center' | 'right' | 'active';
+export type DribbleTutorialMode = 'classic' | 'last-bounce';
 
 export type TutorialEvent =
   | 'boost-left'
@@ -13,7 +14,9 @@ export type TutorialEvent =
   | 'hazard-hit'
   | 'hazard-avoided'
   | 'health-hit'
-  | 'bonus-hit';
+  | 'bonus-hit'
+  | 'risk-pass'
+  | 'recovery-hit';
 
 export interface TutorialSpawnRequest {
   kind: TargetKind;
@@ -31,7 +34,7 @@ export interface TutorialLesson {
   spawn?: TutorialSpawnRequest;
 }
 
-const lessons: TutorialLesson[] = [
+const classicLessons: TutorialLesson[] = [
   {
     id: 'left-bounce',
     title: 'Power Bounce',
@@ -110,14 +113,79 @@ const lessons: TutorialLesson[] = [
   },
 ];
 
+const lastBounceLessons: TutorialLesson[] = [
+  {
+    id: 'versus-power',
+    title: 'Your Possession',
+    instruction: 'You control the right hand. Power-bounce to clear low hazards.',
+    control: 'RIGHT CLICK',
+    expectedEvent: 'boost-right',
+  },
+  {
+    id: 'versus-pass',
+    title: 'Pass To The AI',
+    instruction: 'Send the ball through center to the AI on the left.',
+    control: 'LEFT CLICK',
+    expectedEvent: 'switch-left',
+  },
+  {
+    id: 'versus-return',
+    title: 'Return The Ball',
+    instruction: 'The AI passes to your right hand. The ball pauses there until you send it back.',
+    control: 'LEFT CLICK TO RETURN',
+    expectedEvent: 'switch-left',
+  },
+  {
+    id: 'versus-ground',
+    title: 'Clear Ground Hazards',
+    instruction: 'A low red hazard is coming. Time a power bounce to clear it.',
+    control: 'RIGHT CLICK',
+    expectedEvent: 'hazard-avoided',
+    spawn: { kind: 'hazard', lane: 'right', height: 'low' },
+  },
+  {
+    id: 'versus-air',
+    title: 'Respect Air Hazards',
+    instruction: 'Air hazards punish power bounces. Stay low and let this one pass.',
+    control: 'DO NOT POWER BOUNCE',
+    expectedEvent: 'hazard-avoided',
+    spawn: { kind: 'hazard', lane: 'right', height: 'high' },
+  },
+  {
+    id: 'versus-risk',
+    title: 'Risk Passes',
+    instruction: 'Pass when the hazard is close to the AI. This spends one red Risk Card.',
+    control: 'LEFT CLICK',
+    expectedEvent: 'risk-pass',
+    spawn: { kind: 'hazard', lane: 'left', height: 'low' },
+  },
+  {
+    id: 'versus-recovery',
+    title: 'Recovery Gate',
+    instruction: 'Power-bounce through the green card to restore one spent Risk Card.',
+    control: 'RIGHT CLICK',
+    expectedEvent: 'recovery-hit',
+    spawn: { kind: 'recovery', lane: 'right', height: 'high' },
+  },
+  {
+    id: 'versus-pressure',
+    title: 'Pressure',
+    instruction: 'Holding the ball fills pressure and accelerates hazards in your lane. Keep making decisions.',
+    control: 'PASS OR POWER BOUNCE',
+    expectedEvent: 'switch-left',
+  },
+];
+
 export class DribbleTutorialDirector {
+  private mode: DribbleTutorialMode = 'classic';
   private lessonIndex = 0;
   private spawnPending = false;
   private spawnDelay = 0;
   private complete = false;
   private hazardBounceArmed = false;
 
-  public reset(): void {
+  public reset(mode: DribbleTutorialMode = 'classic'): void {
+    this.mode = mode;
     this.lessonIndex = 0;
     this.complete = false;
     this.hazardBounceArmed = false;
@@ -129,6 +197,7 @@ export class DribbleTutorialDirector {
   }
 
   public getLesson(): TutorialLesson {
+    const lessons = this.getLessons();
     return lessons[Math.min(this.lessonIndex, lessons.length - 1)];
   }
 
@@ -137,7 +206,7 @@ export class DribbleTutorialDirector {
   }
 
   public getLessonCount(): number {
-    return lessons.length;
+    return this.getLessons().length;
   }
 
   public isComplete(): boolean {
@@ -156,7 +225,7 @@ export class DribbleTutorialDirector {
   public recordEvent(event: TutorialEvent): boolean {
     const lesson = this.getLesson();
     if (this.complete) return false;
-    if (lesson.id === 'avoid-hazard') {
+    if (lesson.id === 'avoid-hazard' || lesson.id === 'versus-ground') {
       if (event === 'boost-left' || event === 'boost-right') {
         this.hazardBounceArmed = true;
         return false;
@@ -171,11 +240,28 @@ export class DribbleTutorialDirector {
         return false;
       }
     }
+    if (lesson.id === 'versus-air') {
+      if (event === 'boost-left' || event === 'boost-right') {
+        this.hazardBounceArmed = true;
+        return false;
+      }
+      if (event === 'hazard-avoided' && this.hazardBounceArmed) {
+        this.hazardBounceArmed = false;
+        this.retryTarget();
+        return false;
+      }
+      if (event === 'hazard-hit') {
+        this.hazardBounceArmed = false;
+        this.retryTarget();
+        return false;
+      }
+    }
     if (event !== lesson.expectedEvent) {
       return false;
     }
 
     this.lessonIndex += 1;
+    const lessons = this.getLessons();
     if (this.lessonIndex >= lessons.length) {
       this.lessonIndex = lessons.length - 1;
       this.complete = true;
@@ -199,5 +285,9 @@ export class DribbleTutorialDirector {
     this.hazardBounceArmed = false;
     this.spawnPending = Boolean(this.getLesson().spawn);
     this.spawnDelay = this.spawnPending ? 0.85 : 0;
+  }
+
+  private getLessons(): TutorialLesson[] {
+    return this.mode === 'last-bounce' ? lastBounceLessons : classicLessons;
   }
 }

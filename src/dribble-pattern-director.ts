@@ -23,6 +23,7 @@ interface DribblePatternDefinition {
   label: string;
   minDifficulty: number;
   weight: number;
+  modes?: readonly DribbleGameMode[];
   steps: readonly DribblePatternStep[];
 }
 
@@ -92,6 +93,36 @@ const patterns: readonly DribblePatternDefinition[] = [
       { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.84 },
     ],
   },
+  {
+    id: 'hard-crossfire',
+    label: 'CROSSFIRE',
+    minDifficulty: 0.18,
+    weight: 1.05,
+    modes: ['hard'],
+    steps: [
+      { kind: 'hazard', lane: 'left', height: 'low' },
+      { kind: 'score', lane: 'right', intervalScale: 0.84 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.82 },
+      { kind: 'score', lane: 'left', intervalScale: 0.84 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.8 },
+      { kind: 'score', lane: 'center', intervalScale: 0.86 },
+    ],
+  },
+  {
+    id: 'hard-pressure-line',
+    label: 'PRESSURE LINE',
+    minDifficulty: 0.48,
+    weight: 0.8,
+    modes: ['hard'],
+    steps: [
+      { kind: 'score', lane: 'center', speedScale: 1.03 },
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.8 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.82 },
+      { kind: 'score', lane: 'left', intervalScale: 0.84, speedScale: 1.03 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.8 },
+      { kind: 'score', lane: 'right', intervalScale: 0.84, speedScale: 1.03 },
+    ],
+  },
 ];
 
 export class DribblePatternDirector {
@@ -137,7 +168,7 @@ export class DribblePatternDirector {
       ) {
         return null;
       }
-      this.activePattern = this.selectPattern(options.difficulty);
+      this.activePattern = this.selectPattern(options.difficulty, options.mode);
       this.activeStepIndex = 0;
     }
 
@@ -150,7 +181,7 @@ export class DribblePatternDirector {
       this.lastPatternId = pattern.id;
       this.activePattern = null;
       this.activeStepIndex = 0;
-      const minimumRecovery = options.mode === 'hard' ? 3 : 4;
+      const minimumRecovery = options.mode === 'hard' ? 4 : 6;
       const recoveryRange = options.mode === 'hard' ? 3 : 4;
       this.randomSpawnsRemaining = minimumRecovery + Math.floor(Math.random() * recoveryRange);
     }
@@ -164,13 +195,17 @@ export class DribblePatternDirector {
     };
   }
 
-  private selectPattern(difficulty: number): DribblePatternDefinition {
+  private selectPattern(difficulty: number, mode: DribbleGameMode): DribblePatternDefinition {
     const eligible = patterns.filter(pattern => (
-      pattern.minDifficulty <= difficulty && pattern.id !== this.lastPatternId
+      pattern.minDifficulty <= difficulty
+      && (!pattern.modes || pattern.modes.includes(mode))
+      && pattern.id !== this.lastPatternId
     ));
     const candidates = eligible.length > 0
       ? eligible
-      : patterns.filter(pattern => pattern.minDifficulty <= difficulty);
+      : patterns.filter(pattern => (
+        pattern.minDifficulty <= difficulty && (!pattern.modes || pattern.modes.includes(mode))
+      ));
     const totalWeight = candidates.reduce((sum, pattern) => sum + pattern.weight, 0);
     let roll = Math.random() * totalWeight;
     for (const pattern of candidates) {

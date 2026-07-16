@@ -49,6 +49,11 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
   }
 
   public playPowerBounceCameraImpulse(side: 'left' | 'right'): void {
+    try {
+      if (localStorage.getItem('basketball-frenzy-reduced-motion') === 'true') return;
+    } catch {
+      // Use the default camera response when storage is unavailable.
+    }
     this.powerBounceImpulseTime = 0;
     this.powerBounceImpulseSide = side === 'left' ? -1 : 1;
   }

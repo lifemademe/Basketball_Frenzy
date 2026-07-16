@@ -98,6 +98,29 @@
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-mode-back-slot></div>
     </section>
 
+    <section class="dribble-main-menu-panel dribble-main-menu-tutorial-select" aria-label="Choose tutorial">
+      <div class="dribble-main-menu-panel-heading dribble-mode-heading">
+        <h2>Choose Tutorial</h2>
+      </div>
+      <div class="dribble-mode-options dribble-tutorial-options">
+        <div class="dribble-mode-option dribble-mode-normal">
+          <div class="dribble-main-menu-action" data-menu-classic-tutorial-slot></div>
+          <div class="dribble-tutorial-mode-copy">
+            <strong>CLASSIC</strong>
+            <span>Targets, timing, health and Frenzy</span>
+          </div>
+        </div>
+        <div class="dribble-mode-option dribble-mode-last-bounce">
+          <div class="dribble-main-menu-action" data-menu-last-bounce-tutorial-slot></div>
+          <div class="dribble-tutorial-mode-copy">
+            <strong>VERSUS AI</strong>
+            <span>Risk Cards, returns and recovery gates</span>
+          </div>
+        </div>
+      </div>
+      <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-tutorial-back-slot></div>
+    </section>
+
     <section class="dribble-main-menu-panel dribble-main-menu-how" aria-label="How to play">
       <div class="dribble-main-menu-panel-heading">
         <span>COURT BASICS</span>
@@ -116,6 +139,7 @@
       <div class="dribble-main-menu-panel-heading dribble-shop-heading">
         <div>
           <h2>Locker</h2>
+          <small data-shop-goal>Next unlock: Epic Ball</small>
         </div>
         <strong><img src="@project/assets/textures/Star.png" alt="Stars"> <b data-shop-stars>0</b></strong>
       </div>
@@ -308,9 +332,14 @@
         <span><b>Sound FX</b><output data-menu-sfx-volume-value>80%</output></span>
         <input id="dribble-menu-sfx-volume" data-menu-sfx-volume type="range" min="0" max="100" step="1" value="80">
       </label>
-      <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-fullscreen">
-        <span><b>Fullscreen</b></span>
-        <input id="dribble-menu-fullscreen" data-menu-fullscreen type="checkbox">
+      <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-reduced-motion">
+        <span><b>Reduced Motion</b></span>
+        <input id="dribble-menu-reduced-motion" data-menu-reduced-motion type="checkbox">
+        <i aria-hidden="true"></i>
+      </label>
+      <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-reduced-flashes">
+        <span><b>Reduced Flashes</b></span>
+        <input id="dribble-menu-reduced-flashes" data-menu-reduced-flashes type="checkbox">
         <i aria-hidden="true"></i>
       </label>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-settings-back-slot></div>

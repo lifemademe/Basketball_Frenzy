@@ -1,7 +1,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
-export type TargetKind = 'score' | 'hazard' | 'health' | 'bonus';
+export type TargetKind = 'score' | 'hazard' | 'health' | 'bonus' | 'recovery';
 
 function createStarGeometry(): THREE.ExtrudeGeometry {
   const shape = new THREE.Shape();
@@ -25,11 +25,42 @@ function createStarGeometry(): THREE.ExtrudeGeometry {
   return geometry;
 }
 
+function createCardGeometry(): THREE.ExtrudeGeometry {
+  const width = 0.78;
+  const height = 0.96;
+  const radius = 0.12;
+  const left = -width / 2;
+  const right = width / 2;
+  const bottom = -height / 2;
+  const top = height / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(left + radius, bottom);
+  shape.lineTo(right - radius, bottom);
+  shape.quadraticCurveTo(right, bottom, right, bottom + radius);
+  shape.lineTo(right, top - radius);
+  shape.quadraticCurveTo(right, top, right - radius, top);
+  shape.lineTo(left + radius, top);
+  shape.quadraticCurveTo(left, top, left, top - radius);
+  shape.lineTo(left, bottom + radius);
+  shape.quadraticCurveTo(left, bottom, left + radius, bottom);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.13,
+    bevelEnabled: true,
+    bevelSize: 0.035,
+    bevelThickness: 0.035,
+    bevelSegments: 2,
+  });
+  geometry.center();
+  return geometry;
+}
+
 export interface DribbleTargetOptions extends ENGINE.ActorOptions {
   kind?: TargetKind;
   laneX?: number;
   speed?: number;
   rhythmTarget?: boolean;
+  spacingGroup?: string;
 }
 
 @ENGINE.GameClass()
@@ -43,11 +74,13 @@ export class DribbleTarget extends ENGINE.Actor {
   public speed = 4;
   public radius = 0.55;
   public isRhythmTarget = false;
+  public spacingGroup: string | null = null;
 
   private hit = false;
   private gameplayActive = true;
   private removalRequested = false;
   private missedScoreTarget = false;
+  private avoidedHazard = false;
   private glowShell: ENGINE.MeshComponent | null = null;
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
@@ -64,11 +97,12 @@ export class DribbleTarget extends ENGINE.Actor {
     this.laneX = options?.laneX ?? this.laneX;
     this.speed = options?.speed ?? this.speed;
     this.isRhythmTarget = options?.rhythmTarget ?? false;
-    this.radius = this.kind === 'bonus' ? 0.58 : 0.55;
+    this.spacingGroup = options?.spacingGroup ?? null;
+    this.radius = this.kind === 'bonus' ? 0.58 : this.kind === 'recovery' ? 0.52 : 0.55;
 
     const color = this.kind === 'score'
       ? 0xffca3a
-      : this.kind === 'health'
+      : this.kind === 'health' || this.kind === 'recovery'
         ? 0x4de6b8
         : this.kind === 'bonus'
           ? 0xffca3a
@@ -77,10 +111,16 @@ export class DribbleTarget extends ENGINE.Actor {
       ? new THREE.TorusGeometry(0.42, 0.12, 12, 28)
       : this.kind === 'health'
         ? new THREE.BoxGeometry(0.2, 0.9, 0.18)
+        : this.kind === 'recovery'
+          ? createCardGeometry()
         : this.kind === 'bonus'
           ? createStarGeometry()
           : new THREE.OctahedronGeometry(0.55, 0);
-    this.baseEmissiveIntensity = this.kind === 'bonus' ? 4.2 : this.kind === 'health' ? 3.2 : 2.8;
+    this.baseEmissiveIntensity = this.kind === 'bonus'
+      ? 4.2
+      : this.kind === 'health' || this.kind === 'recovery'
+        ? 3.2
+        : 2.8;
     const material = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
@@ -97,7 +137,11 @@ export class DribbleTarget extends ENGINE.Actor {
       physicsOptions: { enabled: false },
     });
 
-    this.glowBaseOpacity = this.kind === 'bonus' ? 0.4 : this.kind === 'health' ? 0.3 : 0.24;
+    this.glowBaseOpacity = this.kind === 'bonus'
+      ? 0.4
+      : this.kind === 'health' || this.kind === 'recovery'
+        ? 0.3
+        : 0.24;
     this.glowMaterial = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
@@ -138,6 +182,25 @@ export class DribbleTarget extends ENGINE.Actor {
         name: 'Health Crossbar',
         geometry: new THREE.BoxGeometry(0.9, 0.2, 0.18),
         material,
+        physicsOptions: { enabled: false },
+      }));
+    } else if (this.kind === 'recovery') {
+      const recoveryMarkMaterial = new THREE.MeshBasicMaterial({
+        color: 0xf4fff9,
+        toneMapped: false,
+      });
+      rootComponent.add(ENGINE.MeshComponent.create({
+        name: 'Recovery Card Vertical Mark',
+        geometry: new THREE.BoxGeometry(0.14, 0.5, 0.045),
+        material: recoveryMarkMaterial,
+        position: new THREE.Vector3(0, 0, 0.105),
+        physicsOptions: { enabled: false },
+      }));
+      rootComponent.add(ENGINE.MeshComponent.create({
+        name: 'Recovery Card Horizontal Mark',
+        geometry: new THREE.BoxGeometry(0.5, 0.14, 0.045),
+        material: recoveryMarkMaterial,
+        position: new THREE.Vector3(0, 0, 0.105),
         physicsOptions: { enabled: false },
       }));
     } else if (this.kind === 'bonus') {
@@ -194,6 +257,9 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.kind === 'bonus') {
       this.rootComponent.rotation.y += deltaTime * 0.45;
       this.rootComponent.rotation.z += deltaTime * 2.2;
+    } else if (this.kind === 'recovery') {
+      this.rootComponent.rotation.y += deltaTime * 1.15;
+      this.rootComponent.rotation.z = Math.sin(this.glowPhase * 0.5) * 0.08;
     } else {
       const rotationSpeed = 1 + this.pressureLevel * 0.85;
       this.rootComponent.rotation.x += deltaTime * 2.5 * rotationSpeed;
@@ -204,6 +270,7 @@ export class DribbleTarget extends ENGINE.Actor {
 
     if (this.rootComponent.position.z > 2.5) {
       this.missedScoreTarget = this.kind === 'score';
+      this.avoidedHazard = this.kind === 'hazard' && !this.hit;
       this.destroy();
     }
   }
@@ -244,6 +311,10 @@ export class DribbleTarget extends ENGINE.Actor {
 
   public didMissScoreTarget(): boolean {
     return this.missedScoreTarget;
+  }
+
+  public didAvoidHazard(): boolean {
+    return this.avoidedHazard;
   }
 
   private getUnconstrainedApproachSpeed(): number {

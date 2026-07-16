@@ -108,10 +108,41 @@
   background: #65e6a8;
 }
 
+.dribble-tutorial-hud[data-mode='last-bounce'] {
+  right: auto;
+  left: clamp(196px, 11vw, 232px);
+  width: min(980px, calc(100vw - 660px));
+  min-width: 560px;
+  border-color: rgba(255, 82, 96, 0.62);
+  background:
+    linear-gradient(100deg, rgba(53, 8, 20, 0.9), rgba(7, 21, 48, 0.9));
+  transform: none;
+}
+
+.dribble-tutorial-hud[data-mode='last-bounce'] .dribble-tutorial-copy > span {
+  color: #ff6f7d;
+}
+
+.dribble-tutorial-hud[data-mode='last-bounce'] .dribble-tutorial-action strong,
+.dribble-tutorial-hud[data-mode='last-bounce'] .dribble-tutorial-progress i {
+  color: #fff;
+  background: linear-gradient(90deg, #ff394f, #ffb23f);
+  box-shadow: 0 0 14px rgba(255, 76, 80, 0.58);
+}
+
 @media (max-width: 900px) {
   .dribble-tutorial-hud {
     top: 106px;
     width: calc(100vw - 32px);
+    min-width: 0;
+  }
+}
+
+@media (max-width: 1500px) {
+  .dribble-tutorial-hud[data-mode='last-bounce'] {
+    top: 112px;
+    left: 24px;
+    width: calc(100vw - 48px);
     min-width: 0;
   }
 }
