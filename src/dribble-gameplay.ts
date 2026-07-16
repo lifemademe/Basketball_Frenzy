@@ -177,15 +177,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private versusAiDecisionTimer = 0;
   private versusLastStableSide: DribbleSide = 'left';
   private versusSpawnCount = 0;
-  private versusLiableOwner: VersusOwner = 'ai';
-  private versusPendingLiabilityOwner: VersusOwner | null = null;
-  private versusLiabilityControlTime = 0;
-  private versusLiabilityDelay = 0.4;
-  private versusLiabilityMinimumTime = 0.12;
-  private versusLiabilityBounceBaseline = 0;
-  private versusDangerPass = false;
-  private versusQueuedAiAction: 'boost' | null = null;
+  private versusQueuedAiAction: 'return' | 'boost' | null = null;
   private versusQueuedAiActionTimer = 0;
+  private versusReturnLockedOwner: VersusOwner | null = null;
+  private versusWasCatching = false;
   private versusPressureWarningStage = 0;
   private readonly versusLossesToEndMatch = 3;
   private readonly versusPressureDuration = 2.45;
@@ -195,8 +190,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const ballState = this.ball?.getState();
     if (this.gameMode === 'last-bounce') {
       if (!this.versusRoundActive || ballState?.side !== 'right' || ballState.isTransferring) return null;
+      if (ballState.isCatching && this.versusReturnLockedOwner === 'player') {
+        this.versusHud?.showCallout('SECURE THE BALL', 'Return available after the catch', 'gold', 520);
+        return null;
+      }
       const actionWorked = this.ball?.transferToLeft();
-      if (actionWorked) this.beginVersusPass('player', 'ai');
+      if (actionWorked) this.beginVersusPass('ai', ballState.isCatching);
       return actionWorked ? 'transfer' : null;
     }
     const isBoost = ballState?.side === 'left';
@@ -285,6 +284,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.startVersusMatch();
     } else {
       this.versusRoundActive = false;
+      this.ball?.setCatchEnabled(false);
       this.ball?.reset();
     }
     this.setGameplayActive(true);
@@ -324,6 +324,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.laneSwitchCount = 0;
     this.patternDirector.cancel();
     this.tutorialDirector.reset();
+    this.ball?.setCatchEnabled(false);
     this.ball?.reset();
     this.ball?.setFrenzyActive(false);
     this.setGameplayActive(true);
@@ -1071,6 +1072,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private startVersusMatch(): void {
+    this.ball?.setCatchEnabled(true);
     this.versusPlayerLosses = 0;
     this.versusAiLosses = 0;
     this.versusRound = 1;
@@ -1090,12 +1092,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const startingSide: DribbleSide = this.versusRound % 2 === 1 ? 'left' : 'right';
     this.versusLastStableSide = startingSide;
     this.versusOwner = startingSide === 'left' ? 'ai' : 'player';
-    this.versusLiableOwner = this.versusOwner;
-    this.versusPendingLiabilityOwner = null;
-    this.versusLiabilityControlTime = 0;
-    this.versusDangerPass = false;
     this.versusQueuedAiAction = null;
     this.versusQueuedAiActionTimer = 0;
+    this.versusReturnLockedOwner = null;
+    this.versusWasCatching = false;
     this.versusPressureWarningStage = 0;
     this.ball?.reset(startingSide);
     this.ball?.setGameplayActive(true);
@@ -1126,7 +1126,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     const difficulty = THREE.MathUtils.clamp(this.elapsedTime / 75, 0, 1);
-    this.versusPossessionTime += deltaTime;
     this.spawnTimer -= deltaTime;
     if (this.spawnTimer <= 0) {
       if (this.spawnVersusHazard(difficulty)) {
@@ -1139,8 +1138,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     const ballState = this.ball?.getState();
     if (!ballState) return;
+    if (!ballState.isCatching) this.versusPossessionTime += deltaTime;
     this.updateVersusPossession(ballState);
-    this.updateVersusLiability(deltaTime, ballState);
+    this.updateVersusCatchState(ballState);
     this.updateVersusAi(deltaTime, ballState, difficulty);
     const pressure = THREE.MathUtils.clamp(
       this.versusPossessionTime / this.versusPressureDuration,
@@ -1165,18 +1165,30 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusPossessionTime = 0;
     this.versusPressureWarningStage = 0;
     this.versusAiDecisionTimer = THREE.MathUtils.randFloat(0.28, 0.46);
-    if (this.versusPendingLiabilityOwner === this.versusOwner) {
-      this.versusLiabilityControlTime = 0;
-      this.versusLiabilityBounceBaseline = ballState.completedBounces;
-    } else {
-      this.versusLiableOwner = this.versusOwner;
-    }
     this.versusHud?.showCallout(
-      this.versusOwner === 'player' ? 'YOUR BALL' : 'AI BALL',
-      this.versusOwner === 'player' ? 'Pass or power-bounce' : 'Read the next move',
+      ballState.isCatching ? 'CATCH WINDOW' : this.versusOwner === 'player' ? 'YOUR BALL' : 'AI BALL',
+      ballState.isCatching
+        ? this.versusReturnLockedOwner === this.versusOwner
+          ? 'Control this catch'
+          : this.versusOwner === 'player'
+            ? 'Left click to return'
+            : 'AI can return the pass'
+        : this.versusOwner === 'player' ? 'Pass or power-bounce' : 'Read the next move',
       this.versusOwner === 'player' ? 'blue' : 'gold',
       620,
     );
+  }
+
+  private updateVersusCatchState(ballState: DribbleBallState): void {
+    if (this.versusWasCatching && !ballState.isCatching) {
+      if (this.versusReturnLockedOwner === this.versusOwner) {
+        this.versusReturnLockedOwner = null;
+      }
+      if (this.versusOwner === 'ai' && this.versusQueuedAiAction === 'boost') {
+        this.versusQueuedAiActionTimer = Math.min(this.versusQueuedAiActionTimer, 0.08);
+      }
+    }
+    this.versusWasCatching = ballState.isCatching;
   }
 
   private updateVersusAi(
@@ -1197,15 +1209,30 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.versusQueuedAiActionTimer = Math.max(0, this.versusQueuedAiActionTimer - deltaTime);
       if (this.versusQueuedAiActionTimer > 0) return;
       const queuedAction = this.versusQueuedAiAction;
-      this.versusQueuedAiAction = null;
-      if (queuedAction === 'boost' && this.findVersusGroundThreat('left', 0.82)) {
+      if (
+        queuedAction === 'return'
+        && ballState.isCatching
+        && this.versusReturnLockedOwner !== 'ai'
+      ) {
+        this.versusQueuedAiAction = null;
+        if (this.ball?.transferToRight()) {
+          this.beginVersusPass('player', true);
+          this.versusHud?.showCallout('AI RETURNS', 'Immediate counter-pass', 'danger', 540);
+        }
+        return;
+      }
+      if (queuedAction === 'boost' && !ballState.isCatching && this.findVersusGroundThreat('left', 0.82)) {
+        this.versusQueuedAiAction = null;
         if (this.ball?.boostLeft()) {
           this.versusHud?.showCallout('AI REACTS', 'Power bounce queued', 'gold', 440);
         }
         return;
       }
+      if (ballState.isCatching) return;
+      this.versusQueuedAiAction = null;
     }
 
+    if (ballState.isCatching) return;
     this.versusAiDecisionTimer -= deltaTime;
     if (this.versusAiDecisionTimer > 0) return;
     this.versusAiDecisionTimer = THREE.MathUtils.lerp(0.34, 0.2, difficulty)
@@ -1225,7 +1252,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
           }
         } else if (rightLaneSafe) {
           if (this.ball?.transferToRight()) {
-            this.beginVersusPass('ai', 'player');
+            this.beginVersusPass('player', false);
             this.versusHud?.showCallout('INCOMING', 'AI passes to you', 'danger', 520);
           }
         }
@@ -1236,31 +1263,28 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const pressureThreshold = THREE.MathUtils.lerp(2.45, 1.72, difficulty);
     if (this.versusPossessionTime >= pressureThreshold && rightLaneSafe) {
       if (this.ball?.transferToRight()) {
-        this.beginVersusPass('ai', 'player');
+        this.beginVersusPass('player', false);
         this.versusHud?.showCallout('INCOMING', 'Pressure pass', 'danger', 520);
       }
     }
   }
 
-  private beginVersusPass(passer: VersusOwner, receiver: VersusOwner): void {
+  private beginVersusPass(
+    receiver: VersusOwner,
+    immediateReturn: boolean,
+  ): void {
     const receiverSide: DribbleSide = receiver === 'ai' ? 'left' : 'right';
     const dangerPass = this.findVersusGroundThreat(
       receiverSide,
       DribbleBall.transferDuration + 0.62,
     ) !== null;
-    this.versusLiableOwner = passer;
-    this.versusPendingLiabilityOwner = receiver;
-    this.versusLiabilityControlTime = 0;
-    this.versusLiabilityDelay = dangerPass ? 0.68 : 0.4;
-    this.versusLiabilityMinimumTime = dangerPass ? 0.42 : 0.12;
-    this.versusLiabilityBounceBaseline = this.ball?.getState().completedBounces ?? 0;
-    this.versusDangerPass = dangerPass;
+    this.versusReturnLockedOwner = immediateReturn ? receiver : null;
 
     if (receiver === 'ai') this.queueVersusAiReception(dangerPass);
     if (!dangerPass) return;
     this.versusHud?.showCallout(
       'DANGER PASS',
-      'Passer remains liable',
+      'Receiver gets a return window',
       'danger',
       760,
     );
@@ -1268,23 +1292,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       volume: 0.48,
       bus: 'SFX',
     });
-  }
-
-  private updateVersusLiability(deltaTime: number, ballState: DribbleBallState): void {
-    const pendingOwner = this.versusPendingLiabilityOwner;
-    if (!pendingOwner || ballState.isTransferring || this.versusOwner !== pendingOwner) return;
-    this.versusLiabilityControlTime += deltaTime;
-    const completedControlledBounce = ballState.completedBounces > this.versusLiabilityBounceBaseline
-      && this.versusLiabilityControlTime >= this.versusLiabilityMinimumTime;
-    if (
-      this.versusLiabilityControlTime < this.versusLiabilityDelay
-      && !completedControlledBounce
-    ) {
-      return;
-    }
-    this.versusLiableOwner = pendingOwner;
-    this.versusPendingLiabilityOwner = null;
-    this.versusDangerPass = false;
   }
 
   private queueVersusAiReception(dangerPass: boolean): void {
@@ -1299,7 +1306,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const reactionChance = THREE.MathUtils.lerp(0.66, 0.82, difficulty)
       * (dangerPass ? 0.9 : 1);
     if (Math.random() >= reactionChance) return;
-    this.versusQueuedAiAction = 'boost';
+    this.versusQueuedAiAction = dangerPass && this.versusReturnLockedOwner !== 'ai'
+      ? 'return'
+      : 'boost';
     this.versusQueuedAiActionTimer = THREE.MathUtils.lerp(0.2, 0.11, difficulty)
       + THREE.MathUtils.randFloat(0.02, 0.09);
   }
@@ -1407,9 +1416,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private resolveVersusRoundLoss(position: THREE.Vector3): void {
     if (!this.versusRoundActive) return;
-    const loser = this.versusLiableOwner;
-    const passBackfired = this.versusPendingLiabilityOwner !== null
-      && loser !== this.versusPendingLiabilityOwner;
+    const loser = this.versusOwner;
     if (loser === 'player') this.versusPlayerLosses += 1;
     else this.versusAiLosses += 1;
     this.versusRoundActive = false;
@@ -1418,14 +1425,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     for (const target of this.activeTargets) target.setGameplayActive(false);
     this.spawnImpactBurst(position, 0xff453a);
     this.versusHud?.showCallout(
-      passBackfired
-        ? 'DANGER PASS BACKFIRED'
-        : loser === 'player'
-          ? 'YOU GOT TAGGED'
-          : 'AI GOT TAGGED',
-      passBackfired
-        ? loser === 'player' ? 'You passed too late' : 'AI passed too late'
-        : loser === 'player' ? 'Round lost' : 'Round won',
+      loser === 'player' ? 'YOU GOT TAGGED' : 'AI GOT TAGGED',
+      loser === 'player' ? 'Round lost' : 'Round won',
       loser === 'player' ? 'danger' : 'blue',
       1350,
     );
@@ -1456,7 +1457,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.versusAiLosses,
       this.versusPossessionTime / this.versusPressureDuration,
       ballState?.isTransferring ?? false,
-      this.versusPendingLiabilityOwner !== null,
+      ballState?.isCatching ?? false,
+      this.versusReturnLockedOwner === this.versusOwner,
     );
   }
 
@@ -1694,6 +1696,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private checkBallTargetHits(ballState: DribbleBallState, targets: DribbleTarget[]): void {
+    if (this.gameMode === 'last-bounce' && ballState.isCatching) return;
     for (const target of targets) {
       const targetPosition = target.rootComponent.position;
       if (ballState.isBoosting) {

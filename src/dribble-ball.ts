@@ -94,6 +94,7 @@ export interface DribbleBallState {
   radius: number;
   isTransferring: boolean;
   isBoosting: boolean;
+  isCatching: boolean;
   completedBounces: number;
 }
 
@@ -101,6 +102,7 @@ export interface DribbleBallState {
 export class DribbleBall extends ENGINE.Actor {
   public static readonly transferDuration = 0.34;
   public static readonly boostDuration = 0.7;
+  public static readonly catchDuration = 0.32;
   public readonly radius = 0.32;
 
   private side: DribbleSide = 'left';
@@ -109,6 +111,8 @@ export class DribbleBall extends ENGINE.Actor {
   private transferFrom: DribbleSide = 'left';
   private transferTo: DribbleSide = 'right';
   private transferStart = new THREE.Vector3();
+  private catchTime = 0;
+  private catchEnabled = false;
   private boostTime = 0;
   private boostStart = new THREE.Vector3();
   private boostBouncePlayed = false;
@@ -145,6 +149,7 @@ export class DribbleBall extends ENGINE.Actor {
     radius: this.radius,
     isTransferring: false,
     isBoosting: false,
+    isCatching: false,
     completedBounces: 0,
   };
 
@@ -216,6 +221,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.ballState.position.copy(this.rootComponent.position);
     this.ballState.isTransferring = this.transferTime > 0;
     this.ballState.isBoosting = this.boostTime > 0;
+    this.ballState.isCatching = this.catchTime > 0;
     this.ballState.completedBounces = this.completedBounces;
     return this.ballState;
   }
@@ -240,6 +246,11 @@ export class DribbleBall extends ENGINE.Actor {
     this.gameplayActive = active;
     if (!active) this.blackHoleDebris?.deactivate();
     this.applyCosmeticVisualState();
+  }
+
+  public setCatchEnabled(enabled: boolean): void {
+    this.catchEnabled = enabled;
+    if (!enabled) this.catchTime = 0;
   }
 
   public setFrenzyActive(active: boolean): void {
@@ -268,6 +279,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.side = side;
     this.phase = 0;
     this.transferTime = 0;
+    this.catchTime = 0;
     this.boostTime = 0;
     this.transferFrom = side;
     this.transferTo = side === 'left' ? 'right' : 'left';
@@ -335,7 +347,19 @@ export class DribbleBall extends ENGINE.Actor {
       if (this.transferTime >= DribbleBall.transferDuration) {
         this.side = this.transferTo;
         this.transferTime = 0;
-        this.phase = 0;
+        this.catchTime = this.catchEnabled ? 0.001 : 0;
+        this.phase = Math.PI / 2;
+        this.bounceCycle = 0;
+        this.rootComponent.scale.setScalar(1);
+        this.rootComponent.position.set(this.lanes[this.side].x, this.handY, this.laneZ);
+        if (this.catchTime > 0) this.playCatchSound();
+      }
+    } else if (this.catchTime > 0) {
+      this.catchTime = Math.min(this.catchTime + deltaTime, DribbleBall.catchDuration);
+      this.updateCatchPosition(this.catchTime / DribbleBall.catchDuration);
+      if (this.catchTime >= DribbleBall.catchDuration) {
+        this.catchTime = 0;
+        this.phase = Math.PI / 2;
         this.bounceCycle = 0;
         this.rootComponent.scale.setScalar(1);
       }
@@ -467,6 +491,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.transferFrom = from;
     this.transferTo = to;
     this.transferTime = 0.001;
+    this.catchTime = 0;
     this.boostTime = 0;
     this.transferBouncePlayed = false;
     this.transferStart.copy(this.rootComponent.position);
@@ -481,7 +506,7 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   private startBoost(side: DribbleSide): boolean {
-    if (this.transferTime > 0 || this.boostTime > 0 || this.side !== side) {
+    if (this.transferTime > 0 || this.catchTime > 0 || this.boostTime > 0 || this.side !== side) {
       return false;
     }
 
@@ -518,17 +543,32 @@ export class DribbleBall extends ENGINE.Actor {
       this.rootComponent.scale.set(1 + impact * 0.16, 1 - impact * 0.24, 1 + impact * 0.16);
     } else {
       const t = THREE.MathUtils.smootherstep((progress - 0.5) / 0.5, 0, 1);
-      const arc = Math.sin(t * Math.PI);
+      const arrival = THREE.MathUtils.smootherstep(t, 0, 1);
+      const arc = Math.sin(t * Math.PI) * 0.18;
       this.rootComponent.position.set(
         THREE.MathUtils.lerp(center.x, target.x, t),
-        THREE.MathUtils.lerp(this.floorY, this.handY, arc),
+        THREE.MathUtils.lerp(this.floorY, this.handY, arrival) + arc,
         THREE.MathUtils.lerp(center.z, this.laneZ, eased),
       );
-      this.rootComponent.scale.set(1 - arc * 0.08, 1 + arc * 0.14, 1 - arc * 0.08);
+      this.rootComponent.scale.set(1 - arc * 0.05, 1 + arc * 0.09, 1 - arc * 0.05);
     }
 
     this.rootComponent.rotation.x += 0.16;
     this.rootComponent.rotation.z += this.transferFrom === 'left' ? -0.12 : 0.12;
+  }
+
+  private updateCatchPosition(progress: number): void {
+    const lane = this.lanes[this.side];
+    const settle = 1 - THREE.MathUtils.smootherstep(progress, 0, 1);
+    const handPulse = Math.sin(progress * Math.PI) * 0.025;
+    this.rootComponent.position.set(lane.x, this.handY + handPulse, this.laneZ);
+    this.rootComponent.scale.set(
+      1 + settle * 0.08,
+      1 - settle * 0.1,
+      1 + settle * 0.08,
+    );
+    this.rootComponent.rotation.x += 0.035;
+    this.rootComponent.rotation.z += this.side === 'left' ? 0.025 : -0.025;
   }
 
   private updateBoostPosition(progress: number): void {
@@ -567,5 +607,12 @@ export class DribbleBall extends ENGINE.Actor {
     } else if (!this.frenzyActive && this.equippedCosmetic === 'blackhole') {
       this.blackHoleDebris?.play(this.rootComponent.position);
     }
+  }
+
+  private playCatchSound(): void {
+    void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+      volume: 0.22,
+      bus: 'SFX',
+    });
   }
 }

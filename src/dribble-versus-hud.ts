@@ -72,11 +72,14 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     aiLosses: number,
     pressure: number,
     receiving: boolean,
-    passerLiable: boolean,
+    catching: boolean,
+    returnLocked: boolean,
   ): void {
     const clampedPressure = Math.max(0, Math.min(1, pressure));
     if (this.rootElement) {
       this.rootElement.dataset.owner = owner;
+      this.rootElement.dataset.catching = catching ? 'true' : 'false';
+      this.rootElement.dataset.returnLocked = returnLocked ? 'true' : 'false';
       this.rootElement.dataset.pressure = clampedPressure >= 1
         ? 'critical'
         : clampedPressure >= 0.68
@@ -87,9 +90,13 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     if (this.ownerElement) this.ownerElement.textContent = owner === 'player' ? 'YOUR POSSESSION' : 'AI POSSESSION';
     if (this.actionElement) {
       this.actionElement.textContent = receiving
-        ? 'BALL IN TRANSIT - PASSER LIABLE'
-        : passerLiable
-          ? 'CONTROL WINDOW - PASSER LIABLE'
+        ? 'BALL IN TRANSIT'
+        : catching
+          ? returnLocked
+            ? 'SECURE THE CATCH'
+            : owner === 'player'
+              ? 'CATCH WINDOW - LEFT: RETURN'
+              : 'AI RETURN WINDOW'
           : clampedPressure >= 1
             ? 'LANE OVERDRIVE - PASS OR POWER'
             : owner === 'player'

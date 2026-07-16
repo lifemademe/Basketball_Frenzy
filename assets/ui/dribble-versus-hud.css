@@ -175,6 +175,21 @@
   box-shadow: 0 0 14px rgba(255, 69, 58, 0.78);
 }
 
+.dribble-versus-hud[data-catching='true'] .dribble-versus-possession {
+  border-color: rgba(106, 215, 255, 0.72);
+  background: rgba(7, 26, 58, 0.8);
+  box-shadow: 0 0 22px rgba(80, 184, 255, 0.2);
+}
+
+.dribble-versus-hud[data-catching='true'][data-return-locked='false'] .dribble-versus-owner b {
+  color: #ffdc63;
+  animation: dribble-versus-return-pulse 360ms ease-in-out infinite alternate;
+}
+
+.dribble-versus-hud[data-catching='true'][data-return-locked='true'] .dribble-versus-owner b {
+  color: rgba(255, 255, 255, 0.62);
+}
+
 .dribble-versus-callout {
   position: absolute;
   top: 22%;
@@ -245,4 +260,9 @@
   to {
     box-shadow: 0 0 25px rgba(255, 69, 58, 0.42);
   }
+}
+
+@keyframes dribble-versus-return-pulse {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
 }
