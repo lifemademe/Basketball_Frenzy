@@ -27,6 +27,8 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onPlay?: (mode: DribbleGameMode) => void;
   onTutorial?: () => void;
   onVolumeChange?: (volume: number) => void;
+  onMusicVolumeChange?: (volume: number) => void;
+  onSfxVolumeChange?: (volume: number) => void;
   onBallBounce?: (strength: number) => void;
   progression?: DribbleProgressionState;
   onPurchaseBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
@@ -50,6 +52,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private rootElement: HTMLElement | null = null;
   private volumeInput: HTMLInputElement | null = null;
   private volumeValue: HTMLElement | null = null;
+  private musicVolumeInput: HTMLInputElement | null = null;
+  private musicVolumeValue: HTMLElement | null = null;
+  private sfxVolumeInput: HTMLInputElement | null = null;
+  private sfxVolumeValue: HTMLElement | null = null;
   private fullscreenInput: HTMLInputElement | null = null;
   private homeStarsElement: HTMLElement | null = null;
   private normalHighScoreElement: HTMLElement | null = null;
@@ -159,12 +165,24 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (!this.volumeInput) return;
     const volume = Number(this.volumeInput.value) / 100;
     if (this.volumeValue) this.volumeValue.textContent = `${Math.round(volume * 100)}%`;
-    try {
-      localStorage.setItem('basketball-frenzy-master-volume', String(volume));
-    } catch {
-      // Storage can be unavailable in privacy-restricted browser contexts.
-    }
+    this.storeVolume('basketball-frenzy-master-volume', volume);
     this.options.onVolumeChange(volume);
+  };
+
+  private readonly handleMusicVolumeInput = (): void => {
+    if (!this.musicVolumeInput) return;
+    const volume = Number(this.musicVolumeInput.value) / 100;
+    if (this.musicVolumeValue) this.musicVolumeValue.textContent = `${Math.round(volume * 100)}%`;
+    this.storeVolume('basketball-frenzy-music-volume', volume);
+    this.options.onMusicVolumeChange(volume);
+  };
+
+  private readonly handleSfxVolumeInput = (): void => {
+    if (!this.sfxVolumeInput) return;
+    const volume = Number(this.sfxVolumeInput.value) / 100;
+    if (this.sfxVolumeValue) this.sfxVolumeValue.textContent = `${Math.round(volume * 100)}%`;
+    this.storeVolume('basketball-frenzy-sfx-volume', volume);
+    this.options.onSfxVolumeChange(volume);
   };
 
   private readonly handleFullscreenChange = (): void => {
@@ -199,6 +217,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onPlay: () => {},
       onTutorial: () => {},
       onVolumeChange: () => {},
+      onMusicVolumeChange: () => {},
+      onSfxVolumeChange: () => {},
       onBallBounce: () => {},
       progression: createDefaultProgressionState(),
       onPurchaseBall: () => createDefaultProgressionState(),
@@ -216,6 +236,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.rootElement = this.layout.querySelector('[data-main-menu]') as HTMLElement | null;
     this.volumeInput = this.layout.querySelector('[data-menu-volume]') as HTMLInputElement | null;
     this.volumeValue = this.layout.querySelector('[data-menu-volume-value]') as HTMLElement | null;
+    this.musicVolumeInput = this.layout.querySelector('[data-menu-music-volume]') as HTMLInputElement | null;
+    this.musicVolumeValue = this.layout.querySelector('[data-menu-music-volume-value]') as HTMLElement | null;
+    this.sfxVolumeInput = this.layout.querySelector('[data-menu-sfx-volume]') as HTMLInputElement | null;
+    this.sfxVolumeValue = this.layout.querySelector('[data-menu-sfx-volume-value]') as HTMLElement | null;
     this.fullscreenInput = this.layout.querySelector('[data-menu-fullscreen]') as HTMLInputElement | null;
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
     this.normalHighScoreElement = this.layout.querySelector('[data-menu-normal-high-score]') as HTMLElement | null;
@@ -351,20 +375,27 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleActionButton = mounted[mounted.length - 1];
     this.setProgression(this.options.progression);
 
-    let volume = 0.8;
-    try {
-      const storedValue = localStorage.getItem('basketball-frenzy-master-volume');
-      const storedVolume = storedValue === null ? Number.NaN : Number(storedValue);
-      if (Number.isFinite(storedVolume)) volume = Math.max(0, Math.min(1, storedVolume));
-    } catch {
-      // Keep the default when storage is unavailable.
-    }
+    const volume = this.loadVolume('basketball-frenzy-master-volume', 0.8);
+    const musicVolume = this.loadVolume('basketball-frenzy-music-volume', 0.55);
+    const sfxVolume = this.loadVolume('basketball-frenzy-sfx-volume', 0.8);
     if (this.volumeInput) {
       this.volumeInput.value = String(Math.round(volume * 100));
       this.volumeInput.addEventListener('input', this.handleVolumeInput);
     }
+    if (this.musicVolumeInput) {
+      this.musicVolumeInput.value = String(Math.round(musicVolume * 100));
+      this.musicVolumeInput.addEventListener('input', this.handleMusicVolumeInput);
+    }
+    if (this.sfxVolumeInput) {
+      this.sfxVolumeInput.value = String(Math.round(sfxVolume * 100));
+      this.sfxVolumeInput.addEventListener('input', this.handleSfxVolumeInput);
+    }
     if (this.volumeValue) this.volumeValue.textContent = `${Math.round(volume * 100)}%`;
+    if (this.musicVolumeValue) this.musicVolumeValue.textContent = `${Math.round(musicVolume * 100)}%`;
+    if (this.sfxVolumeValue) this.sfxVolumeValue.textContent = `${Math.round(sfxVolume * 100)}%`;
     this.options.onVolumeChange(volume);
+    this.options.onMusicVolumeChange(musicVolume);
+    this.options.onSfxVolumeChange(sfxVolume);
 
     this.fullscreenInput?.addEventListener('change', this.handleFullscreenInput);
     this.menuBall?.addEventListener('pointerdown', this.handleBallPointerDown);
@@ -761,8 +792,29 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     }
   }
 
+  private loadVolume(key: string, fallback: number): number {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored === null) return fallback;
+      const value = Number(stored);
+      return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private storeVolume(key: string, volume: number): void {
+    try {
+      localStorage.setItem(key, String(volume));
+    } catch {
+      // Audio remains adjustable for the current session when storage is unavailable.
+    }
+  }
+
   protected override onDestroy(): void {
     this.volumeInput?.removeEventListener('input', this.handleVolumeInput);
+    this.musicVolumeInput?.removeEventListener('input', this.handleMusicVolumeInput);
+    this.sfxVolumeInput?.removeEventListener('input', this.handleSfxVolumeInput);
     this.fullscreenInput?.removeEventListener('change', this.handleFullscreenInput);
     this.menuBall?.removeEventListener('pointerdown', this.handleBallPointerDown);
     this.menuBall?.removeEventListener('pointermove', this.handleBallPointerMove);
@@ -780,6 +832,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.rootElement = null;
     this.volumeInput = null;
     this.volumeValue = null;
+    this.musicVolumeInput = null;
+    this.musicVolumeValue = null;
+    this.sfxVolumeInput = null;
+    this.sfxVolumeValue = null;
     this.fullscreenInput = null;
     this.homeStarsElement = null;
     this.normalHighScoreElement = null;

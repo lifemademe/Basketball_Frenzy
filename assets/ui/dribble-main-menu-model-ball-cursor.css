@@ -223,6 +223,7 @@
   height: clamp(250px, 39vh, 340px);
   overflow: visible;
   transform: translateX(-50%);
+  transition: width 280ms cubic-bezier(0.22, 1, 0.36, 1), height 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dribble-main-menu-logo img {
@@ -652,17 +653,10 @@
   color: #ffffff;
 }
 
-.dribble-main-menu-settings {
-  min-height: 438px;
-  padding: 72px 58px 44px;
-  box-sizing: border-box;
-  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
-  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
-}
-
+.dribble-main-menu-settings,
 .dribble-main-menu-shop {
   width: min(470px, calc(100vw - 34px));
-  height: min(700px, calc(100vh - 240px));
+  height: min(548px, calc(100vh - 40px));
   min-height: 500px;
   padding: 72px 58px 44px;
   box-sizing: border-box;
@@ -670,6 +664,9 @@
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
 }
 
+.dribble-main-menu[data-panel='mode-select'] .dribble-main-menu-brand,
+.dribble-main-menu[data-panel='settings'] .dribble-main-menu-brand,
+.dribble-main-menu[data-panel='shop'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='achievements'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='achievements'] footer {
   display: none;
@@ -1306,19 +1303,15 @@
     margin-top: 10px;
   }
 
-  .dribble-main-menu-settings {
-    min-height: 410px;
-    padding: 64px 46px 38px;
-  }
-
   .dribble-main-menu-mode-select {
     min-height: 440px;
     padding: 52px 42px 34px;
   }
 
+  .dribble-main-menu-settings,
   .dribble-main-menu-shop {
     width: min(390px, 100%);
-    height: min(560px, calc(100vh - 200px));
+    height: min(520px, calc(100vh - 28px));
     min-height: 480px;
     padding: 64px 46px 38px;
   }
@@ -1386,6 +1379,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dribble-main-menu-panel,
+  .dribble-main-menu-logo,
   .dribble-menu-ball,
   .dribble-logo-sparkle,
   .dribble-main-menu-logo::after,

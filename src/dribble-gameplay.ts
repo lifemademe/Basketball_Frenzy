@@ -7,6 +7,7 @@ import { hideDribbleBootScreen } from './dribble-boot-screen.js';
 import { DribbleComboPopup } from './dribble-combo-popup.js';
 import { DribbleImpactBurst } from './dribble-impact-burst.js';
 import { DribbleMainMenu, type DribbleGameMode } from './dribble-main-menu.js';
+import { DribbleMusicDirector } from './dribble-music-director.js';
 import { DribbleOverlay } from './dribble-overlay.js';
 import { DribblePatternDirector, type PatternLane } from './dribble-pattern-director.js';
 import {
@@ -89,6 +90,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly targetHitPosition = new THREE.Vector3();
   private readonly comboPopupPosition = new THREE.Vector3();
   private gameState: DribbleGameState = 'menu';
+  private musicDirector: DribbleMusicDirector | null = null;
   private impactBurstCursor = 0;
   private comboPopupCursor = 0;
   private previousGameCursor: string | null = null;
@@ -148,6 +150,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!world) {
       return;
     }
+    this.musicDirector?.setState('gameplay');
 
     if (!this.tutorialActive) this.commitHighScore();
     this.stopTutorial();
@@ -196,6 +199,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   public startTutorial(): void {
     const world = this.getWorld();
     if (!world) return;
+    this.musicDirector?.setState('gameplay');
 
     this.unlockAchievementAndSync('playTutorial');
 
@@ -282,6 +286,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   protected override doBeginPlay(): void {
     super.doBeginPlay();
+    const world = this.getWorld();
+    if (world) {
+      this.musicDirector = new DribbleMusicDirector(world);
+      this.musicDirector.preload();
+      this.musicDirector.setState('menu');
+    }
     this.setupArena();
     this.hideReferenceHands();
     void this.setupHandAnimations();
@@ -294,6 +304,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   protected override doEndPlay(): void {
     this.scoreDisplay?.destroy();
+    this.musicDirector?.stop();
+    this.musicDirector = null;
     this.handModelRoots.clear();
     this.pauseButton?.destroy();
     this.livesDisplay?.destroy();
@@ -536,6 +548,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onPlay: mode => this.restartRun(mode),
       onTutorial: () => this.startTutorial(),
       onVolumeChange: volume => this.applyMasterVolume(volume),
+      onMusicVolumeChange: volume => this.applyMusicVolume(volume),
+      onSfxVolumeChange: volume => this.applySfxVolume(volume),
       onBallBounce: strength => playBasketballBounce(world, strength),
       progression: this.progression,
       onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
@@ -1237,6 +1251,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.getWorld()?.globalAudioManager.getBus('Master')?.setVolume(volume);
   }
 
+  private applyMusicVolume(volume: number): void {
+    this.musicDirector?.setVolume(volume);
+  }
+
+  private applySfxVolume(volume: number): void {
+    this.getWorld()?.globalAudioManager.getBus('SFX')?.setVolume(volume);
+  }
+
   private updateTutorial(deltaTime: number): void {
     this.tutorialDirector.update(deltaTime);
     this.syncTutorialLesson();
@@ -1349,6 +1371,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!this.tutorialActive) this.commitHighScore();
     this.stopTutorial();
     this.gameState = 'menu';
+    this.musicDirector?.setState('menu');
     this.setGameplayActive(false);
     this.deactivateHitEffects();
     this.setHudVisible(false);
@@ -1364,6 +1387,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.gameState = 'paused';
+    this.musicDirector?.setPaused(true);
     this.setGameplayActive(false);
     this.setHudVisible(false);
     this.tutorialHud?.hide();
@@ -1377,6 +1401,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.gameState = 'playing';
+    this.musicDirector?.setPaused(false);
     this.setGameplayActive(true);
     this.overlay?.hide();
     this.setHudVisible(true);
@@ -1393,6 +1418,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.gameState = 'gameOver';
+    this.musicDirector?.setPaused(true);
     this.commitHighScore();
     this.setGameplayActive(false);
     this.deactivateHitEffects();

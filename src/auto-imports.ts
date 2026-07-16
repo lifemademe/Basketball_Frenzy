@@ -7,6 +7,7 @@ import './dribble-combo-popup.ts';
 import './dribble-gameplay.ts';
 import './dribble-impact-burst.ts';
 import './dribble-main-menu.ts';
+import './dribble-music-director.ts';
 import './dribble-overlay.ts';
 import './dribble-pattern-director.ts';
 import './dribble-progression.ts';
