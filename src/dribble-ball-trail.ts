@@ -195,7 +195,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
       const normalX = -tangentY / tangentLength;
       const normalY = tangentX / tangentLength;
       const progress = index / (this.pointCount - 1);
-      const baseWidth = THREE.MathUtils.lerp(0.002, 0.078, THREE.MathUtils.smoothstep(progress, 0, 0.84));
+      const baseWidth = THREE.MathUtils.lerp(0.004, 0.108, THREE.MathUtils.smoothstep(progress, 0, 0.82));
       const width = baseWidth * this.getWidthScale();
       const offset = index * 6;
 
@@ -220,7 +220,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
         corePositions[coreOffset + 2] = point.z + 0.018;
         const whiteBlend = this.cosmetic === 'blackhole'
           ? 0.12 + progress * 0.12
-          : 0.3 + progress * (this.frenzyActive ? 0.58 : 0.42);
+          : 0.4 + progress * (this.frenzyActive ? 0.58 : 0.48);
         this.scratchCoreColor.copy(this.scratchColor).lerp(this.whiteColor, whiteBlend);
         coreColors[coreOffset] = this.scratchCoreColor.r;
         coreColors[coreOffset + 1] = this.scratchCoreColor.g;
@@ -240,10 +240,10 @@ export class DribbleBallTrail extends ENGINE.Actor {
   }
 
   private getWidthScale(): number {
-    const powerScale = this.powerBounceActive ? 1.38 : 1;
-    if (this.frenzyActive) return 1.55 * powerScale;
-    if (this.cosmetic === 'blackhole') return 1.34 * powerScale;
-    if (this.cosmetic === 'disco') return 1.2 * powerScale;
+    const powerScale = this.powerBounceActive ? 1.45 : 1.12;
+    if (this.frenzyActive) return 1.62 * powerScale;
+    if (this.cosmetic === 'blackhole') return 1.4 * powerScale;
+    if (this.cosmetic === 'disco') return 1.28 * powerScale;
     return powerScale;
   }
 

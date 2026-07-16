@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 
 export type VersusOwner = 'player' | 'ai';
 export type VersusCalloutTone = 'gold' | 'danger' | 'blue' | 'recovery';
+export type VersusTutorialFocus = 'lives' | 'risk' | null;
 
 export interface DribbleVersusHudOptions extends ENGINE.BaseUIComponentOptions {}
 
@@ -139,6 +140,12 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
 
   public setTutorialLayout(active: boolean): void {
     if (this.rootElement) this.rootElement.dataset.tutorial = active ? 'true' : 'false';
+  }
+
+  public setTutorialFocus(focus: VersusTutorialFocus): void {
+    if (!this.rootElement) return;
+    if (focus) this.rootElement.dataset.tutorialFocus = focus;
+    else delete this.rootElement.dataset.tutorialFocus;
   }
 
   public showCallout(

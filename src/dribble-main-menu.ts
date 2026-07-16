@@ -823,6 +823,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   private refreshAchievementsUi(): void {
     let completed = 0;
+    const tutorialProgress = Number(this.progression.classicTutorialCompleted)
+      + Number(this.progression.lastBounceTutorialCompleted);
     for (const row of this.achievementRows) {
       const achievement = row.dataset.achievementId as AchievementId | undefined;
       const unlocked = achievement !== undefined
@@ -830,7 +832,17 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         && this.progression.achievements[achievement];
       row.dataset.unlocked = unlocked ? 'true' : 'false';
       const state = row.querySelector('.dribble-achievement-state');
-      if (state) state.textContent = unlocked ? 'COMPLETE' : 'LOCKED';
+      if (state) {
+        state.textContent = achievement === 'playTutorial'
+          ? unlocked ? 'COMPLETE' : `${tutorialProgress} / 2`
+          : unlocked ? 'COMPLETE' : 'LOCKED';
+      }
+      if (achievement === 'playTutorial') {
+        const progress = row.querySelector('[data-tutorial-achievement-progress]') as HTMLElement | null;
+        const count = row.querySelector('[data-tutorial-achievement-count]') as HTMLElement | null;
+        progress?.style.setProperty('--achievement-progress', String(tutorialProgress / 2));
+        if (count) count.textContent = `${tutorialProgress} / 2`;
+      }
       if (unlocked) completed += 1;
     }
     if (this.achievementCountElement) this.achievementCountElement.textContent = String(completed);

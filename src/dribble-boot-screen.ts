@@ -1,6 +1,15 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 const bootSelector = '[data-dribble-boot-screen]';
+const bootProgressTimers = new WeakMap<HTMLElement, number>();
+
+function setBootProgress(screen: HTMLElement, progress: number): void {
+  const clamped = Math.max(0, Math.min(100, Math.round(progress)));
+  screen.style.setProperty('--dribble-boot-progress', `${clamped}%`);
+  const label = screen.querySelector('[data-dribble-boot-percent]');
+  if (label) label.textContent = `${clamped}%`;
+  screen.setAttribute('aria-label', `Loading Basketball Frenzy ${clamped}%`);
+}
 
 export function showDribbleBootScreen(container: HTMLElement): void {
   container.querySelector(bootSelector)?.remove();
@@ -34,57 +43,75 @@ export function showDribbleBootScreen(container: HTMLElement): void {
         align-items: center;
         width: min(520px, 82vw);
       }
-      [data-dribble-boot-logo] {
-        display: block;
+      [data-dribble-boot-logo-frame] {
+        position: relative;
         width: min(470px, 76vw);
         height: min(310px, 38vh);
+        overflow: hidden;
+      }
+      [data-dribble-boot-logo] {
+        display: block;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
         filter: grayscale(1) saturate(0) brightness(0.82);
         opacity: 0;
         transition: opacity 180ms ease;
       }
       [data-dribble-boot-logo][data-loaded='true'] { opacity: 1; }
-      [data-dribble-boot-loader] {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        height: 26px;
-        margin-top: 8px;
+      [data-dribble-boot-logo-mask] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: calc(100% - var(--dribble-boot-progress));
+        background:
+          linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.72) 0%,
+            rgba(0, 0, 0, 0.82) 18%,
+            rgba(0, 0, 0, 0.9) 100%
+          );
+        transition: width 140ms linear;
+        pointer-events: none;
       }
-      [data-dribble-boot-loader] i {
-        display: block;
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: #ffca3a;
-        box-shadow: 0 0 10px rgba(255, 202, 58, 0.72);
-        animation: dribble-boot-bounce 760ms ease-in-out infinite alternate;
-      }
-      [data-dribble-boot-loader] i:nth-child(2) { animation-delay: 120ms; }
-      [data-dribble-boot-loader] i:nth-child(3) { animation-delay: 240ms; }
       [data-dribble-boot-label] {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 8px;
         margin-top: 10px;
-        color: rgba(255, 255, 255, 0.78);
-        font: 400 16px/20px 'Boogaloo', 'Trebuchet MS', sans-serif;
+        color: #ffca3a;
+        font: 400 20px/24px 'Boogaloo', 'Trebuchet MS', sans-serif;
         letter-spacing: 0;
+        text-shadow: 0 0 12px rgba(255, 202, 58, 0.28);
       }
-      @keyframes dribble-boot-bounce {
-        from { transform: translateY(5px) scale(0.82); opacity: 0.58; }
-        to { transform: translateY(-5px) scale(1); opacity: 1; }
+      [data-dribble-boot-percent] {
+        color: #ffdc63;
+        font-size: 22px;
       }
       @media (prefers-reduced-motion: reduce) {
         [data-dribble-boot-screen],
         [data-dribble-boot-logo] { transition: none; }
-        [data-dribble-boot-loader] i { animation: none; }
+        [data-dribble-boot-logo-mask] { transition: none; }
       }
     </style>
     <div data-dribble-boot-content>
-      <img data-dribble-boot-logo alt="Basketball Frenzy">
-      <div data-dribble-boot-loader aria-hidden="true"><i></i><i></i><i></i></div>
-      <span data-dribble-boot-label>Loading</span>
+      <div data-dribble-boot-logo-frame>
+        <img data-dribble-boot-logo alt="Basketball Frenzy">
+        <i data-dribble-boot-logo-mask aria-hidden="true"></i>
+      </div>
+      <span data-dribble-boot-label><b>LOADING</b><b data-dribble-boot-percent>0%</b></span>
     </div>
   `;
   container.appendChild(screen);
+  setBootProgress(screen, 0);
+  let simulatedProgress = 0;
+  const progressTimer = window.setInterval(() => {
+    simulatedProgress = Math.min(92, simulatedProgress + Math.max(1, (92 - simulatedProgress) * 0.075));
+    setBootProgress(screen, simulatedProgress);
+  }, 90);
+  bootProgressTimers.set(screen, progressTimer);
 
   const logo = screen.querySelector('[data-dribble-boot-logo]') as HTMLImageElement | null;
   void ENGINE.resolveAssetPathsInText('@project/assets/textures/Basketball_frenzy_logo.png')
@@ -99,7 +126,13 @@ export function showDribbleBootScreen(container: HTMLElement): void {
 export function hideDribbleBootScreen(container: HTMLElement): void {
   const screen = container.querySelector(bootSelector) as HTMLElement | null;
   if (!screen) return;
-  screen.dataset.ready = 'true';
+  const progressTimer = bootProgressTimers.get(screen);
+  if (progressTimer !== undefined) window.clearInterval(progressTimer);
+  bootProgressTimers.delete(screen);
+  setBootProgress(screen, 100);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.setTimeout(() => screen.remove(), reducedMotion ? 0 : 280);
+  window.setTimeout(() => {
+    screen.dataset.ready = 'true';
+    window.setTimeout(() => screen.remove(), reducedMotion ? 0 : 280);
+  }, reducedMotion ? 0 : 180);
 }

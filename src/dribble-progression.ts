@@ -51,6 +51,8 @@ export interface DribbleProgressionState {
   discoBallOwned: boolean;
   blackHoleBallOwned: boolean;
   equippedBall: BallCosmetic;
+  classicTutorialCompleted: boolean;
+  lastBounceTutorialCompleted: boolean;
   achievements: Record<AchievementId, boolean>;
   achievementMigrationVersion: number;
 }
@@ -74,8 +76,10 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     discoBallOwned: false,
     blackHoleBallOwned: false,
     equippedBall: 'classic',
+    classicTutorialCompleted: false,
+    lastBounceTutorialCompleted: false,
     achievements: createDefaultAchievements(),
-    achievementMigrationVersion: 3,
+    achievementMigrationVersion: 4,
   };
 }
 
@@ -101,8 +105,10 @@ export function loadProgression(): DribbleProgressionState {
       discoBallOwned,
       blackHoleBallOwned,
       equippedBall: isBallCosmetic(parsed.equippedBall) ? parsed.equippedBall : 'classic',
+      classicTutorialCompleted: parsed.classicTutorialCompleted === true,
+      lastBounceTutorialCompleted: parsed.lastBounceTutorialCompleted === true,
       achievements: loadAchievements(parsed.achievements),
-      achievementMigrationVersion: 3,
+      achievementMigrationVersion: 4,
     };
     if (loaded.normalRunsCompleted === 0 && loaded.normalHighScore > 0) loaded.normalRunsCompleted = 1;
     if (loaded.hardRunsCompleted === 0 && loaded.hardHighScore > 0) loaded.hardRunsCompleted = 1;
@@ -121,6 +127,13 @@ export function loadProgression(): DribbleProgressionState {
       loaded.achievements.highScore = loaded.normalRunsCompleted > 0
         || loaded.hardRunsCompleted > 0;
     }
+    if (sanitizeCount(parsed.achievementMigrationVersion) < 4) {
+      loaded.classicTutorialCompleted = loaded.achievements.playTutorial;
+      loaded.lastBounceTutorialCompleted = false;
+      loaded.achievements.playTutorial = false;
+    }
+    loaded.achievements.playTutorial = loaded.classicTutorialCompleted
+      && loaded.lastBounceTutorialCompleted;
     return persist(loaded);
   } catch {
     return fallback;
@@ -181,7 +194,32 @@ export function resetProgression(
   return persist({
     ...state,
     achievements: createDefaultAchievements(),
-    achievementMigrationVersion: 3,
+    classicTutorialCompleted: false,
+    lastBounceTutorialCompleted: false,
+    achievementMigrationVersion: 4,
+  });
+}
+
+export function recordTutorialCompletion(
+  state: DribbleProgressionState,
+  mode: 'classic' | 'last-bounce',
+): DribbleProgressionState {
+  const classicTutorialCompleted = state.classicTutorialCompleted || mode === 'classic';
+  const lastBounceTutorialCompleted = state.lastBounceTutorialCompleted || mode === 'last-bounce';
+  if (
+    classicTutorialCompleted === state.classicTutorialCompleted
+    && lastBounceTutorialCompleted === state.lastBounceTutorialCompleted
+  ) {
+    return state;
+  }
+  return persist({
+    ...state,
+    classicTutorialCompleted,
+    lastBounceTutorialCompleted,
+    achievements: {
+      ...state.achievements,
+      playTutorial: classicTutorialCompleted && lastBounceTutorialCompleted,
+    },
   });
 }
 

@@ -98,7 +98,11 @@
   border-color: rgba(101, 230, 168, 0.72);
 }
 
-.dribble-tutorial-hud[data-complete='true'] .dribble-tutorial-copy > span,
+.dribble-tutorial-hud[data-complete='true'] .dribble-tutorial-copy > span {
+  color: #65e6a8;
+  background: transparent;
+}
+
 .dribble-tutorial-hud[data-complete='true'] .dribble-tutorial-action strong {
   color: #07150e;
   background: #65e6a8;

@@ -5,6 +5,7 @@ export type TutorialLane = 'left' | 'center' | 'right' | 'active';
 export type DribbleTutorialMode = 'classic' | 'last-bounce';
 
 export type TutorialEvent =
+  | 'continue'
   | 'boost-left'
   | 'boost-right'
   | 'switch-left'
@@ -115,24 +116,24 @@ const classicLessons: TutorialLesson[] = [
 
 const lastBounceLessons: TutorialLesson[] = [
   {
-    id: 'versus-power',
-    title: 'Your Possession',
-    instruction: 'You control the right hand. Power-bounce to clear low hazards.',
-    control: 'RIGHT CLICK',
-    expectedEvent: 'boost-right',
+    id: 'versus-lives',
+    title: 'Three Lives Each',
+    instruction: 'The three circles beside AI and YOU are round lives. A hazard ♦️ fills one circle; lose all three and the match is over.',
+    control: 'LEFT CLICK TO CONTINUE',
+    expectedEvent: 'continue',
+  },
+  {
+    id: 'versus-cards',
+    title: 'Risk Cards',
+    instruction: 'Each side has three red Risk Cards. A dangerous late pass spends one. With none left, another Risk Pass loses the round. Green cards restore one.',
+    control: 'LEFT CLICK TO CONTINUE',
+    expectedEvent: 'continue',
   },
   {
     id: 'versus-pass',
     title: 'Pass To The AI',
     instruction: 'Send the ball through center to the AI on the left.',
     control: 'LEFT CLICK',
-    expectedEvent: 'switch-left',
-  },
-  {
-    id: 'versus-return',
-    title: 'Return The Ball',
-    instruction: 'The AI passes to your right hand. The ball pauses there until you send it back.',
-    control: 'LEFT CLICK TO RETURN',
     expectedEvent: 'switch-left',
   },
   {
@@ -146,17 +147,17 @@ const lastBounceLessons: TutorialLesson[] = [
   {
     id: 'versus-air',
     title: 'Respect Air Hazards',
-    instruction: 'Air hazards punish power bounces. Stay low and let this one pass.',
-    control: 'DO NOT POWER BOUNCE',
+    instruction: 'Air hazards are dangerous during a power bounce. Avoid contact and let this one pass safely.',
+    control: 'AVOID THE AIR HAZARD',
     expectedEvent: 'hazard-avoided',
     spawn: { kind: 'hazard', lane: 'right', height: 'high' },
   },
   {
     id: 'versus-risk',
     title: 'Risk Passes',
-    instruction: 'Pass when the hazard is close to the AI. This spends one red Risk Card.',
-    control: 'LEFT CLICK',
-    expectedEvent: 'risk-pass',
+    instruction: 'Wait for PASS NOW, then pass. The lesson completes only if the hazard is safely cleared.',
+    control: 'WAIT FOR THE CUE',
+    expectedEvent: 'hazard-avoided',
     spawn: { kind: 'hazard', lane: 'left', height: 'low' },
   },
   {
@@ -170,9 +171,10 @@ const lastBounceLessons: TutorialLesson[] = [
   {
     id: 'versus-pressure',
     title: 'Pressure',
-    instruction: 'Holding the ball fills pressure and accelerates hazards in your lane. Keep making decisions.',
-    control: 'PASS OR POWER BOUNCE',
+    instruction: 'Watch the red hazard accelerate as pressure fills, then pass before it reaches you.',
+    control: 'WATCH THE BAR, THEN LEFT CLICK',
     expectedEvent: 'switch-left',
+    spawn: { kind: 'hazard', lane: 'right', height: 'low' },
   },
 ];
 
@@ -183,12 +185,14 @@ export class DribbleTutorialDirector {
   private spawnDelay = 0;
   private complete = false;
   private hazardBounceArmed = false;
+  private riskPassArmed = false;
 
   public reset(mode: DribbleTutorialMode = 'classic'): void {
     this.mode = mode;
     this.lessonIndex = 0;
     this.complete = false;
     this.hazardBounceArmed = false;
+    this.riskPassArmed = false;
     this.prepareLesson();
   }
 
@@ -240,18 +244,21 @@ export class DribbleTutorialDirector {
         return false;
       }
     }
-    if (lesson.id === 'versus-air') {
-      if (event === 'boost-left' || event === 'boost-right') {
-        this.hazardBounceArmed = true;
-        return false;
-      }
-      if (event === 'hazard-avoided' && this.hazardBounceArmed) {
-        this.hazardBounceArmed = false;
-        this.retryTarget();
+    if (lesson.id === 'versus-air' && event === 'hazard-hit') {
+      this.retryTarget();
+      return false;
+    }
+    if (lesson.id === 'versus-risk') {
+      if (event === 'risk-pass') {
+        this.riskPassArmed = true;
         return false;
       }
       if (event === 'hazard-hit') {
-        this.hazardBounceArmed = false;
+        this.riskPassArmed = false;
+        this.retryTarget();
+        return false;
+      }
+      if (event === 'hazard-avoided' && !this.riskPassArmed) {
         this.retryTarget();
         return false;
       }
@@ -283,6 +290,7 @@ export class DribbleTutorialDirector {
 
   private prepareLesson(): void {
     this.hazardBounceArmed = false;
+    this.riskPassArmed = false;
     this.spawnPending = Boolean(this.getLesson().spawn);
     this.spawnDelay = this.spawnPending ? 0.85 : 0;
   }

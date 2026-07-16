@@ -113,7 +113,6 @@ export class DribbleBall extends ENGINE.Actor {
   private transferStart = new THREE.Vector3();
   private catchTime = 0;
   private catchEnabled = false;
-  private heldAtHand = false;
   private boostTime = 0;
   private boostStart = new THREE.Vector3();
   private boostBouncePlayed = false;
@@ -254,17 +253,6 @@ export class DribbleBall extends ENGINE.Actor {
     if (!enabled) this.catchTime = 0;
   }
 
-  public holdAtHand(side: DribbleSide): void {
-    this.side = side;
-    this.transferTime = 0;
-    this.catchTime = 0;
-    this.boostTime = 0;
-    this.heldAtHand = true;
-    this.rootComponent.scale.setScalar(1);
-    this.rootComponent.position.set(this.lanes[side].x, this.handY, this.laneZ);
-    this.trail?.clear(this.rootComponent.position);
-  }
-
   public setFrenzyActive(active: boolean): void {
     if (this.frenzyActive === active) {
       return;
@@ -293,7 +281,6 @@ export class DribbleBall extends ENGINE.Actor {
     this.transferTime = 0;
     this.catchTime = 0;
     this.boostTime = 0;
-    this.heldAtHand = false;
     this.transferFrom = side;
     this.transferTo = side === 'left' ? 'right' : 'left';
     this.bounceCycle = 0;
@@ -344,15 +331,6 @@ export class DribbleBall extends ENGINE.Actor {
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
     if (!this.gameplayActive) {
-      return;
-    }
-
-    if (this.heldAtHand) {
-      this.rootComponent.position.set(this.lanes[this.side].x, this.handY, this.laneZ);
-      this.rootComponent.scale.setScalar(1);
-      this.trail?.record(this.rootComponent.position);
-      this.modelAnimationMixer?.update(deltaTime);
-      this.updateCosmeticVisuals(deltaTime);
       return;
     }
 
@@ -512,7 +490,6 @@ export class DribbleBall extends ENGINE.Actor {
 
     this.transferFrom = from;
     this.transferTo = to;
-    this.heldAtHand = false;
     this.transferTime = 0.001;
     this.catchTime = 0;
     this.boostTime = 0;
@@ -533,7 +510,6 @@ export class DribbleBall extends ENGINE.Actor {
       return false;
     }
 
-    this.heldAtHand = false;
     this.boostTime = 0.001;
     this.boostBouncePlayed = false;
     this.boostStart.copy(this.rootComponent.position);

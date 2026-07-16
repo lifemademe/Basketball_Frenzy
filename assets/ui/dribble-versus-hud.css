@@ -108,6 +108,20 @@
   box-shadow: 0 0 9px rgba(255, 202, 58, 0.72);
 }
 
+.dribble-versus-hud[data-tutorial-focus='lives'] .dribble-versus-rounds {
+  position: relative;
+  padding: 5px 7px;
+  border: 1px solid rgba(255, 220, 99, 0.84);
+  border-radius: 5px;
+  background: rgba(255, 202, 58, 0.12);
+  box-shadow: 0 0 18px rgba(255, 202, 58, 0.46);
+  animation: dribble-versus-coach-focus 620ms ease-in-out infinite alternate;
+}
+
+.dribble-versus-hud[data-tutorial-focus='lives'] .dribble-versus-risk {
+  opacity: 0.3;
+}
+
 .dribble-versus-risk {
   display: flex;
   width: 100%;
@@ -178,6 +192,31 @@
   background: rgba(255, 255, 255, 0.42);
   content: '';
   transform: rotate(-42deg);
+}
+
+.dribble-versus-hud[data-tutorial-focus='risk'] .dribble-versus-risk {
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 105, 96, 0.88);
+  border-radius: 5px;
+  background: rgba(255, 69, 58, 0.12);
+  box-shadow: 0 0 18px rgba(255, 69, 58, 0.46);
+  animation: dribble-versus-coach-focus 620ms ease-in-out infinite alternate;
+}
+
+.dribble-versus-hud[data-tutorial-focus='risk'] .dribble-versus-rounds {
+  opacity: 0.3;
+}
+
+@keyframes dribble-versus-coach-focus {
+  from {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+
+  to {
+    filter: brightness(1.18);
+    transform: scale(1.04);
+  }
 }
 
 .dribble-versus-hud[data-player-risk='empty'] .dribble-versus-player .dribble-versus-risk,
