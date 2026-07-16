@@ -88,6 +88,7 @@ export class DribbleTarget extends ENGINE.Actor {
       name: 'Target Mesh',
       geometry,
       material,
+      castShadow: true,
       physicsOptions: { enabled: false },
     });
 

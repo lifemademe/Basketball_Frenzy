@@ -289,20 +289,22 @@
 .dribble-main-menu[data-panel='how-to-play'] .dribble-main-menu-how,
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-settings,
 .dribble-main-menu[data-panel='shop'] .dribble-main-menu-shop,
-.dribble-main-menu[data-panel='achievements'] .dribble-main-menu-achievements {
+.dribble-main-menu[data-panel='achievements'] .dribble-main-menu-achievements,
+.dribble-main-menu[data-panel='reset'] .dribble-main-menu-reset {
   display: block;
   animation: dribble-main-menu-enter 220ms ease-out both;
 }
 
 .dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
   display: grid;
-  margin-top: clamp(-54px, -5vh, -32px);
+  margin-top: clamp(-82px, -7vh, -56px);
 }
 
 .dribble-main-menu-mode-select,
 .dribble-main-menu-how,
 .dribble-main-menu-settings,
-.dribble-main-menu-shop {
+.dribble-main-menu-shop,
+.dribble-main-menu-reset {
   position: relative;
 }
 
@@ -471,7 +473,7 @@
   padding: 0 !important;
   background: transparent url('@project/assets/textures/play_button_background.png') center / contain no-repeat !important;
   color: #ffffff;
-  font-size: 66px !important;
+  font-size: 60px !important;
   line-height: 1 !important;
   place-items: center;
   text-align: center;
@@ -485,11 +487,12 @@
   display: grid;
   width: 100%;
   height: 100%;
-  font-size: 66px !important;
+  font-size: 60px !important;
   line-height: 1 !important;
   letter-spacing: 0;
   place-items: center;
   text-align: center;
+  transform: translateY(-7px);
   -webkit-text-stroke: 1px rgba(5, 39, 112, 0.72);
 }
 
@@ -515,6 +518,49 @@
   background-repeat: no-repeat;
   background-size: contain;
   filter: none;
+}
+
+.dribble-main-menu-reset-action {
+  position: fixed;
+  z-index: 5;
+  right: clamp(18px, 2.5vw, 38px);
+  bottom: clamp(16px, 2.5vh, 30px);
+  display: none;
+  width: 78px;
+  height: 78px;
+  margin: 0;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+}
+
+.dribble-main-menu[data-panel='home'] > .dribble-main-menu-reset-action {
+  display: block;
+}
+
+.dribble-main-menu-reset-action .ui-button,
+.dribble-main-menu-reset-action .ui-button:hover,
+.dribble-main-menu-reset-action .ui-button:focus-visible {
+  width: 78px;
+  height: 78px;
+  min-height: 78px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent url('@project/assets/textures/Reset.png') center / 110% auto no-repeat !important;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  filter: none;
+  opacity: 1;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+}
+
+.dribble-main-menu-reset-action .ui-button-label {
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  font-size: 0;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
 }
 
 .dribble-main-menu-achievements-action {
@@ -589,6 +635,16 @@
   filter: brightness(1.12) saturate(1.08);
 }
 
+.dribble-main-menu .dribble-main-menu-reset-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-reset-action .ui-button:focus-visible {
+  background: transparent url('@project/assets/textures/Reset.png') center / 110% auto no-repeat !important;
+  border: 0;
+  box-shadow: none;
+  color: transparent;
+  filter: brightness(1.08) saturate(1.05);
+  opacity: 1;
+}
+
 .dribble-main-menu-panel-heading h2 {
   margin: 0 0 22px;
   font-size: 30px;
@@ -654,7 +710,8 @@
 }
 
 .dribble-main-menu-settings,
-.dribble-main-menu-shop {
+.dribble-main-menu-shop,
+.dribble-main-menu-reset {
   width: min(470px, calc(100vw - 34px));
   height: min(548px, calc(100vh - 40px));
   min-height: 500px;
@@ -668,8 +725,153 @@
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='shop'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='achievements'] .dribble-main-menu-brand,
-.dribble-main-menu[data-panel='achievements'] footer {
+.dribble-main-menu[data-panel='reset'] .dribble-main-menu-brand,
+.dribble-main-menu[data-panel='achievements'] footer,
+.dribble-main-menu[data-panel='reset'] footer {
   display: none;
+}
+
+.dribble-main-menu-reset {
+  padding-bottom: 132px;
+}
+
+.dribble-reset-heading span {
+  margin-bottom: 2px;
+  color: #bfefff;
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
+}
+
+.dribble-reset-heading h2 {
+  margin-bottom: 13px;
+  color: #ffffff;
+  font-size: 34px;
+  line-height: 38px;
+  text-shadow: 0 3px 0 #0b43a5;
+}
+
+.dribble-reset-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dribble-reset-list > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 8px 12px 8px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 7px;
+  background: rgba(4, 45, 119, 0.52);
+  color: #ffffff;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  text-align: left;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.dribble-reset-list > button:hover,
+.dribble-reset-list > button:focus-visible {
+  border-color: #ffffff;
+  outline: none;
+  background: rgba(14, 91, 190, 0.74);
+  transform: translateX(3px);
+}
+
+.dribble-reset-list > button span {
+  display: grid;
+  min-width: 0;
+}
+
+.dribble-reset-list > button b {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.dribble-reset-list > button small {
+  overflow: hidden;
+  color: #b9dafa;
+  font-size: 12px;
+  line-height: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dribble-reset-list > button strong {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 171, 171, 0.58);
+  border-radius: 5px;
+  background: rgba(145, 28, 42, 0.62);
+  color: #ffe4e4;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.dribble-reset-confirmation {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: 50%;
+  display: none;
+  width: min(310px, calc(100% - 92px));
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(4, 18, 55, 0.96);
+  box-shadow: 0 16px 30px rgba(0, 8, 34, 0.58);
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+}
+
+.dribble-reset-confirmation[data-active='true'] {
+  display: block;
+  animation: dribble-reset-confirmation-enter 160ms ease-out both;
+}
+
+.dribble-reset-confirmation p {
+  margin: 0 0 15px;
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 26px;
+  text-align: center;
+}
+
+.dribble-reset-confirmation > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.dribble-reset-confirmation button {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 6px;
+  background: #176ec7;
+  color: #ffffff;
+  font: 400 18px/22px 'Boogaloo', 'Trebuchet MS', sans-serif;
+}
+
+.dribble-reset-confirmation button[data-reset-confirm] {
+  border-color: rgba(255, 184, 184, 0.7);
+  background: #a6293b;
+}
+
+.dribble-reset-confirmation button:hover,
+.dribble-reset-confirmation button:focus-visible {
+  outline: none;
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.dribble-reset-status {
+  min-height: 18px;
+  margin: 10px 2px 0;
+  color: #86ffac;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
 }
 
 .dribble-main-menu-achievements {
@@ -1103,7 +1305,10 @@
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
-.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-reset .dribble-main-menu-back .ui-button,
+.dribble-main-menu-reset .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-reset .dribble-main-menu-back .ui-button:focus-visible {
   min-height: 112px;
   padding: 0;
   border: 0;
@@ -1130,7 +1335,9 @@
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:hover,
 .dribble-main-menu-mode-select .dribble-main-menu-back .ui-button:focus-visible,
 .dribble-main-menu-shop .dribble-main-menu-back .ui-button:hover,
-.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible {
+.dribble-main-menu-shop .dribble-main-menu-back .ui-button:focus-visible,
+.dribble-main-menu-reset .dribble-main-menu-back .ui-button:hover,
+.dribble-main-menu-reset .dribble-main-menu-back .ui-button:focus-visible {
   filter: brightness(1.1) saturate(1.08);
   transform: translateY(-2px) scale(1.025);
 }
@@ -1235,6 +1442,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes dribble-reset-confirmation-enter {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
 @keyframes dribble-logo-sparkle {
   0%, 58%, 100% { opacity: 0; transform: scale(0.25) rotate(0); }
   68% { opacity: 1; transform: scale(1.25) rotate(38deg); }
@@ -1309,11 +1521,16 @@
   }
 
   .dribble-main-menu-settings,
-  .dribble-main-menu-shop {
+  .dribble-main-menu-shop,
+  .dribble-main-menu-reset {
     width: min(390px, 100%);
     height: min(520px, calc(100vh - 28px));
     min-height: 480px;
     padding: 64px 46px 38px;
+  }
+
+  .dribble-main-menu-reset {
+    padding-bottom: 122px;
   }
 
   .dribble-main-menu-achievements {
@@ -1366,14 +1583,28 @@
     min-height: 104px;
   }
 
+  .dribble-main-menu-reset-action {
+    right: 12px;
+    bottom: 12px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .dribble-main-menu-reset-action .ui-button {
+    width: 64px;
+    height: 64px;
+    min-height: 64px;
+  }
+
   .dribble-main-menu-play .ui-button,
   .dribble-main-menu-play .ui-button.size-large {
     min-height: 92px;
-    font-size: 54px !important;
+    font-size: 50px !important;
   }
 
   .dribble-main-menu-play .ui-button-label {
-    font-size: 54px !important;
+    font-size: 50px !important;
+    transform: translateY(-5px);
   }
 }
 

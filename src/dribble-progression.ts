@@ -1,6 +1,7 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
 export type WristbandColor = 'orange' | 'blue' | 'lime' | 'pink' | 'white' | 'purple';
 export type WristbandSide = 'left' | 'right';
+export type ProgressionResetTarget = 'normalHighScore' | 'hardHighScore' | 'achievements';
 
 export const wristbandColors: readonly WristbandColor[] = [
   'orange',
@@ -45,6 +46,7 @@ export interface DribbleProgressionState {
   blackHoleBallOwned: boolean;
   equippedBall: BallCosmetic;
   achievements: Record<AchievementId, boolean>;
+  achievementMigrationVersion: number;
 }
 
 export const epicBallPrice = 1;
@@ -65,6 +67,7 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     blackHoleBallOwned: false,
     equippedBall: 'classic',
     achievements: createDefaultAchievements(),
+    achievementMigrationVersion: 1,
   };
 }
 
@@ -89,13 +92,17 @@ export function loadProgression(): DribbleProgressionState {
       blackHoleBallOwned,
       equippedBall: isBallCosmetic(parsed.equippedBall) ? parsed.equippedBall : 'classic',
       achievements: loadAchievements(parsed.achievements),
+      achievementMigrationVersion: 1,
     };
     if (!isBallOwned(loaded, loaded.equippedBall)) loaded.equippedBall = 'classic';
-    const bestScore = Math.max(loaded.normalHighScore, loaded.hardHighScore);
-    if (bestScore > 0) loaded.achievements.firstPoint = true;
-    if (bestScore >= 10000) loaded.achievements.score10000 = true;
-    if (loaded.epicBallOwned || loaded.discoBallOwned || loaded.blackHoleBallOwned) {
-      loaded.achievements.firstPurchase = true;
+    if (sanitizeCount(parsed.achievementMigrationVersion) < 1) {
+      const bestScore = Math.max(loaded.normalHighScore, loaded.hardHighScore);
+      if (bestScore > 0) loaded.achievements.firstPoint = true;
+      if (bestScore >= 10000) loaded.achievements.score10000 = true;
+      if (loaded.epicBallOwned || loaded.discoBallOwned || loaded.blackHoleBallOwned) {
+        loaded.achievements.firstPurchase = true;
+      }
+      return persist(loaded);
     }
     return loaded;
   } catch {
@@ -125,6 +132,23 @@ export function getHighScore(
   mode: 'normal' | 'hard',
 ): number {
   return mode === 'hard' ? state.hardHighScore : state.normalHighScore;
+}
+
+export function resetProgression(
+  state: DribbleProgressionState,
+  target: ProgressionResetTarget,
+): DribbleProgressionState {
+  if (target === 'normalHighScore') {
+    return persist({ ...state, normalHighScore: 0 });
+  }
+  if (target === 'hardHighScore') {
+    return persist({ ...state, hardHighScore: 0 });
+  }
+  return persist({
+    ...state,
+    achievements: createDefaultAchievements(),
+    achievementMigrationVersion: 1,
+  });
 }
 
 export function setWristbandColor(

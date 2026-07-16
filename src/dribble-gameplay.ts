@@ -18,12 +18,14 @@ import {
   loadProgression,
   purchaseBall,
   recordHighScore,
+  resetProgression as resetSavedProgression,
   setWristbandColor as saveWristbandColor,
   unlockAchievement,
   wristbandColorHex,
   type AchievementId,
   type BallCosmetic,
   type DribbleProgressionState,
+  type ProgressionResetTarget,
   type WristbandColor,
   type WristbandSide,
 } from './dribble-progression.js';
@@ -82,6 +84,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly comboPopups: DribbleComboPopup[] = [];
   private readonly activeTargets: DribbleTarget[] = [];
   private readonly targetSpawnSwitchCounts = new WeakMap<DribbleTarget, number>();
+  private readonly targetPaceScales = new WeakMap<DribbleTarget, number>();
   private readonly patternDirector = new DribblePatternDirector();
   private readonly tutorialDirector = new DribbleTutorialDirector();
   private tutorialActive = false;
@@ -102,8 +105,15 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly minimumTargetGap = 2.35;
   private readonly comfortableTargetGap = 3.15;
   private readonly centerRhythmLength = 8;
+  private readonly difficultyRampStart = 5;
+  private readonly difficultyRampDuration = 90;
+  private readonly speedStageStart = 12;
+  private readonly speedStageInterval = 20;
+  private readonly maximumSpeedStage = 4;
+  private readonly speedStageBoost = 0.3;
   private lastSpawnIntervalScale = 1;
   private laneSwitchCount = 0;
+  private difficultyStage = 0;
 
   public handleLeftClick(): DribbleInputAction {
     if (this.gameState !== 'playing') return null;
@@ -182,6 +192,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.lastSpawnWasCenterRhythm = false;
     this.lastSpawnIntervalScale = 1;
     this.laneSwitchCount = 0;
+    this.difficultyStage = 0;
     this.patternDirector.reset(this.gameMode);
     this.ball?.reset();
     this.setGameplayActive(true);
@@ -256,10 +267,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     this.centerRhythmCooldown = Math.max(0, this.centerRhythmCooldown - deltaTime);
     this.updateFrenzy(deltaTime);
+    const difficulty = this.getDifficultyRamp();
+    this.updateDifficultyStage();
     this.spawnTimer -= deltaTime;
     if (this.spawnTimer <= 0) {
-      if (this.spawnTarget()) {
-        const difficulty = this.getDifficultyRamp();
+      if (this.spawnTarget(difficulty)) {
         const baseInterval = this.lastSpawnWasCenterRhythm
           ? THREE.MathUtils.lerp(0.92, 0.7, difficulty)
           : THREE.MathUtils.lerp(1.02, 0.54, difficulty);
@@ -277,7 +289,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     const ballState = this.ball?.getState();
     if (ballState) {
-      this.updateTargetSpacing(this.activeTargets);
+      this.updateTargetSpacing(this.activeTargets, deltaTime, difficulty);
       this.updateTimingMeter(ballState, this.activeTargets);
       this.checkBallTargetHits(ballState, this.activeTargets);
       this.updateHandAnimations(deltaTime, ballState);
@@ -367,13 +379,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
-    world.addBox({
+    const courtFloor = world.addBox({
       position: new THREE.Vector3(0, -0.08, -7),
       width: 3.6,
       height: 0.16,
       depth: 30,
       color: 0x2b2134,
-    }).setName('Dribble Court Floor');
+    });
+    courtFloor.setName('Dribble Court Floor');
+    courtFloor.rootComponent.castShadow = false;
+    courtFloor.rootComponent.receiveShadow = true;
 
     world.addBox({
       position: new THREE.Vector3(0, 0.02, -1.85),
@@ -411,12 +426,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const renderer = world.getRenderer() as unknown as {
       getPixelRatio?: () => number;
       setPixelRatio?: (ratio: number) => void;
-      shadowMap?: { enabled: boolean };
+      shadowMap?: { enabled: boolean; autoUpdate?: boolean };
     } | null;
     const currentPixelRatio = renderer?.getPixelRatio?.() ?? 1;
     renderer?.setPixelRatio?.(Math.min(currentPixelRatio, 1));
     if (renderer?.shadowMap) {
-      renderer.shadowMap.enabled = false;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.autoUpdate = true;
     }
   }
 
@@ -486,7 +502,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
           color: new THREE.Color(1, 0.296138, 0.088656),
           intensity: 5.5,
           isSunLight: false,
-          castShadow: false,
+          castShadow: true,
           shadowMapSize: 1024,
           shadowBias: -0.001,
           shadowCameraBottom: -15,
@@ -555,6 +571,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
       onEquipBall: cosmetic => this.setEquippedBall(cosmetic),
       onWristbandColorChange: (side, color) => this.setWristbandSelection(side, color),
+      onResetProgression: target => this.resetProgression(target),
     });
     this.overlay = new DribbleOverlay(world.uiManager, {
       onResume: () => this.resumeRun(),
@@ -662,7 +679,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       : existing?.getComponent(ENGINE.ModelMeshComponent);
     if (existingModel?.modelUrl === modelUrl) {
       existingModel.replacePhysicsOptions({ enabled: false });
-      existingModel.castShadow = false;
+      existingModel.castShadow = true;
       return;
     }
     existing?.destroy();
@@ -674,7 +691,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       scale: new THREE.Vector3(0.5, 0.5, 0.5),
       physicsOptions: { enabled: false },
     });
-    hand.rootComponent.castShadow = false;
+    hand.rootComponent.castShadow = true;
     world.addActor(hand);
   }
 
@@ -795,7 +812,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     world.addActors(coralFill, blueFill);
   }
 
-  private spawnTarget(): boolean {
+  private spawnTarget(difficulty: number): boolean {
     const world = this.getWorld();
     if (!world) {
       return false;
@@ -811,7 +828,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     this.tryStartCenterRhythm(existingTargets);
-    const difficulty = this.getDifficultyRamp();
     const rhythmTarget = this.centerRhythmSpawnsRemaining > 0;
     const patternStep = !rhythmTarget && this.frenzyTimeRemaining <= 0
       ? this.patternDirector.takeStep({
@@ -836,18 +852,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       : patternStep
         ? this.getPatternLaneX(patternStep.lane)
         : availableLanes[Math.floor(Math.random() * availableLanes.length)];
-    const targetPace = THREE.MathUtils.lerp(4.1, 7.2, difficulty);
-    let speed = rhythmTarget
-      ? targetPace
-      : targetPace * THREE.MathUtils.randFloat(0.96, 1.04) * (patternStep?.speedScale ?? 1);
-    if (rearmostTarget) {
-      const timeToCollect = Math.max(
-        1,
-        (-1.85 - rearmostTarget.rootComponent.position.z) / Math.max(rearmostTarget.speed, 0.1),
-      );
-      const catchUpAllowance = Math.max(0, entryGap - this.minimumTargetGap) / timeToCollect * 0.45;
-      speed = Math.min(speed, rearmostTarget.speed + catchUpAllowance);
-    }
+    const paceScale = rhythmTarget ? 1 : patternStep?.speedScale ?? 1;
+    const speed = this.getTargetPace(difficulty) * paceScale;
     const target = DribbleTarget.create({
       name: kind === 'score'
         ? 'Score Target'
@@ -877,6 +883,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     world.addActor(target);
     this.activeTargets.push(target);
     this.targetSpawnSwitchCounts.set(target, this.laneSwitchCount);
+    this.targetPaceScales.set(target, paceScale);
     this.lastSpawnWasCenterRhythm = rhythmTarget;
     this.lastSpawnIntervalScale = patternStep?.intervalScale ?? 1;
     if (patternStep?.startsPattern) {
@@ -931,13 +938,25 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
   }
 
-  private updateTargetSpacing(targets: DribbleTarget[]): void {
+  private updateTargetSpacing(
+    targets: DribbleTarget[],
+    deltaTime: number,
+    difficulty: number,
+  ): void {
+    const targetPace = this.getTargetPace(difficulty);
+    const accelerationBlend = 1 - Math.exp(-deltaTime * 1.65);
     const frontTarget = targets[0];
-    frontTarget?.setSpacingSpeedLimit(null);
+    if (frontTarget) {
+      const desiredSpeed = targetPace * (this.targetPaceScales.get(frontTarget) ?? 1);
+      frontTarget.speed = THREE.MathUtils.lerp(frontTarget.speed, desiredSpeed, accelerationBlend);
+      frontTarget.setSpacingSpeedLimit(null);
+    }
 
     for (let index = 1; index < targets.length; index += 1) {
       const leader = targets[index - 1];
       const follower = targets[index];
+      const desiredSpeed = targetPace * (this.targetPaceScales.get(follower) ?? 1);
+      follower.speed = THREE.MathUtils.lerp(follower.speed, desiredSpeed, accelerationBlend);
       const gap = leader.rootComponent.position.z - follower.rootComponent.position.z;
       if (gap >= this.comfortableTargetGap) {
         follower.setSpacingSpeedLimit(null);
@@ -957,7 +976,39 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private getDifficultyRamp(): number {
-    return THREE.MathUtils.clamp((this.elapsedTime - 8) / 112, 0, 1);
+    return THREE.MathUtils.clamp(
+      (this.elapsedTime - this.difficultyRampStart) / this.difficultyRampDuration,
+      0,
+      1,
+    );
+  }
+
+  private getTargetPace(difficulty: number): number {
+    const stageBoost = this.getDifficultyStage() * this.speedStageBoost;
+    const modeScale = this.gameMode === 'hard' ? 1.05 : 1;
+    return (4.15 + difficulty * 3.9 + stageBoost) * modeScale;
+  }
+
+  private getDifficultyStage(): number {
+    if (this.elapsedTime < this.speedStageStart) return 0;
+    return Math.min(
+      this.maximumSpeedStage,
+      Math.floor((this.elapsedTime - this.speedStageStart) / this.speedStageInterval) + 1,
+    );
+  }
+
+  private updateDifficultyStage(): void {
+    const stage = this.getDifficultyStage();
+    if (stage <= this.difficultyStage) return;
+    this.difficultyStage = stage;
+    this.juiceHud?.showPraise('SPEED UP!', 'gold');
+    const world = this.getWorld();
+    if (world) {
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.2,
+        bus: 'SFX',
+      });
+    }
   }
 
   private selectTargetKind(difficulty: number): TargetKind {
@@ -1529,6 +1580,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       volume: 0.16,
       bus: 'SFX',
     });
+    return this.progression;
+  }
+
+  private resetProgression(target: ProgressionResetTarget): DribbleProgressionState {
+    this.progression = resetSavedProgression(this.progression, target);
     return this.progression;
   }
 

@@ -5,6 +5,7 @@
   <button class="dribble-menu-ball" data-menu-ball type="button" aria-label="Drag and bounce the basketball">
     <canvas data-menu-ball-canvas aria-hidden="true"></canvas>
   </button>
+  <div class="dribble-main-menu-action dribble-main-menu-reset-action" data-menu-reset-slot></div>
   <section class="dribble-main-menu-content" aria-label="Basketball Frenzy main menu">
     <header class="dribble-main-menu-brand">
       <div class="dribble-main-menu-logo">
@@ -222,6 +223,39 @@
           <span class="dribble-achievement-state">LOCKED</span>
         </article>
       </div>
+    </section>
+
+    <section class="dribble-main-menu-panel dribble-main-menu-reset" aria-label="Reset options">
+      <div class="dribble-main-menu-panel-heading dribble-reset-heading">
+        <h2>Reset Options</h2>
+      </div>
+      <div class="dribble-reset-list" role="group" aria-label="Choose data to reset">
+        <button type="button" data-reset-choice="normalHighScore">
+          <span><b>Normal Best</b><small data-reset-normal-value>0 points</small></span>
+          <strong>RESET</strong>
+        </button>
+        <button type="button" data-reset-choice="hardHighScore">
+          <span><b>Hard Best</b><small data-reset-hard-value>0 points</small></span>
+          <strong>RESET</strong>
+        </button>
+        <button type="button" data-reset-choice="achievements">
+          <span><b>Achievements</b><small data-reset-achievements-value>0 of 5 complete</small></span>
+          <strong>RESET</strong>
+        </button>
+        <button type="button" data-reset-choice="audio">
+          <span><b>Sound Settings</b><small>Restore the default mix</small></span>
+          <strong>RESET</strong>
+        </button>
+      </div>
+      <div class="dribble-reset-confirmation" data-reset-confirmation data-active="false">
+        <p data-reset-confirm-title>Reset this setting?</p>
+        <div>
+          <button type="button" data-reset-cancel>Cancel</button>
+          <button type="button" data-reset-confirm>Confirm</button>
+        </div>
+      </div>
+      <p class="dribble-reset-status" data-reset-status aria-live="polite"></p>
+      <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-reset-back-slot></div>
     </section>
 
     <section class="dribble-main-menu-panel dribble-main-menu-settings" aria-label="Settings">

@@ -149,7 +149,7 @@ export class DribbleBall extends ENGINE.Actor {
     const ballModel = ENGINE.ModelMeshComponent.create({
       name: 'Ball Model',
       modelUrl: ballModelPaths.classic,
-      castShadow: false,
+      castShadow: true,
       physicsOptions: { enabled: false },
     });
     const modelScale = (this.radius * 2) / 1.1889150142669678;
