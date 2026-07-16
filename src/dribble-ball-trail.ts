@@ -5,7 +5,7 @@ import type { BallCosmetic } from './dribble-progression.js';
 
 @ENGINE.GameClass()
 export class DribbleBallTrail extends ENGINE.Actor {
-  private static readonly maxPoints = 18;
+  private static readonly maxPoints = 22;
 
   private readonly points = Array.from(
     { length: DribbleBallTrail.maxPoints },
@@ -14,9 +14,13 @@ export class DribbleBallTrail extends ENGINE.Actor {
   private pointCount = 0;
   private cosmetic: BallCosmetic = 'classic';
   private frenzyActive = false;
+  private powerBounceActive = false;
   private colorPhase = 0;
   private readonly scratchColor = new THREE.Color();
+  private readonly scratchCoreColor = new THREE.Color();
+  private readonly whiteColor = new THREE.Color(0xffffff);
   private trailMesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
+  private trailCore: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial> | null = null;
 
   public override initialize(options?: ENGINE.ActorOptions): void {
     super.initialize({
@@ -31,6 +35,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
       transparent: false,
       opacity: 1,
       depthWrite: false,
+      depthTest: false,
       blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
@@ -40,6 +45,22 @@ export class DribbleBallTrail extends ENGINE.Actor {
     this.trailMesh.frustumCulled = false;
     this.trailMesh.renderOrder = 8;
     this.rootComponent.add(this.trailMesh);
+
+    const coreMaterial = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+      depthTest: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    this.trailCore = new THREE.Line(this.createCoreGeometry(), coreMaterial);
+    this.trailCore.name = 'Ball Trail Luminous Core';
+    this.trailCore.frustumCulled = false;
+    this.trailCore.renderOrder = 9;
+    this.rootComponent.add(this.trailCore);
   }
 
   public record(position: THREE.Vector3): void {
@@ -70,6 +91,9 @@ export class DribbleBallTrail extends ENGINE.Actor {
     if (this.trailMesh) {
       this.trailMesh.geometry.setDrawRange(0, 0);
     }
+    if (this.trailCore) {
+      this.trailCore.geometry.setDrawRange(0, 0);
+    }
   }
 
   public setFrenzyActive(active: boolean): void {
@@ -83,12 +107,24 @@ export class DribbleBallTrail extends ENGINE.Actor {
     this.updateRibbon();
   }
 
+  public setPowerBounceActive(active: boolean): void {
+    if (this.powerBounceActive === active) return;
+    this.powerBounceActive = active;
+    this.updateRibbon();
+  }
+
   protected override doEndPlay(): void {
     if (this.trailMesh) {
       this.trailMesh.geometry.dispose();
       this.trailMesh.material.dispose();
       this.trailMesh.removeFromParent();
       this.trailMesh = null;
+    }
+    if (this.trailCore) {
+      this.trailCore.geometry.dispose();
+      this.trailCore.material.dispose();
+      this.trailCore.removeFromParent();
+      this.trailCore = null;
     }
     super.doEndPlay();
   }
@@ -116,6 +152,26 @@ export class DribbleBallTrail extends ENGINE.Actor {
     return geometry;
   }
 
+  private createCoreGeometry(): THREE.BufferGeometry {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array(DribbleBallTrail.maxPoints * 3),
+        3,
+      ).setUsage(THREE.DynamicDrawUsage),
+    );
+    geometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(
+        new Float32Array(DribbleBallTrail.maxPoints * 3),
+        3,
+      ).setUsage(THREE.DynamicDrawUsage),
+    );
+    geometry.setDrawRange(0, 0);
+    return geometry;
+  }
+
   private updateRibbon(): void {
     if (!this.trailMesh || this.pointCount < 2) {
       return;
@@ -125,6 +181,10 @@ export class DribbleBallTrail extends ENGINE.Actor {
     const colorAttribute = this.trailMesh.geometry.getAttribute('color') as THREE.BufferAttribute;
     const positions = positionAttribute.array as Float32Array;
     const colors = colorAttribute.array as Float32Array;
+    const corePositionAttribute = this.trailCore?.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+    const coreColorAttribute = this.trailCore?.geometry.getAttribute('color') as THREE.BufferAttribute | undefined;
+    const corePositions = corePositionAttribute?.array as Float32Array | undefined;
+    const coreColors = coreColorAttribute?.array as Float32Array | undefined;
     for (let index = 0; index < this.pointCount; index += 1) {
       const point = this.points[index];
       const previous = this.points[Math.max(0, index - 1)];
@@ -135,7 +195,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
       const normalX = -tangentY / tangentLength;
       const normalY = tangentX / tangentLength;
       const progress = index / (this.pointCount - 1);
-      const baseWidth = THREE.MathUtils.lerp(0.004, 0.062, THREE.MathUtils.smoothstep(progress, 0, 0.82));
+      const baseWidth = THREE.MathUtils.lerp(0.002, 0.078, THREE.MathUtils.smoothstep(progress, 0, 0.84));
       const width = baseWidth * this.getWidthScale();
       const offset = index * 6;
 
@@ -152,18 +212,39 @@ export class DribbleBallTrail extends ENGINE.Actor {
       colors[offset + 3] = this.scratchColor.r;
       colors[offset + 4] = this.scratchColor.g;
       colors[offset + 5] = this.scratchColor.b;
+
+      if (corePositions && coreColors) {
+        const coreOffset = index * 3;
+        corePositions[coreOffset] = point.x;
+        corePositions[coreOffset + 1] = point.y;
+        corePositions[coreOffset + 2] = point.z + 0.018;
+        const whiteBlend = this.cosmetic === 'blackhole'
+          ? 0.12 + progress * 0.12
+          : 0.3 + progress * (this.frenzyActive ? 0.58 : 0.42);
+        this.scratchCoreColor.copy(this.scratchColor).lerp(this.whiteColor, whiteBlend);
+        coreColors[coreOffset] = this.scratchCoreColor.r;
+        coreColors[coreOffset + 1] = this.scratchCoreColor.g;
+        coreColors[coreOffset + 2] = this.scratchCoreColor.b;
+      }
     }
 
     positionAttribute.needsUpdate = true;
     colorAttribute.needsUpdate = true;
     this.trailMesh.geometry.setDrawRange(0, (this.pointCount - 1) * 6);
+    if (corePositionAttribute && coreColorAttribute && this.trailCore) {
+      corePositionAttribute.needsUpdate = true;
+      coreColorAttribute.needsUpdate = true;
+      this.trailCore.geometry.setDrawRange(0, this.pointCount);
+      this.trailCore.material.opacity = this.powerBounceActive || this.frenzyActive ? 1 : 0.88;
+    }
   }
 
   private getWidthScale(): number {
-    if (this.frenzyActive) return 1.45;
-    if (this.cosmetic === 'blackhole') return 1.32;
-    if (this.cosmetic === 'disco') return 1.16;
-    return 1;
+    const powerScale = this.powerBounceActive ? 1.38 : 1;
+    if (this.frenzyActive) return 1.55 * powerScale;
+    if (this.cosmetic === 'blackhole') return 1.34 * powerScale;
+    if (this.cosmetic === 'disco') return 1.2 * powerScale;
+    return powerScale;
   }
 
   private setTrailColor(progress: number): void {

@@ -627,6 +627,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onMusicVolumeChange: volume => this.applyMusicVolume(volume),
       onSfxVolumeChange: volume => this.applySfxVolume(volume),
       onBallBounce: strength => playBasketballBounce(world, strength),
+      onExit: () => this.exitGame(),
       progression: this.progression,
       onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
       onEquipBall: cosmetic => this.setEquippedBall(cosmetic),
@@ -1210,17 +1211,24 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private checkBallTargetHits(ballState: DribbleBallState, targets: DribbleTarget[]): void {
     for (const target of targets) {
       const targetPosition = target.rootComponent.position;
-      const depthDistance = Math.abs(targetPosition.z - ballState.position.z);
-      if (depthDistance > 0.48) {
-        continue;
-      }
+      if (ballState.isBoosting) {
+        const boostCollisionRadius = target.radius * 0.9 + ballState.radius * 0.65;
+        if (targetPosition.distanceToSquared(ballState.position) > boostCollisionRadius ** 2) {
+          continue;
+        }
+      } else {
+        const depthDistance = Math.abs(targetPosition.z - ballState.position.z);
+        if (depthDistance > 0.48) {
+          continue;
+        }
 
-      const lateralRadius = target.radius + ballState.radius * 0.8;
-      const verticalRadius = target.radius + ballState.radius * 0.85;
-      const normalizedX = (targetPosition.x - ballState.position.x) / lateralRadius;
-      const normalizedY = (targetPosition.y - ballState.position.y) / verticalRadius;
-      if (normalizedX * normalizedX + normalizedY * normalizedY > 1) {
-        continue;
+        const lateralRadius = target.radius + ballState.radius * 0.8;
+        const verticalRadius = target.radius + ballState.radius * 0.85;
+        const normalizedX = (targetPosition.x - ballState.position.x) / lateralRadius;
+        const normalizedY = (targetPosition.y - ballState.position.y) / verticalRadius;
+        if (normalizedX * normalizedX + normalizedY * normalizedY > 1) {
+          continue;
+        }
       }
 
       if (!target.consumeHit()) {
@@ -1550,6 +1558,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.overlay?.hide();
     this.mainMenu?.showHome();
     world.inputManager.exitPointerLock();
+  }
+
+  private exitGame(): void {
+    this.commitHighScore();
+    this.musicDirector?.stop();
+    const closeGame = (): void => window.close();
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().then(closeGame, closeGame);
+      return;
+    }
+    closeGame();
   }
 
   private pauseRun(): void {

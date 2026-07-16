@@ -272,6 +272,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.boostBouncePlayed = false;
     this.rootComponent.scale.setScalar(1);
     this.updateBouncePosition(0);
+    this.trail?.setPowerBounceActive(false);
     this.trail?.clear(this.rootComponent.position);
   }
 
@@ -356,6 +357,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.updateBouncePosition(deltaTime);
     }
 
+    this.trail?.setPowerBounceActive(this.boostTime > 0);
     this.trail?.record(this.rootComponent.position);
     this.modelAnimationMixer?.update(deltaTime);
     this.updateCosmeticVisuals(deltaTime);

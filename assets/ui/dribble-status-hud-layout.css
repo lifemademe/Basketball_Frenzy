@@ -279,6 +279,8 @@
 .dribble-juice-hud {
   --frenzy-progress: 0;
   --frenzy-inset: 50%;
+  --frenzy-gold: #ffca3a;
+  --frenzy-light: #fff3a6;
   position: fixed;
   inset: 0;
   z-index: 30;
@@ -293,14 +295,35 @@
   overflow: hidden;
   opacity: 0;
   box-shadow:
-    inset 0 0 0 2px rgba(255, 216, 79, 0.55),
-    inset 0 0 46px rgba(255, 179, 0, 0.3);
+    inset 0 0 0 2px rgba(255, 220, 86, 0.62),
+    inset 0 0 54px rgba(255, 171, 0, 0.24);
   transition: opacity 220ms ease;
+  will-change: opacity;
 }
 
 .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-screen {
   opacity: 1;
-  animation: dribble-frenzy-edge-pulse 680ms ease-in-out infinite alternate;
+}
+
+.dribble-frenzy-screen::before {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 235, 145, 0.72),
+    inset 0 0 82px rgba(255, 174, 0, 0.36);
+  content: '';
+  opacity: 0;
+}
+
+.dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-screen::before {
+  animation: dribble-frenzy-ambient-pulse 760ms ease-in-out infinite alternate;
+}
+
+.dribble-juice-hud[data-frenzy-urgent='true'] .dribble-frenzy-screen::before {
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 218, 112, 0.82),
+    inset 0 0 92px rgba(255, 105, 35, 0.42);
+  animation-duration: 360ms;
 }
 
 .dribble-frenzy-screen::after {
@@ -309,55 +332,67 @@
   content: '';
   opacity: 0;
   box-shadow:
-    inset 0 0 0 5px rgba(255, 248, 199, 0.95),
-    inset 0 0 90px rgba(255, 202, 58, 0.8);
+    inset 0 0 0 6px rgba(255, 250, 211, 0.98),
+    inset 0 0 120px rgba(255, 196, 34, 0.86);
 }
 
 .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-screen::after {
-  animation: dribble-frenzy-activation-flash 720ms ease-out both;
+  animation: dribble-frenzy-activation-flash 900ms ease-out both;
 }
 
 .dribble-frenzy-streak {
   position: absolute;
-  width: 120px;
+  width: 150px;
   height: 2px;
-  background: #ffe680;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fff4b7 28%, #ffca3a 72%, transparent);
   opacity: 0;
-  box-shadow: 0 0 8px #ffca3a;
+  box-shadow: 0 0 8px rgba(255, 202, 58, 0.92);
+  will-change: transform, opacity;
 }
 
-.dribble-frenzy-streak:nth-child(1) { top: 18%; left: -130px; animation-delay: -120ms; }
-.dribble-frenzy-streak:nth-child(2) { top: 34%; left: -130px; animation-delay: -480ms; }
-.dribble-frenzy-streak:nth-child(3) { top: 62%; left: -130px; animation-delay: -260ms; }
-.dribble-frenzy-streak:nth-child(4) { top: 79%; left: -130px; animation-delay: -650ms; }
-.dribble-frenzy-streak:nth-child(5) { top: 24%; right: -130px; animation-delay: -360ms; }
-.dribble-frenzy-streak:nth-child(6) { top: 43%; right: -130px; animation-delay: -80ms; }
-.dribble-frenzy-streak:nth-child(7) { top: 68%; right: -130px; animation-delay: -570ms; }
-.dribble-frenzy-streak:nth-child(8) { top: 86%; right: -130px; animation-delay: -210ms; }
+.dribble-frenzy-streak:nth-child(1) { top: 17%; left: -160px; width: 190px; animation-delay: -120ms; }
+.dribble-frenzy-streak:nth-child(2) { top: 33%; left: -160px; width: 110px; animation-delay: -480ms; }
+.dribble-frenzy-streak:nth-child(3) { top: 64%; left: -160px; width: 170px; animation-delay: -260ms; }
+.dribble-frenzy-streak:nth-child(4) { top: 82%; left: -160px; width: 125px; animation-delay: -650ms; }
+.dribble-frenzy-streak:nth-child(5) { top: 23%; right: -160px; width: 120px; animation-delay: -360ms; }
+.dribble-frenzy-streak:nth-child(6) { top: 44%; right: -160px; width: 185px; animation-delay: -80ms; }
+.dribble-frenzy-streak:nth-child(7) { top: 69%; right: -160px; width: 105px; animation-delay: -570ms; }
+.dribble-frenzy-streak:nth-child(8) { top: 87%; right: -160px; width: 155px; animation-delay: -210ms; }
 
 .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-streak:nth-child(-n+4) {
   animation-name: dribble-frenzy-streak-left;
-  animation-duration: 920ms;
+  animation-duration: 880ms;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 
 .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-streak:nth-child(n+5) {
   animation-name: dribble-frenzy-streak-right;
-  animation-duration: 920ms;
+  animation-duration: 880ms;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 
+.dribble-juice-hud[data-frenzy-urgent='true'] .dribble-frenzy-streak {
+  animation-duration: 640ms !important;
+}
+
 .dribble-frenzy-meter {
   position: absolute;
-  top: 22px;
+  top: 18px;
   left: 50%;
-  width: min(430px, calc(100vw - 300px));
-  min-width: 240px;
+  width: min(470px, calc(100vw - 300px));
+  min-width: 250px;
+  padding: 8px 11px 11px;
+  border: 1px solid rgba(255, 222, 105, 0.56);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(30, 24, 10, 0.9), rgba(10, 10, 8, 0.78));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.36), 0 0 16px rgba(255, 190, 20, 0.2), inset 0 1px 0 rgba(255, 247, 191, 0.13);
+  box-sizing: border-box;
   opacity: 0;
   transform: translate(-50%, -12px) scale(0.96);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 180ms ease, transform 180ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .dribble-frenzy-meter[data-active='true'] {
@@ -365,53 +400,145 @@
   transform: translate(-50%, 0) scale(1);
 }
 
+.dribble-juice-hud.is-frenzy-activating .dribble-frenzy-meter {
+  animation: dribble-frenzy-meter-impact 720ms cubic-bezier(0.16, 0.82, 0.25, 1) both;
+}
+
 .dribble-frenzy-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   color: #fff3b0;
-  font-size: 12px;
-  line-height: 14px;
-  text-shadow: 0 0 10px rgba(255, 202, 58, 0.9);
+  font-size: 13px;
+  line-height: 16px;
+  text-shadow: 0 0 9px rgba(255, 202, 58, 0.72);
 }
 
-.dribble-frenzy-header strong,
-.dribble-frenzy-header b {
-  color: #ffca3a;
-  font-size: inherit;
+.dribble-frenzy-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dribble-frenzy-title i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #fff2a6;
+  background: var(--frenzy-gold);
+  box-shadow: 0 0 8px rgba(255, 202, 58, 0.9);
+  transform: rotate(45deg);
+}
+
+.dribble-frenzy-header strong {
+  color: var(--frenzy-light);
+  font-size: 15px;
+  line-height: 17px;
   letter-spacing: 0;
+}
+
+.dribble-frenzy-time {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  min-width: 58px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 220, 88, 0.42);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+}
+
+.dribble-frenzy-time b {
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 19px;
+}
+
+.dribble-frenzy-time small {
+  margin-left: 2px;
+  color: #ffd34f;
+  font-size: 11px;
 }
 
 .dribble-frenzy-track {
   position: relative;
-  height: 13px;
+  height: 18px;
   overflow: hidden;
-  border: 1px solid rgba(255, 232, 128, 0.65);
-  border-radius: 7px;
-  background: rgba(28, 26, 18, 0.72);
-  box-shadow: 0 0 12px rgba(255, 202, 58, 0.32), inset 0 0 7px rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(255, 232, 128, 0.7);
+  border-radius: 9px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent calc(12.5% - 1px), rgba(255, 239, 172, 0.13) 12.5%),
+    rgba(20, 18, 12, 0.88);
+  box-shadow: 0 0 11px rgba(255, 202, 58, 0.28), inset 0 2px 7px rgba(0, 0, 0, 0.82);
 }
 
 .dribble-frenzy-fill {
   position: absolute;
   inset: 2px;
-  border-radius: 4px;
-  background: #ffca3a;
+  overflow: hidden;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ff9d14, #ffcf3f 24%, #fff0a1 50%, #ffcf3f 76%, #ff9d14);
   clip-path: inset(0 var(--frenzy-inset) 0 var(--frenzy-inset));
-  box-shadow: 0 0 15px #ffd84f, 0 0 28px rgba(255, 184, 0, 0.85);
+  box-shadow: 0 0 14px #ffd84f, 0 0 24px rgba(255, 171, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: clip-path 40ms linear;
+}
+
+.dribble-frenzy-fill i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -30%;
+  width: 24%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  transform: skewX(-18deg);
+  animation: dribble-frenzy-fill-shimmer 820ms linear infinite;
 }
 
 .dribble-frenzy-core {
   position: absolute;
-  top: 1px;
-  bottom: 1px;
+  top: 0;
+  bottom: 0;
   left: 50%;
-  width: 3px;
-  background: #fff8d6;
+  z-index: 2;
+  width: 4px;
+  background: #fffbe6;
   opacity: calc(var(--frenzy-progress) * 1);
   transform: translateX(-50%);
-  box-shadow: 0 0 9px #ffffff;
+  box-shadow: 0 0 8px #ffffff, 0 0 15px #ffd34f;
+}
+
+.dribble-frenzy-core i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 1px solid #ffffff;
+  background: #ffd34f;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 9px #ffffff, 0 0 16px #ffca3a;
+  animation: dribble-frenzy-core-pulse 420ms ease-in-out infinite alternate;
+}
+
+.dribble-frenzy-meter[data-urgent='true'] {
+  border-color: rgba(255, 155, 64, 0.82);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.36), 0 0 18px rgba(255, 100, 32, 0.34), inset 0 1px 0 rgba(255, 235, 185, 0.16);
+  animation: dribble-frenzy-urgent 300ms ease-in-out infinite alternate;
+}
+
+.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-time {
+  border-color: rgba(255, 145, 61, 0.8);
+  background: rgba(111, 24, 6, 0.54);
+}
+
+.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-time b,
+.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-time small {
+  color: #ffb067;
+}
+
+.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-fill {
+  background: linear-gradient(90deg, #ff5d35, #ff9d23 30%, #ffe276 50%, #ff9d23 70%, #ff5d35);
 }
 
 .dribble-score-praise {
@@ -471,35 +598,50 @@
   100% { opacity: 0; transform: translate(-50%, -30px) scale(0.92) rotate(1deg); }
 }
 
-@keyframes dribble-frenzy-edge-pulse {
-  from {
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 216, 79, 0.42),
-      inset 0 0 36px rgba(255, 179, 0, 0.2);
-  }
-  to {
-    box-shadow:
-      inset 0 0 0 3px rgba(255, 232, 128, 0.78),
-      inset 0 0 62px rgba(255, 179, 0, 0.42);
-  }
+@keyframes dribble-frenzy-ambient-pulse {
+  from { opacity: 0.26; }
+  to { opacity: 0.72; }
 }
 
 @keyframes dribble-frenzy-activation-flash {
   0% { opacity: 0; }
-  12% { opacity: 1; }
+  9% { opacity: 1; }
+  30% { opacity: 0.72; }
   100% { opacity: 0; }
 }
 
+@keyframes dribble-frenzy-meter-impact {
+  0% { opacity: 0; transform: translate(-50%, -14px) scale(0.82); }
+  28% { opacity: 1; transform: translate(-50%, 2px) scale(1.06); }
+  58% { transform: translate(-50%, 0) scale(0.985); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes dribble-frenzy-fill-shimmer {
+  from { transform: translateX(0) skewX(-18deg); }
+  to { transform: translateX(550%) skewX(-18deg); }
+}
+
+@keyframes dribble-frenzy-core-pulse {
+  from { opacity: 0.76; transform: translate(-50%, -50%) rotate(45deg) scale(0.84); }
+  to { opacity: 1; transform: translate(-50%, -50%) rotate(45deg) scale(1.08); }
+}
+
+@keyframes dribble-frenzy-urgent {
+  from { filter: brightness(0.96); }
+  to { filter: brightness(1.12); }
+}
+
 @keyframes dribble-frenzy-streak-left {
-  0% { opacity: 0; transform: translateX(0) scaleX(0.5); }
-  18% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateX(62vw) scaleX(1.25); }
+  0% { opacity: 0; transform: translateX(0) skewX(-16deg) scaleX(0.45); }
+  16% { opacity: 0.82; }
+  100% { opacity: 0; transform: translateX(65vw) skewX(-16deg) scaleX(1.2); }
 }
 
 @keyframes dribble-frenzy-streak-right {
-  0% { opacity: 0; transform: translateX(0) scaleX(0.5); }
-  18% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateX(-62vw) scaleX(1.25); }
+  0% { opacity: 0; transform: translateX(0) skewX(16deg) scaleX(0.45); }
+  16% { opacity: 0.82; }
+  100% { opacity: 0; transform: translateX(-65vw) skewX(16deg) scaleX(1.2); }
 }
 
 @media (max-width: 720px) {
@@ -530,7 +672,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dribble-timing[data-active='false'] .dribble-timing-track::after,
-  .dribble-timing[data-ready='true'] .dribble-timing-marker {
-    animation: none;
+  .dribble-timing[data-ready='true'] .dribble-timing-marker,
+  .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-screen::before,
+  .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-screen::after,
+  .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-meter,
+  .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-streak,
+  .dribble-frenzy-fill i,
+  .dribble-frenzy-core i,
+  .dribble-frenzy-meter[data-urgent='true'] {
+    animation: none !important;
   }
 }

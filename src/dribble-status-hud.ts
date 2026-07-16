@@ -366,6 +366,9 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private praiseTimer: ReturnType<typeof setTimeout> | null = null;
   private activationTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyActive = false;
+  private frenzyUrgent = false;
+  private lastFrenzyPercent = -1;
+  private lastFrenzyTimeText = '';
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -384,7 +387,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   }
 
   protected override getInitialData(): Record<string, string> {
-    return { label: 'FRENZY', time: '8.0' };
+    return { label: 'FRENZY MODE', time: '8.0' };
   }
 
   protected override cacheElements(): void {
@@ -399,6 +402,11 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     const clamped = Math.max(0, Math.min(1, progress));
     this.rootElement?.style.setProperty('--frenzy-progress', String(clamped));
     this.rootElement?.style.setProperty('--frenzy-inset', `${(1 - clamped) * 50}%`);
+    const percent = Math.round(clamped * 100);
+    if (this.frenzyElement && percent !== this.lastFrenzyPercent) {
+      this.lastFrenzyPercent = percent;
+      this.frenzyElement.setAttribute('aria-valuenow', String(percent));
+    }
     if (this.rootElement && active !== this.frenzyActive) {
       this.rootElement.dataset.frenzyActive = active ? 'true' : 'false';
       if (active) {
@@ -409,14 +417,28 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
         this.activationTimer = setTimeout(() => {
           this.rootElement?.classList.remove('is-frenzy-activating');
           this.activationTimer = null;
-        }, 720);
+        }, 900);
       } else {
         this.rootElement.classList.remove('is-frenzy-activating');
       }
     }
     this.frenzyActive = active;
-    if (this.frenzyElement) this.frenzyElement.dataset.active = active ? 'true' : 'false';
-    if (this.timeElement) this.timeElement.textContent = remaining.toFixed(1);
+    const urgent = active && remaining > 0 && remaining <= 1.5;
+    if (this.rootElement && urgent !== this.frenzyUrgent) {
+      this.rootElement.dataset.frenzyUrgent = urgent ? 'true' : 'false';
+    }
+    if (this.frenzyElement) {
+      this.frenzyElement.dataset.active = active ? 'true' : 'false';
+      if (urgent !== this.frenzyUrgent) {
+        this.frenzyElement.dataset.urgent = urgent ? 'true' : 'false';
+      }
+    }
+    this.frenzyUrgent = urgent;
+    const timeText = Math.max(0, remaining).toFixed(1);
+    if (this.timeElement && timeText !== this.lastFrenzyTimeText) {
+      this.lastFrenzyTimeText = timeText;
+      this.timeElement.textContent = timeText;
+    }
   }
 
   public showPraise(label: string, tone: 'green' | 'gold'): void {
@@ -448,5 +470,9 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.frenzyElement = null;
     this.timeElement = null;
     this.praiseElement = null;
+    this.frenzyActive = false;
+    this.frenzyUrgent = false;
+    this.lastFrenzyPercent = -1;
+    this.lastFrenzyTimeText = '';
   }
 }

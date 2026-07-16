@@ -39,6 +39,7 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onMusicVolumeChange?: (volume: number) => void;
   onSfxVolumeChange?: (volume: number) => void;
   onBallBounce?: (strength: number) => void;
+  onExit?: () => void;
   progression?: DribbleProgressionState;
   onPurchaseBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
   onEquipBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
@@ -273,6 +274,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onMusicVolumeChange: () => {},
       onSfxVolumeChange: () => {},
       onBallBounce: () => {},
+      onExit: () => {},
       progression: createDefaultProgressionState(),
       onPurchaseBall: () => createDefaultProgressionState(),
       onEquipBall: () => createDefaultProgressionState(),
@@ -334,6 +336,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const settingsSlot = slot('settings');
     const shopSlot = slot('shop');
     const resetSlot = slot('reset');
+    const exitSlot = slot('exit');
     const achievementsSlot = slot('achievements');
     const howBackSlot = slot('how-back');
     const settingsBackSlot = slot('settings-back');
@@ -346,7 +349,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const blackHoleActionSlot = slot('blackhole-action');
     if (
       !playSlot || !normalModeSlot || !hardModeSlot || !modeBackSlot
-      || !howSlot || !settingsSlot || !shopSlot || !resetSlot || !achievementsSlot || !howBackSlot
+      || !howSlot || !settingsSlot || !shopSlot || !resetSlot || !exitSlot || !achievementsSlot || !howBackSlot
       || !settingsBackSlot || !shopBackSlot || !achievementsBackSlot || !resetBackSlot
       || !classicActionSlot || !epicActionSlot
       || !discoActionSlot || !blackHoleActionSlot
@@ -393,6 +396,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: 'Reset',
         onClick: () => this.showPanel('reset'),
       }, resetSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Exit',
+        onClick: () => this.options.onExit(),
+      }, exitSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
         label: 'Achievements',
@@ -527,6 +535,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       '@project/assets/textures/close.png',
       '@project/assets/textures/Back.png',
       '@project/assets/textures/Reset.png',
+      '@project/assets/textures/exit.png',
       '@project/assets/textures/mouse.png',
     ];
     const resolvedPaths = await Promise.all(

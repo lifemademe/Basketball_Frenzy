@@ -523,7 +523,7 @@
 .dribble-main-menu-reset-action {
   position: fixed;
   z-index: 5;
-  right: clamp(18px, 2.5vw, 38px);
+  right: calc(clamp(18px, 2.5vw, 38px) + 88px);
   bottom: clamp(16px, 2.5vh, 30px);
   display: none;
   width: 78px;
@@ -533,6 +533,22 @@
 }
 
 .dribble-main-menu[data-panel='home'] > .dribble-main-menu-reset-action {
+  display: block;
+}
+
+.dribble-main-menu-exit-action {
+  position: fixed;
+  z-index: 5;
+  right: clamp(18px, 2.5vw, 38px);
+  bottom: clamp(16px, 2.5vh, 30px);
+  display: none;
+  width: 78px;
+  height: 78px;
+  margin: 0;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+}
+
+.dribble-main-menu[data-panel='home'] > .dribble-main-menu-exit-action {
   display: block;
 }
 
@@ -561,6 +577,35 @@
   opacity: 0;
   font-size: 0;
   cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+}
+
+.dribble-main-menu-exit-action .ui-button,
+.dribble-main-menu-exit-action .ui-button:hover,
+.dribble-main-menu-exit-action .ui-button:focus-visible {
+  width: 78px;
+  height: 78px;
+  min-height: 78px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent url('@project/assets/textures/exit.png') center / contain no-repeat !important;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  filter: none;
+  opacity: 1;
+  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.dribble-main-menu-exit-action .ui-button-label {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .dribble-main-menu-achievements-action {
@@ -643,6 +688,20 @@
   color: transparent;
   filter: brightness(1.08) saturate(1.05);
   opacity: 1;
+}
+
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible {
+  border: 0;
+  background: transparent url('@project/assets/textures/exit.png') center / contain no-repeat !important;
+  box-shadow: none;
+  filter: brightness(1.12) saturate(1.1) drop-shadow(0 7px 9px rgba(167, 61, 0, 0.34));
+  transform: translateY(-2px) scale(1.05);
+}
+
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:active {
+  filter: brightness(0.94);
+  transform: translateY(1px) scale(0.96);
 }
 
 .dribble-main-menu-panel-heading h2 {
@@ -1707,13 +1766,26 @@
   }
 
   .dribble-main-menu-reset-action {
-    right: 12px;
+    right: 84px;
     bottom: 12px;
     width: 64px;
     height: 64px;
   }
 
   .dribble-main-menu-reset-action .ui-button {
+    width: 64px;
+    height: 64px;
+    min-height: 64px;
+  }
+
+  .dribble-main-menu-exit-action {
+    right: 12px;
+    bottom: 12px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .dribble-main-menu-exit-action .ui-button {
     width: 64px;
     height: 64px;
     min-height: 64px;
@@ -1738,6 +1810,7 @@
   .dribble-logo-sparkle,
   .dribble-main-menu-logo::after,
   .dribble-main-menu-action .ui-button,
+  .dribble-main-menu-exit-action .ui-button,
   .dribble-main-menu-toggle i::after {
     animation: none;
     transition: none;
