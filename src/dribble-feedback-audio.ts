@@ -1,6 +1,17 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 export type DribbleFeedbackSound = 'score' | 'perfect' | 'star' | 'hazard' | 'frenzy' | 'round-win';
+export type DribbleEventCue = 'frenzy-start' | 'mode-start';
+
+const eventCuePaths: Readonly<Record<DribbleEventCue, string>> = {
+  'frenzy-start': '@project/assets/audio/againagain.wav',
+  'mode-start': '@project/assets/audio/letsgo.wav',
+};
+
+const eventCueVolumes: Readonly<Record<DribbleEventCue, number>> = {
+  'frenzy-start': 0.68,
+  'mode-start': 0.62,
+};
 
 interface FeedbackTone {
   frequency: number;
@@ -35,6 +46,23 @@ const feedbackTones: Readonly<Record<DribbleFeedbackSound, readonly FeedbackTone
     { frequency: 660, endFrequency: 880, delay: 0.08, duration: 0.2, gain: 0.032, type: 'sine' },
   ],
 };
+
+export function preloadDribbleEventAudio(world: ENGINE.World): void {
+  const manager = world.globalAudioManager;
+  void Promise.all(Object.values(eventCuePaths).map(path => manager.loadSound(path, path)))
+    .catch(error => console.warn('Could not preload Basketball Frenzy event audio', error));
+}
+
+export function playDribbleEventCue(
+  world: ENGINE.World | null | undefined,
+  cue: DribbleEventCue,
+): void {
+  if (!world) return;
+  void world.globalAudioManager.playGlobalSound(eventCuePaths[cue], {
+    bus: 'SFX',
+    volume: eventCueVolumes[cue],
+  });
+}
 
 export function playDribbleFeedback(
   world: ENGINE.World | null | undefined,

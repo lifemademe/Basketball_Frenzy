@@ -103,6 +103,7 @@ export class DribbleBall extends ENGINE.Actor {
   public static readonly transferDuration = 0.34;
   public static readonly boostDuration = 0.7;
   public static readonly catchDuration = 0.32;
+  private static readonly boostTransferHandTolerance = 0.3;
   public readonly radius = 0.32;
 
   private side: DribbleSide = 'left';
@@ -255,7 +256,7 @@ export class DribbleBall extends ENGINE.Actor {
 
   public queueTransferAfterBoost(to: DribbleSide): boolean {
     const from: DribbleSide = to === 'left' ? 'right' : 'left';
-    if (this.boostTime <= 0 || this.side !== from || !this.isBoostDescending()) return false;
+    if (this.boostTime <= 0 || this.side !== from || !this.isBoostTransferInputWindow()) return false;
     this.queuedBoostTransferTo = to;
     return true;
   }
@@ -553,14 +554,14 @@ export class DribbleBall extends ENGINE.Actor {
 
   private isBoostReturningToHand(): boolean {
     const boostProgress = this.boostTime / DribbleBall.boostDuration;
-    const handHeightTolerance = 0.2;
-    return boostProgress > 0.6
-      && Math.abs(this.rootComponent.position.y - this.handY) <= handHeightTolerance;
+    return boostProgress > (this.boostLaunchedFromHand ? 0.5 : 0.59)
+      && Math.abs(this.rootComponent.position.y - this.handY)
+        <= DribbleBall.boostTransferHandTolerance;
   }
 
-  private isBoostDescending(): boolean {
+  private isBoostTransferInputWindow(): boolean {
     const boostProgress = this.boostTime / DribbleBall.boostDuration;
-    return boostProgress >= (this.boostLaunchedFromHand ? 0.5 : 0.59);
+    return boostProgress >= (this.boostLaunchedFromHand ? 0.46 : 0.54);
   }
 
   private startBoost(side: DribbleSide): boolean {

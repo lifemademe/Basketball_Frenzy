@@ -1,4 +1,5 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
+export type CourtCosmetic = 'blue' | 'light-wood' | 'green';
 export type WristbandColor = 'orange' | 'blue' | 'lime' | 'pink' | 'white' | 'purple';
 export type WristbandSide = 'left' | 'right';
 export type CourtChallengeId = 'scoreSprint' | 'hazardRun' | 'rallyMaster';
@@ -53,6 +54,9 @@ export interface DribbleProgressionState {
   discoBallOwned: boolean;
   blackHoleBallOwned: boolean;
   equippedBall: BallCosmetic;
+  lightWoodCourtOwned: boolean;
+  greenCourtOwned: boolean;
+  equippedCourt: CourtCosmetic;
   classicTutorialCompleted: boolean;
   lastBounceTutorialCompleted: boolean;
   achievements: Record<AchievementId, boolean>;
@@ -102,6 +106,7 @@ const courtChallenges: readonly CourtChallengeDefinition[] = [
 export const epicBallPrice = 5;
 export const discoBallPrice = 10;
 export const blackHoleBallPrice = 20;
+export const alternateCourtPrice = 5;
 
 const storageKey = 'basketball-frenzy-progression-v1';
 
@@ -119,6 +124,9 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     discoBallOwned: false,
     blackHoleBallOwned: false,
     equippedBall: 'classic',
+    lightWoodCourtOwned: false,
+    greenCourtOwned: false,
+    equippedCourt: 'blue',
     classicTutorialCompleted: false,
     lastBounceTutorialCompleted: false,
     achievements: createDefaultAchievements(),
@@ -135,7 +143,10 @@ export function loadProgression(): DribbleProgressionState {
   try {
     const stored = localStorage.getItem(storageKey);
     if (!stored) return fallback;
-    const parsed = JSON.parse(stored) as Partial<DribbleProgressionState> & { highScore?: unknown };
+    const parsed = JSON.parse(stored) as Partial<DribbleProgressionState> & {
+      highScore?: unknown;
+      redCourtOwned?: unknown;
+    };
     const legacyHighScore = sanitizeCount(parsed.highScore);
     const epicBallOwned = parsed.epicBallOwned === true;
     const discoBallOwned = parsed.discoBallOwned === true;
@@ -152,6 +163,9 @@ export function loadProgression(): DribbleProgressionState {
       discoBallOwned,
       blackHoleBallOwned,
       equippedBall: isBallCosmetic(parsed.equippedBall) ? parsed.equippedBall : 'classic',
+      lightWoodCourtOwned: parsed.lightWoodCourtOwned === true,
+      greenCourtOwned: parsed.greenCourtOwned === true,
+      equippedCourt: isCourtCosmetic(parsed.equippedCourt) ? parsed.equippedCourt : 'blue',
       classicTutorialCompleted: parsed.classicTutorialCompleted === true,
       lastBounceTutorialCompleted: parsed.lastBounceTutorialCompleted === true,
       achievements: loadAchievements(parsed.achievements),
@@ -168,10 +182,18 @@ export function loadProgression(): DribbleProgressionState {
     if (loaded.normalRunsCompleted === 0 && loaded.normalHighScore > 0) loaded.normalRunsCompleted = 1;
     if (loaded.hardRunsCompleted === 0 && loaded.hardHighScore > 0) loaded.hardRunsCompleted = 1;
     if (!isBallOwned(loaded, loaded.equippedBall)) loaded.equippedBall = 'classic';
+    if (!isCourtOwned(loaded, loaded.equippedCourt)) loaded.equippedCourt = 'blue';
     if (sanitizeCount(parsed.achievementMigrationVersion) < 1) {
       const bestScore = Math.max(loaded.normalHighScore, loaded.hardHighScore);
       if (bestScore >= 10000) loaded.achievements.score10000 = true;
-      if (loaded.epicBallOwned || loaded.discoBallOwned || loaded.blackHoleBallOwned) {
+      if (
+        loaded.epicBallOwned
+        || loaded.discoBallOwned
+        || loaded.blackHoleBallOwned
+        || loaded.lightWoodCourtOwned
+        || parsed.redCourtOwned === true
+        || loaded.greenCourtOwned
+      ) {
         loaded.achievements.firstPurchase = true;
       }
     }
@@ -340,6 +362,27 @@ export function purchaseBall(
   });
 }
 
+export function purchaseCourt(
+  state: DribbleProgressionState,
+  cosmetic: CourtCosmetic,
+): DribbleProgressionState {
+  const price = getCourtPrice(cosmetic);
+  if (isCourtOwned(state, cosmetic) || state.stars < price) return state;
+  const ownership = cosmetic === 'light-wood'
+    ? { lightWoodCourtOwned: true }
+    : { greenCourtOwned: true };
+  return persist({
+    ...state,
+    ...ownership,
+    stars: state.stars - price,
+    equippedCourt: cosmetic,
+    achievements: {
+      ...state.achievements,
+      firstPurchase: true,
+    },
+  });
+}
+
 export function unlockAchievement(
   state: DribbleProgressionState,
   achievement: AchievementId,
@@ -367,11 +410,23 @@ export function equipBall(
   return persist({ ...state, equippedBall: cosmetic });
 }
 
+export function equipCourt(
+  state: DribbleProgressionState,
+  cosmetic: CourtCosmetic,
+): DribbleProgressionState {
+  if (!isCourtOwned(state, cosmetic) || state.equippedCourt === cosmetic) return state;
+  return persist({ ...state, equippedCourt: cosmetic });
+}
+
 export function getBallPrice(cosmetic: BallCosmetic): number {
   if (cosmetic === 'epic') return epicBallPrice;
   if (cosmetic === 'disco') return discoBallPrice;
   if (cosmetic === 'blackhole') return blackHoleBallPrice;
   return 0;
+}
+
+export function getCourtPrice(cosmetic: CourtCosmetic): number {
+  return cosmetic === 'blue' ? 0 : alternateCourtPrice;
 }
 
 export function isBallOwned(
@@ -384,8 +439,21 @@ export function isBallOwned(
   return state.blackHoleBallOwned;
 }
 
+export function isCourtOwned(
+  state: DribbleProgressionState,
+  cosmetic: CourtCosmetic,
+): boolean {
+  if (cosmetic === 'blue') return true;
+  if (cosmetic === 'light-wood') return state.lightWoodCourtOwned;
+  return state.greenCourtOwned;
+}
+
 function isBallCosmetic(value: unknown): value is BallCosmetic {
   return value === 'classic' || value === 'epic' || value === 'disco' || value === 'blackhole';
+}
+
+function isCourtCosmetic(value: unknown): value is CourtCosmetic {
+  return value === 'blue' || value === 'light-wood' || value === 'green';
 }
 
 function isWristbandColor(value: unknown): value is WristbandColor {

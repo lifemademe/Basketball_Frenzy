@@ -11,7 +11,12 @@ import {
   type DribbleIntensityTier,
 } from './dribble-difficulty-director.js';
 import { DribbleImpactBurst } from './dribble-impact-burst.js';
-import { playDribbleFeedback } from './dribble-feedback-audio.js';
+import { DribbleAmbientDust } from './dribble-ambient-dust.js';
+import {
+  playDribbleEventCue,
+  playDribbleFeedback,
+  preloadDribbleEventAudio,
+} from './dribble-feedback-audio.js';
 import {
   DribbleMainMenu,
   highContrastTargetsKey,
@@ -30,11 +35,14 @@ import { DribblePatternDirector, type PatternLane } from './dribble-pattern-dire
 import {
   awardStars,
   equipBall,
+  equipCourt,
   getCompletedRunCount,
   getHighScore,
   isBallOwned,
+  isCourtOwned,
   loadProgression,
   purchaseBall,
+  purchaseCourt,
   recordCourtChallengeProgress,
   recordTutorialCompletion,
   recordRunResult,
@@ -45,6 +53,7 @@ import {
   type AchievementId,
   type BallCosmetic,
   type CourtChallengeMetric,
+  type CourtCosmetic,
   type DribbleProgressionState,
   type ProgressionResetTarget,
   type WristbandColor,
@@ -133,7 +142,7 @@ const achievementToastDefinitions: Readonly<Record<AchievementId, AchievementToa
   },
   firstPurchase: {
     title: 'First Purchase',
-    description: 'Buy your first ball from the shop.',
+    description: 'Buy your first item from the shop.',
     iconPath: '@project/assets/textures/First purchase.png',
     iconScale: 3.2,
     rarity: 'epic',
@@ -167,9 +176,21 @@ interface HandAnimationState {
   weight: number;
 }
 
+interface CourtMaterialSlot {
+  mesh: THREE.Mesh;
+  materialIndex: number;
+  blueMaterial: THREE.MeshStandardMaterial;
+  variants: Map<CourtCosmetic, THREE.MeshStandardMaterial>;
+}
+
 @ENGINE.GameClass()
 export class DribbleGameplayManager extends ENGINE.Actor {
   private ball: DribbleBall | null = null;
+  private ambientDust: DribbleAmbientDust | null = null;
+  private courtModel: ENGINE.ModelMeshComponent | null = null;
+  private courtMaterialApplyToken = 0;
+  private readonly courtMaterialSlots: CourtMaterialSlot[] = [];
+  private readonly courtTextureCache = new Map<CourtCosmetic, THREE.Texture>();
   private scoreDisplay: ENGINE.NumberDisplay | null = null;
   private pauseButton: DribblePauseButton | null = null;
   private livesDisplay: DribbleLivesDisplay | null = null;
@@ -628,6 +649,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (world) {
       this.musicDirector = new DribbleMusicDirector(world);
       this.musicDirector.preload();
+      preloadDribbleEventAudio(world);
       this.musicDirector.setState('menu');
     }
     this.setupArena();
@@ -744,15 +766,113 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.configureRendererForPerformance(world);
     this.configurePostProcessing(world);
     this.configureSunsetLighting(world);
+    this.setupCourtModel(world);
     this.addHand(world, 'Left Hand', '@project/assets/models/right_hand_runtime.glb');
     this.addHand(world, 'Right Hand', '@project/assets/models/left_hand_runtime.glb');
     this.addLights(world);
+
+    this.ambientDust = DribbleAmbientDust.create({ name: 'Ambient Court Dust' });
+    world.addActor(this.ambientDust);
 
     this.ball = DribbleBall.create({ name: 'Dribble Ball' });
     world.addActor(this.ball);
     this.ball.setEquippedCosmetic(this.progression.equippedBall);
     this.ball.setGameplayActive(false);
     this.createHitEffectPool(world);
+  }
+
+  private setupCourtModel(world: ENGINE.World): void {
+    const courtActor = world.getActorByName('Basketballscene 2');
+    this.courtModel = courtActor?.rootComponent instanceof ENGINE.ModelMeshComponent
+      ? courtActor.rootComponent
+      : courtActor?.getComponent(ENGINE.ModelMeshComponent) ?? null;
+    if (!this.courtModel) {
+      console.warn('Basketballscene 2 court model was not found; court cosmetics are unavailable.');
+      return;
+    }
+    this.courtModel.replacePhysicsOptions({ enabled: false });
+    this.courtModel.receiveShadow = true;
+    void this.courtModel.waitForLoad()
+      .then(() => {
+        this.cacheCourtMaterialSlots();
+        return this.applyEquippedCourt();
+      })
+      .catch(error => {
+        console.warn('Could not prepare court material customization.', error);
+      });
+  }
+
+  private cacheCourtMaterialSlots(): void {
+    if (this.courtMaterialSlots.length > 0) return;
+    this.courtModel?.getModel()?.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.forEach((material, materialIndex) => {
+        if (!(material instanceof THREE.MeshStandardMaterial) || material.name !== 'MaterialCancha') return;
+        this.courtMaterialSlots.push({
+          mesh: object,
+          materialIndex,
+          blueMaterial: material,
+          variants: new Map(),
+        });
+      });
+    });
+    if (this.courtMaterialSlots.length === 0) {
+      console.warn('MaterialCancha was not found on the basketball court model.');
+    }
+  }
+
+  private async applyEquippedCourt(): Promise<void> {
+    if (this.courtMaterialSlots.length === 0) return;
+    const cosmetic = this.progression.equippedCourt;
+    const applyToken = ++this.courtMaterialApplyToken;
+    const texture = await this.loadCourtTexture(cosmetic);
+    if (applyToken !== this.courtMaterialApplyToken) return;
+    if (!texture) {
+      if (cosmetic === 'blue') {
+        for (const slot of this.courtMaterialSlots) this.setCourtSlotMaterial(slot, slot.blueMaterial);
+      }
+      return;
+    }
+    for (const slot of this.courtMaterialSlots) {
+      let material = slot.variants.get(cosmetic);
+      if (!material) {
+        material = slot.blueMaterial.clone();
+        material.name = `MaterialCancha_${cosmetic}`;
+        material.map = texture;
+        material.color.set(0xffffff);
+        material.needsUpdate = true;
+        slot.variants.set(cosmetic, material);
+      }
+      this.setCourtSlotMaterial(slot, material);
+    }
+  }
+
+  private async loadCourtTexture(cosmetic: CourtCosmetic): Promise<THREE.Texture | null> {
+    const cached = this.courtTextureCache.get(cosmetic);
+    if (cached) return cached;
+    const texturePath = cosmetic === 'blue'
+      ? '@project/assets/textures/court.png'
+      : cosmetic === 'light-wood'
+        ? '@project/assets/textures/court_light_wood.png'
+        : '@project/assets/textures/court_green.png';
+    const texture = await ENGINE.resourceManager.loadTexture(ENGINE.AssetPath.fromString(texturePath));
+    if (!texture) return null;
+    texture.flipY = false;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    this.courtTextureCache.set(cosmetic, texture);
+    return texture;
+  }
+
+  private setCourtSlotMaterial(slot: CourtMaterialSlot, material: THREE.Material): void {
+    if (!Array.isArray(slot.mesh.material)) {
+      slot.mesh.material = material;
+      return;
+    }
+    const materials = [...slot.mesh.material];
+    materials[slot.materialIndex] = material;
+    slot.mesh.material = materials;
   }
 
   private configureRendererForPerformance(world: ENGINE.World): void {
@@ -899,7 +1019,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       visible: false,
     });
     this.mainMenu = new DribbleMainMenu(world.uiManager, {
-      onPlay: mode => this.restartRun(mode),
+      onPlay: mode => {
+        playDribbleEventCue(world, 'mode-start');
+        this.restartRun(mode);
+      },
       onTutorial: mode => this.startTutorial(mode),
       onVolumeChange: volume => this.applyMasterVolume(volume),
       onMusicVolumeChange: volume => this.applyMusicVolume(volume),
@@ -912,6 +1035,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       progression: this.progression,
       onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
       onEquipBall: cosmetic => this.setEquippedBall(cosmetic),
+      onPurchaseCourt: cosmetic => this.purchaseCourt(cosmetic),
+      onEquipCourt: cosmetic => this.setEquippedCourt(cosmetic),
       onWristbandColorChange: (side, color) => this.setWristbandSelection(side, color),
       onResetProgression: target => this.resetProgression(target),
     });
@@ -2506,16 +2631,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
     this.juiceHud?.showPraise('STAR POWER - FRENZY!', 'gold');
-    if (world) {
-      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
-        volume: 0.9,
-        bus: 'SFX',
-      });
-      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
-        volume: 0.5,
-        bus: 'SFX',
-      });
-    }
+    playDribbleEventCue(world, 'frenzy-start');
   }
 
   private updateFrenzy(deltaTime: number): void {
@@ -2969,6 +3085,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private setGameplayActive(active: boolean): void {
     this.ball?.setGameplayActive(active);
+    this.ambientDust?.setActive(active);
     for (const target of this.activeTargets) {
       target.setGameplayActive(active);
     }
@@ -3044,6 +3161,24 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.ball?.setEquippedCosmetic(this.progression.equippedBall);
     this.updateScoreStarCounter();
     if (!previouslyOwned && isBallOwned(this.progression, cosmetic)) {
+      void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+        volume: 0.72,
+        bus: 'SFX',
+      });
+    }
+    if (!firstPurchaseWasUnlocked && this.progression.achievements.firstPurchase) {
+      this.enqueueAchievementToast('firstPurchase');
+    }
+    return this.progression;
+  }
+
+  private purchaseCourt(cosmetic: CourtCosmetic): DribbleProgressionState {
+    const previouslyOwned = isCourtOwned(this.progression, cosmetic);
+    const firstPurchaseWasUnlocked = this.progression.achievements.firstPurchase;
+    this.progression = purchaseCourt(this.progression, cosmetic);
+    void this.applyEquippedCourt();
+    this.updateScoreStarCounter();
+    if (!previouslyOwned && isCourtOwned(this.progression, cosmetic)) {
       void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
         volume: 0.72,
         bus: 'SFX',
@@ -3195,6 +3330,19 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     return this.progression;
   }
 
+  private setEquippedCourt(cosmetic: CourtCosmetic): DribbleProgressionState {
+    const previousCourt = this.progression.equippedCourt;
+    this.progression = equipCourt(this.progression, cosmetic);
+    void this.applyEquippedCourt();
+    if (previousCourt !== this.progression.equippedCourt) {
+      void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.3,
+        bus: 'SFX',
+      });
+    }
+    return this.progression;
+  }
+
   private setWristbandSelection(side: WristbandSide, color: WristbandColor): DribbleProgressionState {
     const updatedProgression = saveWristbandColor(this.progression, side, color);
     if (updatedProgression === this.progression) return this.progression;
@@ -3211,6 +3359,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.progression = resetSavedProgression(this.progression, target);
     if (target === 'freshStart') {
       this.ball?.setEquippedCosmetic(this.progression.equippedBall);
+      void this.applyEquippedCourt();
       this.applyWristbandColor('left', this.progression.leftWristbandColor);
       this.applyWristbandColor('right', this.progression.rightWristbandColor);
       this.updateScoreStarCounter();
