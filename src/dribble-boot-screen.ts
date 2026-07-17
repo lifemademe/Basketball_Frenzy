@@ -61,6 +61,15 @@ export function showDribbleBootScreen(container: HTMLElement): void {
       [data-dribble-boot-logo][data-loaded='true'] { opacity: 1; }
       [data-dribble-boot-logo-mask] {
         position: absolute;
+        top: 14.45%;
+        left: 23.83%;
+        width: 56.84%;
+        height: 55%;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      [data-dribble-boot-logo-mask]::after {
+        position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
@@ -72,8 +81,8 @@ export function showDribbleBootScreen(container: HTMLElement): void {
             rgba(0, 0, 0, 0.82) 18%,
             rgba(0, 0, 0, 0.9) 100%
           );
+        content: '';
         transition: width 140ms linear;
-        pointer-events: none;
       }
       [data-dribble-boot-label] {
         display: flex;
@@ -93,7 +102,7 @@ export function showDribbleBootScreen(container: HTMLElement): void {
       @media (prefers-reduced-motion: reduce) {
         [data-dribble-boot-screen],
         [data-dribble-boot-logo] { transition: none; }
-        [data-dribble-boot-logo-mask] { transition: none; }
+        [data-dribble-boot-logo-mask]::after { transition: none; }
       }
     </style>
     <div data-dribble-boot-content>

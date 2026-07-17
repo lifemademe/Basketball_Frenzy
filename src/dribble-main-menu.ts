@@ -9,6 +9,7 @@ import {
   discoBallPrice,
   epicBallPrice,
   getBallPrice,
+  getCourtChallenge,
   isBallOwned,
   wristbandColorHex,
   wristbandColors,
@@ -32,6 +33,7 @@ const sfxVolumeKey = 'basketball-frenzy-sfx-volume';
 const playerNameKey = 'basketball-frenzy-player-name';
 export const reducedMotionKey = 'basketball-frenzy-reduced-motion';
 export const reducedFlashesKey = 'basketball-frenzy-reduced-flashes';
+export const highContrastTargetsKey = 'basketball-frenzy-high-contrast-targets';
 const defaultMasterVolume = 0.8;
 const defaultMusicVolume = 0.55;
 const defaultSfxVolume = 0.8;
@@ -44,6 +46,7 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onSfxVolumeChange?: (volume: number) => void;
   onReducedMotionChange?: (enabled: boolean) => void;
   onReducedFlashesChange?: (enabled: boolean) => void;
+  onHighContrastTargetsChange?: (enabled: boolean) => void;
   onBallBounce?: (strength: number) => void;
   onExit?: () => void;
   progression?: DribbleProgressionState;
@@ -75,6 +78,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private sfxVolumeValue: HTMLElement | null = null;
   private reducedMotionInput: HTMLInputElement | null = null;
   private reducedFlashesInput: HTMLInputElement | null = null;
+  private highContrastTargetsInput: HTMLInputElement | null = null;
   private homeStarsElement: HTMLElement | null = null;
   private normalHighScoreElement: HTMLElement | null = null;
   private hardHighScoreElement: HTMLElement | null = null;
@@ -86,6 +90,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private blackHoleStatusElement: HTMLElement | null = null;
   private achievementCountElement: HTMLElement | null = null;
   private achievementRows: HTMLElement[] = [];
+  private courtChallengeElement: HTMLElement | null = null;
+  private courtChallengeTitleElement: HTMLElement | null = null;
+  private courtChallengeCopyElement: HTMLElement | null = null;
+  private courtChallengeCountElement: HTMLElement | null = null;
+  private courtChallengeStateElement: HTMLElement | null = null;
   private wristbandButtons: HTMLButtonElement[] = [];
   private leftWristbandPreview: HTMLElement | null = null;
   private rightWristbandPreview: HTMLElement | null = null;
@@ -247,6 +256,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onReducedFlashesChange(enabled);
   };
 
+  private readonly handleHighContrastTargetsInput = (): void => {
+    const enabled = this.highContrastTargetsInput?.checked ?? false;
+    this.storeBoolean(highContrastTargetsKey, enabled);
+    this.options.onHighContrastTargetsChange(enabled);
+  };
+
   private readonly handleWristbandClick = (event: Event): void => {
     const button = event.currentTarget as HTMLButtonElement;
     const side = button.dataset.wristbandSide as WristbandSide | undefined;
@@ -289,12 +304,15 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.resetAudioSettings();
       if (this.reducedMotionInput) this.reducedMotionInput.checked = false;
       if (this.reducedFlashesInput) this.reducedFlashesInput.checked = false;
+      if (this.highContrastTargetsInput) this.highContrastTargetsInput.checked = false;
       this.options.onReducedMotionChange(false);
       this.options.onReducedFlashesChange(false);
+      this.options.onHighContrastTargetsChange(false);
       try {
         localStorage.removeItem(playerNameKey);
         localStorage.removeItem(reducedMotionKey);
         localStorage.removeItem(reducedFlashesKey);
+        localStorage.removeItem(highContrastTargetsKey);
       } catch {
         // The saved profile may remain when browser storage is unavailable.
       }
@@ -327,6 +345,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onSfxVolumeChange: () => {},
       onReducedMotionChange: () => {},
       onReducedFlashesChange: () => {},
+      onHighContrastTargetsChange: () => {},
       onBallBounce: () => {},
       onExit: () => {},
       progression: createDefaultProgressionState(),
@@ -352,6 +371,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.sfxVolumeValue = this.layout.querySelector('[data-menu-sfx-volume-value]') as HTMLElement | null;
     this.reducedMotionInput = this.layout.querySelector('[data-menu-reduced-motion]') as HTMLInputElement | null;
     this.reducedFlashesInput = this.layout.querySelector('[data-menu-reduced-flashes]') as HTMLInputElement | null;
+    this.highContrastTargetsInput = this.layout.querySelector('[data-menu-high-contrast]') as HTMLInputElement | null;
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
     this.normalHighScoreElement = this.layout.querySelector('[data-menu-normal-high-score]') as HTMLElement | null;
     this.hardHighScoreElement = this.layout.querySelector('[data-menu-hard-high-score]') as HTMLElement | null;
@@ -363,6 +383,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = this.layout.querySelector('[data-shop-blackhole-status]') as HTMLElement | null;
     this.achievementCountElement = this.layout.querySelector('[data-achievement-count]') as HTMLElement | null;
     this.achievementRows = Array.from(this.layout.querySelectorAll('[data-achievement-id]')) as HTMLElement[];
+    this.courtChallengeElement = this.layout.querySelector('[data-court-challenge]') as HTMLElement | null;
+    this.courtChallengeTitleElement = this.layout.querySelector('[data-court-challenge-title]') as HTMLElement | null;
+    this.courtChallengeCopyElement = this.layout.querySelector('[data-court-challenge-copy]') as HTMLElement | null;
+    this.courtChallengeCountElement = this.layout.querySelector('[data-court-challenge-count]') as HTMLElement | null;
+    this.courtChallengeStateElement = this.layout.querySelector('[data-court-challenge-state]') as HTMLElement | null;
     this.wristbandButtons = Array.from(this.layout.querySelectorAll('[data-wristband-color]')) as HTMLButtonElement[];
     this.leftWristbandPreview = this.layout.querySelector('[data-wristband-preview="left"]') as HTMLElement | null;
     this.rightWristbandPreview = this.layout.querySelector('[data-wristband-preview="right"]') as HTMLElement | null;
@@ -577,13 +602,17 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onSfxVolumeChange(sfxVolume);
     const reducedMotion = this.loadBoolean(reducedMotionKey);
     const reducedFlashes = this.loadBoolean(reducedFlashesKey);
+    const highContrastTargets = this.loadBoolean(highContrastTargetsKey);
     if (this.reducedMotionInput) this.reducedMotionInput.checked = reducedMotion;
     if (this.reducedFlashesInput) this.reducedFlashesInput.checked = reducedFlashes;
+    if (this.highContrastTargetsInput) this.highContrastTargetsInput.checked = highContrastTargets;
     this.options.onReducedMotionChange(reducedMotion);
     this.options.onReducedFlashesChange(reducedFlashes);
+    this.options.onHighContrastTargetsChange(highContrastTargets);
 
     this.reducedMotionInput?.addEventListener('change', this.handleReducedMotionInput);
     this.reducedFlashesInput?.addEventListener('change', this.handleReducedFlashesInput);
+    this.highContrastTargetsInput?.addEventListener('change', this.handleHighContrastTargetsInput);
     this.playerNameInput?.addEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.addEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.addEventListener('click', this.handleResetConfirm);
@@ -832,11 +861,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         && this.progression.achievements[achievement];
       row.dataset.unlocked = unlocked ? 'true' : 'false';
       const state = row.querySelector('.dribble-achievement-state');
-      if (state) {
-        state.textContent = achievement === 'playTutorial'
-          ? unlocked ? 'COMPLETE' : `${tutorialProgress} / 2`
-          : unlocked ? 'COMPLETE' : 'LOCKED';
-      }
+      if (state) state.textContent = unlocked ? 'COMPLETE' : 'LOCKED';
       if (achievement === 'playTutorial') {
         const progress = row.querySelector('[data-tutorial-achievement-progress]') as HTMLElement | null;
         const count = row.querySelector('[data-tutorial-achievement-count]') as HTMLElement | null;
@@ -846,6 +871,25 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       if (unlocked) completed += 1;
     }
     if (this.achievementCountElement) this.achievementCountElement.textContent = String(completed);
+    const challenge = getCourtChallenge(this.progression);
+    const progress = Math.min(challenge.goal, this.progression.courtChallengeProgress);
+    this.courtChallengeElement?.style.setProperty(
+      '--court-challenge-progress',
+      String(progress / challenge.goal),
+    );
+    if (this.courtChallengeElement) {
+      this.courtChallengeElement.dataset.complete = String(this.progression.courtChallengeCompleted);
+    }
+    if (this.courtChallengeTitleElement) this.courtChallengeTitleElement.textContent = challenge.title;
+    if (this.courtChallengeCopyElement) this.courtChallengeCopyElement.textContent = challenge.description;
+    if (this.courtChallengeCountElement) {
+      this.courtChallengeCountElement.textContent = `${progress} / ${challenge.goal}`;
+    }
+    if (this.courtChallengeStateElement) {
+      this.courtChallengeStateElement.textContent = this.progression.courtChallengeCompleted
+        ? 'COMPLETE'
+        : `+${challenge.reward} STAR`;
+    }
   }
 
   private refreshBallStatus(element: HTMLElement | null, cosmetic: BallCosmetic): void {
@@ -1192,6 +1236,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.sfxVolumeInput?.removeEventListener('input', this.handleSfxVolumeInput);
     this.reducedMotionInput?.removeEventListener('change', this.handleReducedMotionInput);
     this.reducedFlashesInput?.removeEventListener('change', this.handleReducedFlashesInput);
+    this.highContrastTargetsInput?.removeEventListener('change', this.handleHighContrastTargetsInput);
     this.playerNameInput?.removeEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.removeEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.removeEventListener('click', this.handleResetConfirm);
@@ -1220,6 +1265,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.sfxVolumeValue = null;
     this.reducedMotionInput = null;
     this.reducedFlashesInput = null;
+    this.highContrastTargetsInput = null;
     this.homeStarsElement = null;
     this.normalHighScoreElement = null;
     this.hardHighScoreElement = null;
@@ -1240,6 +1286,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.resetNormalValueElement = null;
     this.resetHardValueElement = null;
     this.resetAchievementsValueElement = null;
+    this.courtChallengeElement = null;
+    this.courtChallengeTitleElement = null;
+    this.courtChallengeCopyElement = null;
+    this.courtChallengeCountElement = null;
+    this.courtChallengeStateElement = null;
     this.nameEntryElement = null;
     this.playerNameInput = null;
     this.playerNameStatus = null;

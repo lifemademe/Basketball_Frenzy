@@ -3,8 +3,8 @@
   position: fixed;
   top: 24px;
   left: 50%;
-  width: min(680px, calc(100vw - 320px));
-  min-width: 420px;
+  width: min(980px, calc(100vw - 320px));
+  min-width: 560px;
   min-height: 106px;
   box-sizing: border-box;
   display: grid;
@@ -13,8 +13,9 @@
   padding: 15px 18px 13px;
   overflow: hidden;
   color: #fff;
-  background: rgba(8, 12, 20, 0.78);
-  border: 1px solid rgba(255, 214, 90, 0.54);
+  background:
+    linear-gradient(100deg, rgba(53, 8, 20, 0.9), rgba(7, 21, 48, 0.9));
+  border: 1px solid rgba(255, 82, 96, 0.62);
   border-radius: 8px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.1);
   transform: translateX(-50%);
@@ -27,7 +28,7 @@
 }
 
 .dribble-tutorial-copy > span {
-  color: #ffd65a;
+  color: #ff6f7d;
   font-size: 14px;
   line-height: 16px;
 }
@@ -58,12 +59,13 @@
 
 .dribble-tutorial-action strong {
   padding: 4px 10px;
-  color: #171007;
-  background: #ffd65a;
+  color: #ffffff;
+  background: linear-gradient(90deg, #ff394f, #ffb23f);
   border-radius: 4px;
   font-size: 18px;
   line-height: 22px;
   white-space: nowrap;
+  box-shadow: 0 0 14px rgba(255, 76, 80, 0.58);
 }
 
 .dribble-tutorial-action .ui-button {
@@ -89,8 +91,8 @@
   display: block;
   width: calc(var(--tutorial-progress) * 100%);
   height: 100%;
-  background: #ffd65a;
-  box-shadow: 0 0 12px rgba(255, 202, 58, 0.72);
+  background: linear-gradient(90deg, #ff394f, #ffb23f);
+  box-shadow: 0 0 14px rgba(255, 76, 80, 0.58);
   transition: width 180ms ease-out;
 }
 

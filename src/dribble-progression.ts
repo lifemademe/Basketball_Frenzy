@@ -1,6 +1,8 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
 export type WristbandColor = 'orange' | 'blue' | 'lime' | 'pink' | 'white' | 'purple';
 export type WristbandSide = 'left' | 'right';
+export type CourtChallengeId = 'scoreSprint' | 'hazardRun' | 'rallyMaster';
+export type CourtChallengeMetric = 'score' | 'hazards' | 'rally';
 export type ProgressionResetTarget =
   | 'normalHighScore'
   | 'hardHighScore'
@@ -55,7 +57,47 @@ export interface DribbleProgressionState {
   lastBounceTutorialCompleted: boolean;
   achievements: Record<AchievementId, boolean>;
   achievementMigrationVersion: number;
+  courtChallengeDate: string;
+  courtChallengeId: CourtChallengeId;
+  courtChallengeProgress: number;
+  courtChallengeCompleted: boolean;
 }
+
+export interface CourtChallengeDefinition {
+  id: CourtChallengeId;
+  title: string;
+  description: string;
+  metric: CourtChallengeMetric;
+  goal: number;
+  reward: number;
+}
+
+const courtChallenges: readonly CourtChallengeDefinition[] = [
+  {
+    id: 'scoreSprint',
+    title: 'Score Sprint',
+    description: 'Score 2,500 points in one run.',
+    metric: 'score',
+    goal: 2500,
+    reward: 1,
+  },
+  {
+    id: 'hazardRun',
+    title: 'Clean Court',
+    description: 'Avoid 15 hazards in one run.',
+    metric: 'hazards',
+    goal: 15,
+    reward: 1,
+  },
+  {
+    id: 'rallyMaster',
+    title: 'Long Rally',
+    description: 'Reach a 12-pass rally in Last Bounce.',
+    metric: 'rally',
+    goal: 12,
+    reward: 1,
+  },
+];
 
 export const epicBallPrice = 5;
 export const discoBallPrice = 15;
@@ -64,6 +106,7 @@ export const blackHoleBallPrice = 30;
 const storageKey = 'basketball-frenzy-progression-v1';
 
 export function createDefaultProgressionState(): DribbleProgressionState {
+  const challenge = getChallengeForDate(getLocalDateKey());
   return {
     normalHighScore: 0,
     hardHighScore: 0,
@@ -80,6 +123,10 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     lastBounceTutorialCompleted: false,
     achievements: createDefaultAchievements(),
     achievementMigrationVersion: 4,
+    courtChallengeDate: getLocalDateKey(),
+    courtChallengeId: challenge.id,
+    courtChallengeProgress: 0,
+    courtChallengeCompleted: false,
   };
 }
 
@@ -109,6 +156,14 @@ export function loadProgression(): DribbleProgressionState {
       lastBounceTutorialCompleted: parsed.lastBounceTutorialCompleted === true,
       achievements: loadAchievements(parsed.achievements),
       achievementMigrationVersion: 4,
+      courtChallengeDate: typeof parsed.courtChallengeDate === 'string'
+        ? parsed.courtChallengeDate
+        : '',
+      courtChallengeId: isCourtChallengeId(parsed.courtChallengeId)
+        ? parsed.courtChallengeId
+        : 'scoreSprint',
+      courtChallengeProgress: sanitizeCount(parsed.courtChallengeProgress),
+      courtChallengeCompleted: parsed.courtChallengeCompleted === true,
     };
     if (loaded.normalRunsCompleted === 0 && loaded.normalHighScore > 0) loaded.normalRunsCompleted = 1;
     if (loaded.hardRunsCompleted === 0 && loaded.hardHighScore > 0) loaded.hardRunsCompleted = 1;
@@ -134,10 +189,38 @@ export function loadProgression(): DribbleProgressionState {
     }
     loaded.achievements.playTutorial = loaded.classicTutorialCompleted
       && loaded.lastBounceTutorialCompleted;
-    return persist(loaded);
+    return persist(refreshCourtChallenge(loaded));
   } catch {
     return fallback;
   }
+}
+
+export function getCourtChallenge(
+  state: DribbleProgressionState,
+): CourtChallengeDefinition {
+  return courtChallenges.find(challenge => challenge.id === state.courtChallengeId)
+    ?? courtChallenges[0];
+}
+
+export function recordCourtChallengeProgress(
+  state: DribbleProgressionState,
+  metric: CourtChallengeMetric,
+  value: number,
+): DribbleProgressionState {
+  const refreshed = refreshCourtChallenge(state);
+  const challenge = getCourtChallenge(refreshed);
+  if (refreshed.courtChallengeCompleted || challenge.metric !== metric) {
+    return refreshed === state ? state : persist(refreshed);
+  }
+  const progress = Math.min(challenge.goal, Math.max(refreshed.courtChallengeProgress, sanitizeCount(value)));
+  if (progress === refreshed.courtChallengeProgress) return refreshed;
+  const completed = progress >= challenge.goal;
+  return persist({
+    ...refreshed,
+    stars: refreshed.stars + (completed ? challenge.reward : 0),
+    courtChallengeProgress: progress,
+    courtChallengeCompleted: completed,
+  });
 }
 
 export function awardStars(state: DribbleProgressionState, amount: number): DribbleProgressionState {
@@ -307,6 +390,36 @@ function isBallCosmetic(value: unknown): value is BallCosmetic {
 
 function isWristbandColor(value: unknown): value is WristbandColor {
   return wristbandColors.some(color => color === value);
+}
+
+function isCourtChallengeId(value: unknown): value is CourtChallengeId {
+  return courtChallenges.some(challenge => challenge.id === value);
+}
+
+function refreshCourtChallenge(state: DribbleProgressionState): DribbleProgressionState {
+  const date = getLocalDateKey();
+  if (state.courtChallengeDate === date) return state;
+  const challenge = getChallengeForDate(date);
+  return {
+    ...state,
+    courtChallengeDate: date,
+    courtChallengeId: challenge.id,
+    courtChallengeProgress: 0,
+    courtChallengeCompleted: false,
+  };
+}
+
+function getChallengeForDate(date: string): CourtChallengeDefinition {
+  const dayNumber = Math.floor(new Date(`${date}T12:00:00`).getTime() / 86_400_000);
+  return courtChallenges[Math.abs(dayNumber) % courtChallenges.length];
+}
+
+function getLocalDateKey(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function createDefaultAchievements(): Record<AchievementId, boolean> {

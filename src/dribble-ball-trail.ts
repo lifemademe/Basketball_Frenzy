@@ -35,7 +35,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
       transparent: false,
       opacity: 1,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
@@ -43,7 +43,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
     this.trailMesh = new THREE.Mesh(geometry, material);
     this.trailMesh.name = 'Ball Trail VFX';
     this.trailMesh.frustumCulled = false;
-    this.trailMesh.renderOrder = 8;
+    this.trailMesh.renderOrder = -4;
     this.rootComponent.add(this.trailMesh);
 
     const coreMaterial = new THREE.LineBasicMaterial({
@@ -52,14 +52,14 @@ export class DribbleBallTrail extends ENGINE.Actor {
       transparent: true,
       opacity: 0.92,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
     this.trailCore = new THREE.Line(this.createCoreGeometry(), coreMaterial);
     this.trailCore.name = 'Ball Trail Luminous Core';
     this.trailCore.frustumCulled = false;
-    this.trailCore.renderOrder = 9;
+    this.trailCore.renderOrder = -3;
     this.rootComponent.add(this.trailCore);
   }
 
@@ -200,11 +200,11 @@ export class DribbleBallTrail extends ENGINE.Actor {
       const offset = index * 6;
 
       positions[offset] = point.x + normalX * width;
-      positions[offset + 1] = point.y + normalY * width;
-      positions[offset + 2] = point.z + 0.012;
+      positions[offset + 1] = point.y + normalY * width - 0.025;
+      positions[offset + 2] = point.z - 0.045;
       positions[offset + 3] = point.x - normalX * width;
-      positions[offset + 4] = point.y - normalY * width;
-      positions[offset + 5] = point.z + 0.012;
+      positions[offset + 4] = point.y - normalY * width - 0.025;
+      positions[offset + 5] = point.z - 0.045;
       this.setTrailColor(progress);
       colors[offset] = this.scratchColor.r;
       colors[offset + 1] = this.scratchColor.g;
@@ -216,8 +216,8 @@ export class DribbleBallTrail extends ENGINE.Actor {
       if (corePositions && coreColors) {
         const coreOffset = index * 3;
         corePositions[coreOffset] = point.x;
-        corePositions[coreOffset + 1] = point.y;
-        corePositions[coreOffset + 2] = point.z + 0.018;
+        corePositions[coreOffset + 1] = point.y - 0.025;
+        corePositions[coreOffset + 2] = point.z - 0.04;
         const whiteBlend = this.cosmetic === 'blackhole'
           ? 0.12 + progress * 0.12
           : 0.4 + progress * (this.frenzyActive ? 0.58 : 0.48);

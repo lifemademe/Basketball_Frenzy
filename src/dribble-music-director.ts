@@ -11,6 +11,7 @@ export class DribbleMusicDirector {
   private transitionToken = 0;
   private musicVolume = 0.55;
   private paused = false;
+  private intensity = 0;
 
   public constructor(private readonly world: ENGINE.World) {}
 
@@ -42,6 +43,13 @@ export class DribbleMusicDirector {
   public setPaused(paused: boolean): void {
     this.paused = paused;
     this.applyBusVolume(0.18);
+  }
+
+  public setIntensity(intensity: number): void {
+    const nextIntensity = Math.max(0, Math.min(1, intensity));
+    if (Math.abs(nextIntensity - this.intensity) < 0.025) return;
+    this.intensity = nextIntensity;
+    this.applyBusVolume(0.16);
   }
 
   public stop(): void {
@@ -80,7 +88,10 @@ export class DribbleMusicDirector {
 
   private applyBusVolume(rampSeconds = 0): void {
     const ducking = this.paused ? 0.38 : 1;
-    this.setBusVolume(this.musicVolume * ducking, rampSeconds);
+    const intensityLift = this.state === 'gameplay'
+      ? 0.9 + this.intensity * 0.1
+      : 1;
+    this.setBusVolume(this.musicVolume * ducking * intensityLift, rampSeconds);
   }
 
   private setBusVolume(volume: number, rampSeconds = 0): void {

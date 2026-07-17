@@ -4,6 +4,7 @@ import './dribble-blackhole-debris.ts';
 import './dribble-boot-screen.ts';
 import './dribble-bounce-audio.ts';
 import './dribble-combo-popup.ts';
+import './dribble-difficulty-director.ts';
 import './dribble-gameplay.ts';
 import './dribble-impact-burst.ts';
 import './dribble-main-menu.ts';

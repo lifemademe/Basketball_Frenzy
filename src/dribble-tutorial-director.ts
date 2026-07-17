@@ -123,13 +123,6 @@ const lastBounceLessons: TutorialLesson[] = [
     expectedEvent: 'continue',
   },
   {
-    id: 'versus-cards',
-    title: 'Risk Cards',
-    instruction: 'Each side has three red Risk Cards. A dangerous late pass spends one. With none left, another Risk Pass loses the round. Green cards restore one.',
-    control: 'LEFT CLICK TO CONTINUE',
-    expectedEvent: 'continue',
-  },
-  {
     id: 'versus-pass',
     title: 'Pass To The AI',
     instruction: 'Send the ball through center to the AI on the left.',
@@ -154,8 +147,8 @@ const lastBounceLessons: TutorialLesson[] = [
   },
   {
     id: 'versus-risk',
-    title: 'Risk Passes',
-    instruction: 'Wait for PASS NOW, then pass. The lesson completes only if the hazard is safely cleared.',
+    title: 'Risk Cards & Risk Passes',
+    instruction: 'Each side has three Risk Cards. A dangerous late pass spends one; with none left, the next Risk Pass loses the round. Wait for PASS NOW and make a safe pass.',
     control: 'WAIT FOR THE CUE',
     expectedEvent: 'hazard-avoided',
     spawn: { kind: 'hazard', lane: 'left', height: 'low' },

@@ -1000,12 +1000,21 @@
 }
 
 .dribble-main-menu-settings,
-.dribble-main-menu-shop,
+.dribble-main-menu-shop {
+  width: min(470px, calc(100vw - 34px));
+  height: min(620px, calc(100vh - 24px));
+  min-height: 560px;
+  padding: 76px 58px 126px;
+  box-sizing: border-box;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
 .dribble-main-menu-reset {
   width: min(470px, calc(100vw - 34px));
   height: min(548px, calc(100vh - 40px));
   min-height: 500px;
-  padding: 72px 58px 44px;
+  padding: 72px 58px 124px;
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
@@ -1020,10 +1029,6 @@
 .dribble-main-menu[data-panel='achievements'] footer,
 .dribble-main-menu[data-panel='reset'] footer {
   display: none;
-}
-
-.dribble-main-menu-reset {
-  padding-bottom: 124px;
 }
 
 .dribble-reset-heading span {
@@ -1347,10 +1352,102 @@
   font-size: 17px;
 }
 
+.dribble-court-challenge {
+  --court-challenge-progress: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 14px;
+  margin: 0 5px 9px;
+  padding: 8px 12px 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 211, 79, 0.58);
+  border-radius: 7px;
+  background: rgba(10, 23, 91, 0.88);
+  box-sizing: border-box;
+}
+
+.dribble-court-challenge > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.dribble-court-challenge small {
+  color: #65d5ff;
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.dribble-court-challenge strong {
+  color: #ffffff;
+  font-size: 17px;
+  line-height: 19px;
+}
+
+.dribble-court-challenge > div:first-child span {
+  overflow: hidden;
+  color: #b9c5f0;
+  font-size: 11px;
+  line-height: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dribble-court-challenge > b {
+  align-self: center;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 211, 79, 0.56);
+  border-radius: 5px;
+  color: #ffd34f;
+  font-size: 11px;
+}
+
+.dribble-court-challenge-progress {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 10px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: rgba(2, 7, 42, 0.76);
+}
+
+.dribble-court-challenge-progress i {
+  display: block;
+  width: calc(var(--court-challenge-progress) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffaf24, #ffe36b);
+  box-shadow: 0 0 10px rgba(255, 211, 79, 0.52);
+  transition: width 220ms ease-out;
+}
+
+.dribble-court-challenge-progress span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 9px;
+  line-height: 10px;
+  text-shadow: 0 1px 2px #000000;
+}
+
+.dribble-court-challenge[data-complete='true'] {
+  border-color: rgba(77, 230, 184, 0.82);
+  background: rgba(12, 64, 84, 0.9);
+}
+
+.dribble-court-challenge[data-complete='true'] > b {
+  border-color: rgba(77, 230, 184, 0.72);
+  color: #62f0c5;
+}
+
 .dribble-achievements-list {
   display: grid;
   gap: 8px;
-  max-height: calc(100% - 38px);
+  max-height: calc(100% - 132px);
   padding: 2px 5px 4px;
   overflow-y: auto;
 }
@@ -1416,12 +1513,13 @@
 .dribble-achievement-progress {
   --achievement-progress: 0;
   position: relative;
-  height: 8px;
-  margin-top: 7px;
+  height: 16px;
+  margin-top: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 211, 79, 0.38);
-  border-radius: 5px;
+  border-radius: 8px;
   background: rgba(3, 8, 51, 0.72);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.52);
 }
 
 .dribble-achievement-progress i {
@@ -1436,12 +1534,16 @@
 
 .dribble-achievement-progress span {
   position: absolute;
-  inset: -5px 4px auto auto;
-  padding: 0 4px;
-  color: #fff7be;
-  background: #0b145c;
-  font-size: 10px;
-  line-height: 12px;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 0 4px rgba(0, 0, 0, 0.72);
+  pointer-events: none;
 }
 
 .dribble-achievement-state {
@@ -2072,16 +2174,18 @@
   }
 
   .dribble-main-menu-settings,
-  .dribble-main-menu-shop,
+  .dribble-main-menu-shop {
+    width: min(390px, 100%);
+    height: min(580px, calc(100vh - 20px));
+    min-height: 520px;
+    padding: 68px 46px 112px;
+  }
+
   .dribble-main-menu-reset {
     width: min(390px, 100%);
     height: min(520px, calc(100vh - 28px));
     min-height: 480px;
-    padding: 64px 46px 38px;
-  }
-
-  .dribble-main-menu-reset {
-    padding-bottom: 116px;
+    padding: 64px 46px 116px;
   }
 
   .dribble-reset-heading h2 {

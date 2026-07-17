@@ -68,6 +68,7 @@ export class DribbleTarget extends ENGINE.Actor {
   private static readonly centerCollectZ = -1.85;
   private static readonly centerGraceRadius = 0.9;
   private static readonly centerGraceStrength = 0.18;
+  private static highContrastEnabled = false;
 
   public kind: TargetKind = 'score';
   public laneX = 0;
@@ -100,13 +101,7 @@ export class DribbleTarget extends ENGINE.Actor {
     this.spacingGroup = options?.spacingGroup ?? null;
     this.radius = this.kind === 'bonus' ? 0.58 : this.kind === 'recovery' ? 0.52 : 0.55;
 
-    const color = this.kind === 'score'
-      ? 0xffca3a
-      : this.kind === 'health' || this.kind === 'recovery'
-        ? 0x4de6b8
-        : this.kind === 'bonus'
-          ? 0xffca3a
-          : 0xff453a;
+    const color = this.getDisplayColor();
     const geometry = this.kind === 'score'
       ? new THREE.TorusGeometry(0.42, 0.12, 12, 28)
       : this.kind === 'health'
@@ -305,6 +300,17 @@ export class DribbleTarget extends ENGINE.Actor {
     this.pressureLevel = THREE.MathUtils.clamp(level, 0, 1);
   }
 
+  public static setHighContrastEnabled(enabled: boolean): void {
+    DribbleTarget.highContrastEnabled = enabled;
+  }
+
+  public applyAccessibilityPalette(): void {
+    const color = this.getDisplayColor();
+    this.targetMaterial?.color.setHex(color);
+    this.targetMaterial?.emissive.setHex(color);
+    this.glowMaterial?.color.setHex(color);
+  }
+
   public isRemovalPending(): boolean {
     return this.removalRequested;
   }
@@ -329,6 +335,17 @@ export class DribbleTarget extends ENGINE.Actor {
       DribbleTarget.centerGraceRadius,
     );
     return this.speed * (1 - influence * DribbleTarget.centerGraceStrength);
+  }
+
+  private getDisplayColor(): number {
+    if (!DribbleTarget.highContrastEnabled) {
+      if (this.kind === 'score' || this.kind === 'bonus') return 0xffca3a;
+      if (this.kind === 'health' || this.kind === 'recovery') return 0x4de6b8;
+      return 0xff453a;
+    }
+    if (this.kind === 'score' || this.kind === 'bonus') return 0xfff000;
+    if (this.kind === 'health' || this.kind === 'recovery') return 0x00eaff;
+    return 0xff1744;
   }
 
   public setGameplayActive(active: boolean): void {
