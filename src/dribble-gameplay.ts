@@ -89,7 +89,6 @@ interface AchievementToastRequest {
 
 interface VersusAiStyle {
   name: string;
-  intro: string;
   reactionBonus: number;
   errorScale: number;
   trapScale: number;
@@ -100,7 +99,6 @@ interface VersusAiStyle {
 const versusAiStyles: readonly VersusAiStyle[] = [
   {
     name: 'ACE',
-    intro: 'Balanced reads and clean counters',
     reactionBonus: 0.015,
     errorScale: 0.82,
     trapScale: 0.92,
@@ -109,7 +107,6 @@ const versusAiStyles: readonly VersusAiStyle[] = [
   },
   {
     name: 'BLAZE',
-    intro: 'Aggressive trap passes and fast pressure',
     reactionBonus: -0.015,
     errorScale: 1.1,
     trapScale: 1.42,
@@ -118,7 +115,6 @@ const versusAiStyles: readonly VersusAiStyle[] = [
   },
   {
     name: 'LOCK',
-    intro: 'Patient defense and precise power bounces',
     reactionBonus: 0.035,
     errorScale: 0.68,
     trapScale: 0.72,
@@ -308,7 +304,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }
       if (!this.versusRoundActive || ballState?.side !== 'right' || ballState.isTransferring) return null;
       if (ballState.isCatching && this.versusReturnLockedOwner === 'player') {
-        this.versusHud?.showCallout('SECURE THE BALL', 'Return available after the catch', 'gold', 520);
         return null;
       }
       const actionWorked = this.ball?.transferToLeft();
@@ -1351,14 +1346,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusPressureWarningStage = 0;
     this.ball?.reset(startingSide);
     this.ball?.setGameplayActive(true);
-    this.versusHud?.showCallout(
-      `ROUND ${this.versusRound}`,
-      this.versusRound === 1
-        ? `${this.versusAiStyle.name}: ${this.versusAiStyle.intro}`
-        : `${this.versusOwner === 'player' ? 'You start' : `${this.versusAiStyle.name} starts`} - cards ${this.versusPlayerRiskCards} vs ${this.versusAiRiskCards}`,
-      this.versusOwner === 'player' ? 'blue' : 'gold',
-      this.versusRound === 1 ? 1450 : 1000,
-    );
     this.syncVersusHud();
   }
 
@@ -1425,18 +1412,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusPossessionTime = 0;
     this.versusPressureWarningStage = 0;
     this.versusAiDecisionTimer = THREE.MathUtils.randFloat(0.28, 0.46);
-    this.versusHud?.showCallout(
-      ballState.isCatching ? 'CATCH WINDOW' : this.versusOwner === 'player' ? 'YOUR BALL' : 'AI BALL',
-      ballState.isCatching
-        ? this.versusReturnLockedOwner === this.versusOwner
-          ? 'Control this catch'
-          : this.versusOwner === 'player'
-            ? 'Left click to return'
-            : 'AI can return the pass'
-        : this.versusOwner === 'player' ? 'Pass or power-bounce' : 'Read the next move',
-      this.versusOwner === 'player' ? 'blue' : 'gold',
-      620,
-    );
   }
 
   private updateVersusCatchState(ballState: DribbleBallState): void {
@@ -1477,7 +1452,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         this.versusQueuedAiAction = null;
         if (this.ball?.transferToRight()) {
           this.beginVersusPass('player', true);
-          this.versusHud?.showCallout('AI RETURNS', 'Immediate counter-pass', 'danger', 540);
         }
         return;
       }
@@ -1489,9 +1463,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         && this.isSafeAiBoostWindow(queuedGroundThreat)
       ) {
         this.versusQueuedAiAction = null;
-        if (this.ball?.boostLeft()) {
-          this.versusHud?.showCallout('AI EVADES', 'Timed power bounce', 'gold', 440);
-        }
+        this.ball?.boostLeft();
         return;
       }
       if (ballState.isCatching) return;
@@ -1519,9 +1491,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         0,
         0.99,
       );
-      if (Math.random() < recoveryReadChance && this.ball?.boostLeft()) {
-        this.versusHud?.showCallout('AI TAKES THE BAIT', 'Recovery power bounce', 'gold', 560);
-      }
+      if (Math.random() < recoveryReadChance) this.ball?.boostLeft();
       return;
     }
 
@@ -1542,23 +1512,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
             || Math.random() < THREE.MathUtils.clamp(0.62 * this.versusAiStyle.boostBias, 0, 0.9)
           )
         ) {
-          if (this.ball?.boostLeft()) {
-            this.versusHud?.showCallout('AI POWER', 'Low hazard avoided', 'gold', 460);
-          }
+          this.ball?.boostLeft();
         } else if (isGroundThreat && rightLaneSafe) {
           if (this.ball?.transferToRight()) {
             this.beginVersusPass('player', false);
-            this.versusHud?.showCallout(
-              timeToContact < 0.5 ? 'QUICK PASS' : 'INCOMING',
-              timeToContact < 0.5 ? 'AI escaped late' : 'AI passes to you',
-              'danger',
-              520,
-            );
           }
         } else if (!isGroundThreat && this.shouldAiMisreadAirThreat(threat, difficulty)) {
-          if (this.ball?.boostLeft()) {
-            this.versusHud?.showCallout('AI COMMITS', 'Power bounce read', 'gold', 420);
-          }
+          this.ball?.boostLeft();
         }
         return;
       }
@@ -1587,7 +1547,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         if (this.ball?.transferToRight()) {
           this.versusTrickyPassCooldown = THREE.MathUtils.randFloat(3.8, 5.4);
           this.beginVersusPass('player', false);
-          this.versusHud?.showCallout('AI TRAP PASS', 'Return it during the catch window', 'danger', 720);
         }
         return;
       }
@@ -1598,7 +1557,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (this.versusPossessionTime >= pressureThreshold && rightLaneSafe) {
       if (this.ball?.transferToRight()) {
         this.beginVersusPass('player', false);
-        this.versusHud?.showCallout('INCOMING', 'Pressure pass', 'danger', 520);
       }
     }
   }
@@ -1721,12 +1679,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (owner === 'player') this.versusPlayerRiskCards = restored;
     else this.versusAiRiskCards = restored;
     this.spawnImpactBurst(position, 0x4de6b8);
-    this.versusHud?.showCallout(
-      owner === 'player' ? 'RISK CARD RESTORED' : 'AI RECOVERS',
-      `${restored} of ${this.versusMaximumRiskCards} cards ready`,
-      'recovery',
-      920,
-    );
+    if (this.tutorialActive) {
+      this.versusHud?.showCallout(
+        owner === 'player' ? 'RISK CARD RESTORED' : 'AI RECOVERS',
+        `${restored} of ${this.versusMaximumRiskCards} cards ready`,
+        'recovery',
+        920,
+      );
+    }
     this.syncVersusHud();
     void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
       volume: 0.58,
@@ -1785,14 +1745,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       urgent ? 6.5 : 9,
       urgent ? 8.5 : 12,
     );
-    this.versusHud?.showCallout(
-      preferredOwner === 'player' ? 'RECOVERY GATE' : 'AI RECOVERY GATE',
-      preferredOwner === 'player'
-        ? 'Power bounce through green to restore a Risk Card'
-        : 'The AI can power bounce to recover',
-      'recovery',
-      1100,
-    );
+    if (this.tutorialActive) {
+      this.versusHud?.showCallout(
+        preferredOwner === 'player' ? 'RECOVERY GATE' : 'AI RECOVERY GATE',
+        preferredOwner === 'player'
+          ? 'Power bounce through green to restore a Risk Card'
+          : 'The AI can power bounce to recover',
+        'recovery',
+        1100,
+      );
+    }
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
       volume: 0.28,
       bus: 'SFX',
@@ -1839,12 +1801,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusPressureWarningStage = nextStage;
     const world = this.getWorld();
     if (nextStage === 2) {
-      this.versusHud?.showCallout(
-        'MAX PRESSURE',
-        `${this.versusOwner === 'player' ? 'Your' : 'AI'} lane is in overdrive`,
-        'danger',
-        760,
-      );
       if (world) {
         void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
           volume: 0.52,
@@ -1853,12 +1809,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }
       return;
     }
-    this.versusHud?.showCallout(
-      'LANE HEATING UP',
-      'Hazards are accelerating',
-      'gold',
-      620,
-    );
     if (world) {
       void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
         volume: 0.25,
@@ -1941,9 +1891,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     playDribbleFeedback(this.getWorld(), loser === 'ai' ? 'round-win' : 'hazard');
     this.versusHud?.showRoundResult(
       loser === 'ai',
-      reason === 'risk'
-        ? loser === 'player' ? 'DISQUALIFIED' : 'AI DISQUALIFIED'
-        : loser === 'player' ? 'ROUND LOST' : 'ROUND WON',
+      loser === 'player' ? 'ROUND LOST' : 'ROUND WON',
       reason === 'risk'
         ? 'No Risk Cards remained'
         : `${reason === 'air' ? 'Air' : 'Ground'} hazard hit ${loser === 'player' ? 'your ball' : `${this.versusAiStyle.name}'s ball`}`,
@@ -3283,12 +3231,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (this.runCoachStage !== 0 || this.elapsedTime < 1.1 || this.tutorialActive) return;
     this.runCoachStage = 1;
     if (this.gameMode === 'last-bounce') {
-      this.versusHud?.showCallout(
-        'READ THE HEIGHT',
-        'Power over ground hazards. Stay low under air hazards, and pass before pressure peaks.',
-        'gold',
-        3800,
-      );
       return;
     }
     this.juiceHud?.showCoach(
