@@ -33,6 +33,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private calloutSubtitleElement: HTMLElement | null = null;
   private opponentNameElement: HTMLElement | null = null;
   private calloutTimer: ReturnType<typeof setTimeout> | null = null;
+  private roundResultTimer: ReturnType<typeof setTimeout> | null = null;
   private renderedPlayerLosses = -1;
   private renderedAiLosses = -1;
   private renderedPlayerRiskCards = -1;
@@ -173,6 +174,16 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     }, duration);
   }
 
+  public showRoundResult(playerWon: boolean, title: string, subtitle: string): void {
+    if (this.roundResultTimer !== null) clearTimeout(this.roundResultTimer);
+    if (this.rootElement) this.rootElement.dataset.roundResult = playerWon ? 'win' : 'loss';
+    this.showCallout(title, subtitle, playerWon ? 'blue' : 'danger', 1400);
+    this.roundResultTimer = setTimeout(() => {
+      this.roundResultTimer = null;
+      if (this.rootElement) delete this.rootElement.dataset.roundResult;
+    }, 780);
+  }
+
   private renderLosses(element: HTMLElement | null, losses: number): void {
     if (!element) return;
     element.replaceChildren();
@@ -197,7 +208,9 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
 
   protected override onDestroy(): void {
     if (this.calloutTimer !== null) clearTimeout(this.calloutTimer);
+    if (this.roundResultTimer !== null) clearTimeout(this.roundResultTimer);
     this.calloutTimer = null;
+    this.roundResultTimer = null;
     this.rootElement = null;
     this.roundElement = null;
     this.ownerElement = null;

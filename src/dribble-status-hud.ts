@@ -377,8 +377,12 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private frenzyElement: HTMLElement | null = null;
   private timeElement: HTMLElement | null = null;
   private praiseElement: HTMLElement | null = null;
+  private coachElement: HTMLElement | null = null;
+  private coachTitleElement: HTMLElement | null = null;
+  private coachBodyElement: HTMLElement | null = null;
   private praiseTimer: ReturnType<typeof setTimeout> | null = null;
   private activationTimer: ReturnType<typeof setTimeout> | null = null;
+  private coachTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyActive = false;
   private frenzyUrgent = false;
   private lastFrenzyPercent = -1;
@@ -410,6 +414,9 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.frenzyElement = this.layout.querySelector('[data-frenzy-meter]') as HTMLElement | null;
     this.timeElement = this.layout.querySelector('[data-frenzy-time]') as HTMLElement | null;
     this.praiseElement = this.layout.querySelector('[data-score-praise]') as HTMLElement | null;
+    this.coachElement = this.layout.querySelector('[data-dribble-coach]') as HTMLElement | null;
+    this.coachTitleElement = this.layout.querySelector('[data-dribble-coach-title]') as HTMLElement | null;
+    this.coachBodyElement = this.layout.querySelector('[data-dribble-coach-body]') as HTMLElement | null;
   }
 
   public setFrenzy(progress: number, remaining: number, active: boolean): void {
@@ -471,6 +478,18 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     }, 760);
   }
 
+  public showCoach(title: string, body: string, duration = 3200): void {
+    if (!this.coachElement) return;
+    if (this.coachTimer) clearTimeout(this.coachTimer);
+    if (this.coachTitleElement) this.coachTitleElement.textContent = title;
+    if (this.coachBodyElement) this.coachBodyElement.textContent = body;
+    this.coachElement.dataset.active = 'true';
+    this.coachTimer = setTimeout(() => {
+      if (this.coachElement) this.coachElement.dataset.active = 'false';
+      this.coachTimer = null;
+    }, duration);
+  }
+
   protected override onDestroy(): void {
     if (this.praiseTimer) {
       clearTimeout(this.praiseTimer);
@@ -480,10 +499,17 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
       clearTimeout(this.activationTimer);
       this.activationTimer = null;
     }
+    if (this.coachTimer) {
+      clearTimeout(this.coachTimer);
+      this.coachTimer = null;
+    }
     this.rootElement = null;
     this.frenzyElement = null;
     this.timeElement = null;
     this.praiseElement = null;
+    this.coachElement = null;
+    this.coachTitleElement = null;
+    this.coachBodyElement = null;
     this.frenzyActive = false;
     this.frenzyUrgent = false;
     this.lastFrenzyPercent = -1;

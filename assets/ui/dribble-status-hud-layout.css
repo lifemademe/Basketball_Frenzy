@@ -577,6 +577,43 @@
   animation: dribble-score-praise 760ms cubic-bezier(0.18, 0.82, 0.25, 1) both;
 }
 
+.dribble-coach {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  display: flex;
+  width: min(430px, calc(100vw - 40px));
+  padding: 10px 16px 11px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 214, 90, 0.5);
+  border-radius: 7px;
+  background: rgba(7, 11, 23, 0.82);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transform: translate(-50%, 9px);
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.dribble-coach[data-active='true'] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.dribble-coach strong {
+  color: #ffda62;
+  font-size: 20px;
+  line-height: 22px;
+}
+
+.dribble-coach span {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 15px;
+  line-height: 18px;
+  text-align: center;
+}
+
 @keyframes dribble-timing-scan {
   0% { opacity: 0; transform: translateX(-20%); }
   18% { opacity: 0.5; }

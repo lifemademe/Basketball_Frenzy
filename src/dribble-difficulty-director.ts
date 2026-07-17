@@ -8,6 +8,8 @@ export class DribbleDifficultyDirector {
   private mode: DribbleGameMode = 'normal';
   private momentum = 0;
   private recovery = 0;
+  private recoveryBeatRemaining = 0;
+  private successStreak = 0;
   private intensity = 0;
   private tier: DribbleIntensityTier = 'warmup';
 
@@ -15,6 +17,8 @@ export class DribbleDifficultyDirector {
     this.mode = mode;
     this.momentum = 0;
     this.recovery = 0;
+    this.recoveryBeatRemaining = 0;
+    this.successStreak = 0;
     this.intensity = mode === 'hard' ? 0.12 : 0;
     this.tier = 'warmup';
   }
@@ -30,12 +34,15 @@ export class DribbleDifficultyDirector {
     const response = 1 - Math.exp(-deltaTime * (target > this.intensity ? 0.72 : 1.35));
     this.intensity = THREE.MathUtils.lerp(this.intensity, target, response);
     this.recovery = Math.max(0, this.recovery - deltaTime * 0.022);
+    this.recoveryBeatRemaining = Math.max(0, this.recoveryBeatRemaining - deltaTime);
     this.momentum = THREE.MathUtils.lerp(this.momentum, 0, 1 - Math.exp(-deltaTime * 0.08));
   }
 
   public recordSuccess(perfect = false): void {
+    this.successStreak += 1;
+    const streakDamping = 1 / (1 + Math.max(0, this.successStreak - 5) * 0.12);
     this.momentum = THREE.MathUtils.clamp(
-      this.momentum + (perfect ? 0.026 : 0.012),
+      this.momentum + (perfect ? 0.026 : 0.012) * streakDamping,
       -0.08,
       0.14,
     );
@@ -43,8 +50,10 @@ export class DribbleDifficultyDirector {
   }
 
   public recordFailure(severe = false): void {
+    this.successStreak = 0;
     this.momentum = Math.max(-0.08, this.momentum - (severe ? 0.075 : 0.04));
     this.recovery = Math.min(0.18, this.recovery + (severe ? 0.11 : 0.065));
+    this.recoveryBeatRemaining = Math.max(this.recoveryBeatRemaining, severe ? 3.2 : 1.35);
   }
 
   public getDifficulty(baseDifficulty: number): number {
@@ -61,7 +70,14 @@ export class DribbleDifficultyDirector {
   }
 
   public getSpawnIntervalScale(): number {
-    return THREE.MathUtils.lerp(1.04, 0.9, this.intensity);
+    const recoveryScale = this.recoveryBeatRemaining > 0
+      ? THREE.MathUtils.lerp(1, 1.16, THREE.MathUtils.smoothstep(this.recoveryBeatRemaining, 0, 3.2))
+      : 1;
+    return THREE.MathUtils.lerp(1.04, 0.9, this.intensity) * recoveryScale;
+  }
+
+  public isRecoveryBeatActive(): boolean {
+    return this.recoveryBeatRemaining > 0;
   }
 
   public takeTierChange(): DribbleIntensityTier | null {

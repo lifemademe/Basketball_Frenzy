@@ -100,8 +100,8 @@ const courtChallenges: readonly CourtChallengeDefinition[] = [
 ];
 
 export const epicBallPrice = 5;
-export const discoBallPrice = 15;
-export const blackHoleBallPrice = 30;
+export const discoBallPrice = 10;
+export const blackHoleBallPrice = 20;
 
 const storageKey = 'basketball-frenzy-progression-v1';
 

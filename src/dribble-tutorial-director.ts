@@ -99,7 +99,7 @@ const classicLessons: TutorialLesson[] = [
   {
     id: 'bonus-star',
     title: 'Bonus Star',
-    instruction: 'Rare stars are high. Use a Power bounce to reach this one.',
+    instruction: 'Rare stars trigger Frenzy. Use a Power bounce to collect this one.',
     control: 'HIGH BOUNCE',
     expectedEvent: 'bonus-hit',
     spawn: { kind: 'bonus', lane: 'active', height: 'high' },
@@ -107,7 +107,7 @@ const classicLessons: TutorialLesson[] = [
   {
     id: 'frenzy',
     title: 'Frenzy Power',
-    instruction: 'Long clean streaks turn the ball gold. During Frenzy, every target is good.',
+    instruction: 'The star turned the ball gold. During Frenzy, every target is good.',
     control: 'HIT THE YELLOW TARGET',
     expectedEvent: 'score-hit',
     spawn: { kind: 'score', lane: 'active', height: 'normal' },

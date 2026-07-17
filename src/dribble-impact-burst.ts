@@ -13,6 +13,7 @@ export class DribbleImpactBurst extends ENGINE.Actor {
   private active = false;
   private material: THREE.MeshBasicMaterial | null = null;
   private activeOpacity = 0.92;
+  private activeScale = 1;
 
   public override initialize(options?: DribbleImpactBurstOptions): void {
     this.material = new THREE.MeshBasicMaterial({
@@ -40,7 +41,7 @@ export class DribbleImpactBurst extends ENGINE.Actor {
     this.gameplayActive = active;
   }
 
-  public play(position: THREE.Vector3, color: THREE.ColorRepresentation): void {
+  public play(position: THREE.Vector3, color: THREE.ColorRepresentation, intensity = 1): void {
     try {
       this.activeOpacity = localStorage.getItem('basketball-frenzy-reduced-flashes') === 'true'
         ? 0.48
@@ -49,6 +50,7 @@ export class DribbleImpactBurst extends ENGINE.Actor {
       this.activeOpacity = 0.92;
     }
     this.elapsed = 0;
+    this.activeScale = THREE.MathUtils.clamp(intensity, 0.7, 1.5);
     this.active = true;
     this.rootComponent.visible = true;
     this.rootComponent.position.copy(position);
@@ -73,7 +75,8 @@ export class DribbleImpactBurst extends ENGINE.Actor {
 
     this.elapsed += deltaTime;
     const progress = Math.min(this.elapsed / this.lifetime, 1);
-    const scale = THREE.MathUtils.lerp(0.45, 2.35, 1 - Math.pow(1 - progress, 3));
+    const scale = THREE.MathUtils.lerp(0.45, 2.35, 1 - Math.pow(1 - progress, 3))
+      * this.activeScale;
     this.rootComponent.scale.setScalar(scale);
     this.rootComponent.rotation.z += deltaTime * 4;
     if (this.material) {

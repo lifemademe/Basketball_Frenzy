@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 export type TargetKind = 'score' | 'hazard' | 'health' | 'bonus' | 'recovery';
+export type TargetThreatOwner = 'player' | 'ai';
 
 function createStarGeometry(): THREE.ExtrudeGeometry {
   const shape = new THREE.Shape();
@@ -89,8 +90,8 @@ export class DribbleTarget extends ENGINE.Actor {
   private baseEmissiveIntensity = 2.8;
   private targetMaterial: THREE.MeshStandardMaterial | null = null;
   private pressureLevel = 0;
-  private rhythmMarker: ENGINE.MeshComponent | null = null;
-  private rhythmMarkerMaterial: THREE.MeshBasicMaterial | null = null;
+  private threatMarker: ENGINE.MeshComponent | null = null;
+  private threatMarkerMaterial: THREE.MeshBasicMaterial | null = null;
   private spacingSpeedLimit = Number.POSITIVE_INFINITY;
 
   public override initialize(options?: DribbleTargetOptions): void {
@@ -153,24 +154,6 @@ export class DribbleTarget extends ENGINE.Actor {
       physicsOptions: { enabled: false },
     });
     rootComponent.add(this.glowShell);
-
-    if (this.isRhythmTarget) {
-      this.rhythmMarkerMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffd65a,
-        transparent: true,
-        opacity: 0.48,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        toneMapped: false,
-      });
-      this.rhythmMarker = ENGINE.MeshComponent.create({
-        name: 'Center Rhythm Marker',
-        geometry: new THREE.TorusGeometry(0.69, 0.025, 8, 32),
-        material: this.rhythmMarkerMaterial,
-        physicsOptions: { enabled: false },
-      });
-      rootComponent.add(this.rhythmMarker);
-    }
 
     if (this.kind === 'health') {
       rootComponent.add(ENGINE.MeshComponent.create({
@@ -245,9 +228,9 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.targetMaterial) {
       this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity + this.pressureLevel * 2.2;
     }
-    this.rhythmMarker?.scale.setScalar(1 + glowPulse * 0.08);
-    if (this.rhythmMarkerMaterial) {
-      this.rhythmMarkerMaterial.opacity = 0.46 + glowPulse * 0.16;
+    this.threatMarker?.scale.setScalar(0.92 + glowPulse * 0.08);
+    if (this.threatMarkerMaterial) {
+      this.threatMarkerMaterial.opacity = 0.72 + glowPulse * 0.16;
     }
     if (this.kind === 'bonus') {
       this.rootComponent.rotation.y += deltaTime * 0.45;
@@ -298,6 +281,30 @@ export class DribbleTarget extends ENGINE.Actor {
 
   public setPressureLevel(level: number): void {
     this.pressureLevel = THREE.MathUtils.clamp(level, 0, 1);
+  }
+
+  public setThreatOwner(owner: TargetThreatOwner): void {
+    if (this.kind !== 'hazard') return;
+    const color = owner === 'player' ? 0x65c4ff : 0xff675f;
+    if (!this.threatMarker) {
+      this.threatMarkerMaterial = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.78,
+        depthWrite: false,
+        toneMapped: false,
+      });
+      this.threatMarker = ENGINE.MeshComponent.create({
+        name: 'Threat Ownership Chevron',
+        geometry: new THREE.ConeGeometry(0.14, 0.25, 3),
+        material: this.threatMarkerMaterial,
+        position: new THREE.Vector3(0, 0.88, 0),
+        rotation: new THREE.Euler(0, 0, Math.PI),
+        physicsOptions: { enabled: false },
+      });
+      this.rootComponent.add(this.threatMarker);
+    }
+    this.threatMarkerMaterial?.color.setHex(color);
   }
 
   public static setHighContrastEnabled(enabled: boolean): void {

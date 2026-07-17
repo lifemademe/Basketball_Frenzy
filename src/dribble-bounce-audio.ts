@@ -29,7 +29,12 @@ export function playBasketballBounce(
   const now = context.currentTime;
   const destination = world.globalAudioManager.getBus('SFX')?.getInput() ?? listener.getInput();
   for (const tone of getBounceTones(style, impact)) {
-    playTone(context, destination, now, tone);
+    const pitchVariation = 1 + (Math.random() - 0.5) * 0.05;
+    playTone(context, destination, now, {
+      ...tone,
+      startFrequency: tone.startFrequency * pitchVariation,
+      endFrequency: tone.endFrequency * pitchVariation,
+    });
   }
 }
 

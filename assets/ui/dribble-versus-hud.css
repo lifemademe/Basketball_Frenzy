@@ -15,6 +15,29 @@
   pointer-events: none;
 }
 
+.dribble-versus-hud::before {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 42%, rgba(69, 166, 255, 0.3) 100%);
+  content: '';
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.dribble-versus-hud[data-round-result='loss']::before {
+  background: radial-gradient(circle at center, transparent 38%, rgba(255, 42, 48, 0.38) 100%);
+  opacity: 1;
+}
+
+.dribble-versus-hud[data-round-result='win']::before {
+  opacity: 1;
+}
+
+.dribble-versus-hud[data-round-result] .dribble-versus-callout strong {
+  font-size: 46px;
+  line-height: 49px;
+}
+
 .dribble-versus-scoreboard {
   position: absolute;
   top: 20px;

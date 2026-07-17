@@ -111,6 +111,14 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
 @ENGINE.GameClass()
 export class FirstPersonPlayerController extends ENGINE.DefaultPlayerController {
   public override handleKeyDown(event: KeyboardEvent): boolean {
+    if (event.code === 'F8' && !event.repeat) {
+      this.getWorld()?.getActors(DribbleGameplayManager)[0]?.toggleDeveloperPanel();
+      return true;
+    }
+    if (event.code === 'F9' && !event.repeat) {
+      this.getWorld()?.getActors(DribbleGameplayManager)[0]?.exportTelemetryReport();
+      return true;
+    }
     if (event.code === 'Escape' && !event.repeat) {
       this.getWorld()?.getActors(DribbleGameplayManager)[0]?.togglePause();
       return true;

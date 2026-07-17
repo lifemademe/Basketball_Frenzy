@@ -1012,8 +1012,8 @@
 
 .dribble-main-menu-reset {
   width: min(470px, calc(100vw - 34px));
-  height: min(548px, calc(100vh - 40px));
-  min-height: 500px;
+  height: min(620px, calc(100vh - 24px));
+  min-height: 560px;
   padding: 72px 58px 124px;
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
@@ -1104,9 +1104,9 @@
 }
 
 .dribble-reset-list > button.dribble-reset-developer strong {
+  --reset-arrow-size: 22px;
   width: 24px;
   height: 24px;
-  font-size: 22px;
 }
 
 .dribble-reset-list > button:hover,
@@ -1140,6 +1140,7 @@
 }
 
 .dribble-reset-list > button strong {
+  --reset-arrow-size: 28px;
   flex: 0 0 auto;
   display: grid;
   width: 30px;
@@ -1148,10 +1149,16 @@
   border-radius: 50%;
   background: rgba(0, 29, 85, 0.48);
   color: var(--reset-accent);
-  font-size: 28px;
+  font-size: 0;
   font-weight: 400;
-  line-height: 25px;
   place-items: center;
+}
+
+.dribble-reset-list > button strong::after {
+  color: inherit;
+  content: '\203a';
+  font: 400 var(--reset-arrow-size)/1 Arial, sans-serif;
+  transform: translate(1px, -1px);
 }
 
 .dribble-reset-confirmation {
@@ -2183,8 +2190,8 @@
 
   .dribble-main-menu-reset {
     width: min(390px, 100%);
-    height: min(520px, calc(100vh - 28px));
-    min-height: 480px;
+    height: min(580px, calc(100vh - 20px));
+    min-height: 520px;
     padding: 64px 46px 116px;
   }
 

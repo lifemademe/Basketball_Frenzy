@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 import type { DribbleGameMode } from './dribble-main-menu.js';
 import type { TargetKind } from './dribble-target.js';
 
@@ -163,6 +165,36 @@ const patterns: readonly DribblePatternDefinition[] = [
       { kind: 'score', lane: 'right', intervalScale: 0.84, speedScale: 1.03 },
     ],
   },
+  {
+    id: 'hard-double-bind',
+    label: 'DOUBLE BIND',
+    minDifficulty: 0.34,
+    weight: 0.95,
+    modes: ['hard'],
+    steps: [
+      { kind: 'hazard', lane: 'left', height: 'low' },
+      { kind: 'score', lane: 'left', intervalScale: 0.8 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.78 },
+      { kind: 'score', lane: 'center', intervalScale: 0.82, speedScale: 1.04 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.78 },
+      { kind: 'score', lane: 'right', intervalScale: 0.82 },
+    ],
+  },
+  {
+    id: 'hard-three-point-press',
+    label: 'THREE-POINT PRESS',
+    minDifficulty: 0.66,
+    weight: 0.78,
+    modes: ['hard'],
+    steps: [
+      { kind: 'hazard', lane: 'center', height: 'low', speedScale: 1.05 },
+      { kind: 'score', lane: 'right', intervalScale: 0.78 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.76 },
+      { kind: 'score', lane: 'left', intervalScale: 0.78, speedScale: 1.05 },
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.76 },
+      { kind: 'score', lane: 'center', intervalScale: 0.8, speedScale: 1.06 },
+    ],
+  },
 ];
 
 export class DribblePatternDirector {
@@ -221,7 +253,7 @@ export class DribblePatternDirector {
       this.lastPatternId = pattern.id;
       this.activePattern = null;
       this.activeStepIndex = 0;
-      const minimumRecovery = options.mode === 'hard' ? 4 : 6;
+      const minimumRecovery = options.mode === 'hard' ? 5 : 7;
       const recoveryRange = options.mode === 'hard' ? 3 : 4;
       this.randomSpawnsRemaining = minimumRecovery + Math.floor(Math.random() * recoveryRange);
     }
@@ -241,11 +273,18 @@ export class DribblePatternDirector {
       && (!pattern.modes || pattern.modes.includes(mode))
       && pattern.id !== this.lastPatternId
     ));
-    const candidates = eligible.length > 0
+    const fallbackCandidates = eligible.length > 0
       ? eligible
       : patterns.filter(pattern => (
         pattern.minDifficulty <= difficulty && (!pattern.modes || pattern.modes.includes(mode))
       ));
+    const hardExclusive = fallbackCandidates.filter(pattern => pattern.modes?.includes('hard'));
+    const candidates = mode === 'hard'
+      && difficulty >= 0.28
+      && hardExclusive.length > 0
+      && Math.random() < THREE.MathUtils.lerp(0.48, 0.72, difficulty)
+      ? hardExclusive
+      : fallbackCandidates;
     const totalWeight = candidates.reduce((sum, pattern) => sum + pattern.weight, 0);
     let roll = Math.random() * totalWeight;
     for (const pattern of candidates) {
