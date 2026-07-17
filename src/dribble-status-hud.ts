@@ -430,12 +430,13 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
 
   public setFrenzy(progress: number, remaining: number, active: boolean): void {
     const clamped = Math.max(0, Math.min(1, progress));
-    this.rootElement?.style.setProperty('--frenzy-progress', String(clamped));
-    this.rootElement?.style.setProperty('--frenzy-inset', `${(1 - clamped) * 50}%`);
     const percent = Math.round(clamped * 100);
-    if (this.frenzyElement && percent !== this.lastFrenzyPercent) {
+    if (percent !== this.lastFrenzyPercent) {
       this.lastFrenzyPercent = percent;
-      this.frenzyElement.setAttribute('aria-valuenow', String(percent));
+      const renderedProgress = percent / 100;
+      this.rootElement?.style.setProperty('--frenzy-progress', String(renderedProgress));
+      this.rootElement?.style.setProperty('--frenzy-inset', `${(1 - renderedProgress) * 50}%`);
+      this.frenzyElement?.setAttribute('aria-valuenow', String(percent));
     }
     if (this.rootElement && active !== this.frenzyActive) {
       this.rootElement.dataset.frenzyActive = active ? 'true' : 'false';

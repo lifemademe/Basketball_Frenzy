@@ -1,0 +1,57 @@
+.dribble-controller-focus-frame {
+  --focus-left: 0px;
+  --focus-top: 0px;
+  --focus-width: 0px;
+  --focus-height: 0px;
+  position: fixed;
+  left: var(--focus-left);
+  top: var(--focus-top);
+  width: var(--focus-width);
+  height: var(--focus-height);
+  z-index: 22000;
+  pointer-events: none;
+}
+
+.dribble-controller-focus-caret {
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  filter: drop-shadow(0 0 4px rgba(255, 202, 58, 0.78));
+  animation: dribble-controller-caret-pulse 780ms ease-in-out infinite alternate;
+}
+
+.dribble-controller-focus-caret-left {
+  left: -14px;
+  border-right: 9px solid #ffca3a;
+  transform: translateY(-50%);
+}
+
+.dribble-controller-focus-caret-right {
+  right: -14px;
+  border-left: 9px solid #ffca3a;
+  transform: translateY(-50%);
+}
+
+[data-controller-focus='true'] {
+  filter: brightness(1.1) saturate(1.08) !important;
+}
+
+button[data-controller-focus='true']:focus,
+button[data-controller-focus='true']:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+@keyframes dribble-controller-caret-pulse {
+  from { opacity: 0.68; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dribble-controller-focus-caret {
+    animation: none;
+  }
+}

@@ -165,6 +165,11 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.show();
   }
 
+  public handleControllerBack(): void {
+    if (this.rootElement?.dataset.mode === 'game-over') this.options.onMainMenu();
+    else this.options.onResume();
+  }
+
   public showGameOver(
     score: number,
     highScore: number,

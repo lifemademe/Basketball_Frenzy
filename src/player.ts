@@ -6,6 +6,10 @@ import * as ENGINE from '@gnsx/genesys.js';
 import * as THREE from 'three';
 
 import { DribbleGameplayManager } from './dribble-gameplay.js';
+import {
+  playGamepadActionFeedback,
+  playGamepadUiFeedback,
+} from './dribble-input-feedback.js';
 
 @ENGINE.GameClass()
 export class FirstPersonPlayer extends ENGINE.CharacterPawn {
@@ -110,6 +114,9 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
 
 @ENGINE.GameClass()
 export class FirstPersonPlayerController extends ENGINE.DefaultPlayerController {
+  private menuAxisHorizontal = 0;
+  private menuAxisVertical = 0;
+
   public override handleKeyDown(event: KeyboardEvent): boolean {
     if (event.code === 'F8' && !event.repeat) {
       this.getWorld()?.getActors(DribbleGameplayManager)[0]?.toggleDeveloperPanel();
@@ -127,21 +134,122 @@ export class FirstPersonPlayerController extends ENGINE.DefaultPlayerController 
   }
 
   public override handleMouseDown(button: ENGINE.MouseButton, event: MouseEvent): boolean {
-    const gameplay = this.getWorld()?.getActors(DribbleGameplayManager)[0];
     if (button === ENGINE.MouseButton.Left) {
-      const action = gameplay?.handleLeftClick();
-      if (action === 'boost' && this.pawn instanceof FirstPersonPlayer) {
-        this.pawn.playPowerBounceCameraImpulse('left');
-      }
+      this.performSideAction('left');
       return true;
     }
     if (button === ENGINE.MouseButton.Right) {
-      const action = gameplay?.handleRightClick();
-      if (action === 'boost' && this.pawn instanceof FirstPersonPlayer) {
-        this.pawn.playPowerBounceCameraImpulse('right');
-      }
+      this.performSideAction('right');
       return true;
     }
     return super.handleMouseDown(button, event);
+  }
+
+  public override handleGamepadButtonDown(
+    gamepadIndex: number,
+    buttonIndex: number,
+    value: number,
+  ): boolean {
+    if (gamepadIndex !== 0) {
+      return super.handleGamepadButtonDown(gamepadIndex, buttonIndex, value);
+    }
+    const gameplay = this.getWorld()?.getActors(DribbleGameplayManager)[0];
+    if (buttonIndex === ENGINE.GamepadButton.Start) {
+      gameplay?.togglePause();
+      playGamepadUiFeedback(gamepadIndex, true);
+      return true;
+    }
+    if (gameplay?.isControllerMenuActive()) {
+      if (buttonIndex === ENGINE.GamepadButton.FaceBottom) {
+        if (gameplay.confirmControllerMenuSelection()) {
+          playGamepadUiFeedback(gamepadIndex, true);
+        }
+        return true;
+      }
+      if (buttonIndex === ENGINE.GamepadButton.FaceRight) {
+        if (gameplay.cancelControllerMenuSelection()) {
+          playGamepadUiFeedback(gamepadIndex, true);
+        }
+        return true;
+      }
+      const direction = buttonIndex === ENGINE.GamepadButton.DpadUp
+        ? 'up'
+        : buttonIndex === ENGINE.GamepadButton.DpadDown
+          ? 'down'
+          : buttonIndex === ENGINE.GamepadButton.DpadLeft
+            ? 'left'
+            : buttonIndex === ENGINE.GamepadButton.DpadRight
+              ? 'right'
+              : null;
+      if (direction) {
+        if (gameplay.navigateControllerMenu(direction)) playGamepadUiFeedback(gamepadIndex);
+        return true;
+      }
+    }
+    if (buttonIndex === ENGINE.GamepadButton.FaceLeft) {
+      this.performSideAction('left', gamepadIndex);
+      return true;
+    }
+    if (buttonIndex === ENGINE.GamepadButton.FaceRight) {
+      this.performSideAction('right', gamepadIndex);
+      return true;
+    }
+    return super.handleGamepadButtonDown(gamepadIndex, buttonIndex, value);
+  }
+
+  public override handleGamepadAxisChange(
+    gamepadIndex: number,
+    axisIndex: number,
+    value: number,
+  ): boolean {
+    if (gamepadIndex !== 0) {
+      return super.handleGamepadAxisChange(gamepadIndex, axisIndex, value);
+    }
+    const gameplay = this.getWorld()?.getActors(DribbleGameplayManager)[0];
+    if (!gameplay?.isControllerMenuActive()) {
+      this.menuAxisHorizontal = 0;
+      this.menuAxisVertical = 0;
+      return super.handleGamepadAxisChange(gamepadIndex, axisIndex, value);
+    }
+
+    if (axisIndex === ENGINE.GamepadAxis.LeftStickX) {
+      return this.handleMenuAxis(gamepadIndex, value, 'horizontal', gameplay);
+    }
+    if (axisIndex === ENGINE.GamepadAxis.LeftStickY) {
+      return this.handleMenuAxis(gamepadIndex, value, 'vertical', gameplay);
+    }
+    return true;
+  }
+
+  private performSideAction(side: 'left' | 'right', gamepadIndex?: number): void {
+    const gameplay = this.getWorld()?.getActors(DribbleGameplayManager)[0];
+    const action = gameplay?.handleSideAction(side) ?? null;
+    if (gamepadIndex === undefined) return;
+    gameplay?.showDirectionalInputFeedback(side, action !== null);
+    playGamepadActionFeedback(gamepadIndex, side, action);
+  }
+
+  private handleMenuAxis(
+    gamepadIndex: number,
+    value: number,
+    axis: 'horizontal' | 'vertical',
+    gameplay: DribbleGameplayManager,
+  ): boolean {
+    if (Math.abs(value) < 0.35) {
+      if (axis === 'horizontal') this.menuAxisHorizontal = 0;
+      else this.menuAxisVertical = 0;
+      return true;
+    }
+    if (Math.abs(value) < 0.68) return true;
+    const directionSign = Math.sign(value);
+    const previousSign = axis === 'horizontal' ? this.menuAxisHorizontal : this.menuAxisVertical;
+    if (previousSign === directionSign) return true;
+    if (axis === 'horizontal') this.menuAxisHorizontal = directionSign;
+    else this.menuAxisVertical = directionSign;
+    const direction = axis === 'horizontal'
+      ? directionSign < 0 ? 'left' : 'right'
+      : directionSign < 0 ? 'up' : 'down';
+    if (gameplay.navigateControllerMenu(direction)) playGamepadUiFeedback(gamepadIndex);
+    return true;
   }
 }

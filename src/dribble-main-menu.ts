@@ -709,7 +709,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       '@project/assets/textures/Back.png',
       '@project/assets/textures/Reset.png',
       '@project/assets/textures/exit.png',
-      '@project/assets/textures/mouse.png',
+      '@project/assets/textures/mouse_cursor.png',
     ];
     const resolvedPaths = await Promise.all(
       logicalPaths.map(path => ENGINE.resolveAssetPathsInText(path)),
@@ -737,6 +737,19 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   public getPlayerName(): string {
     return this.playerName;
+  }
+
+  public handleControllerBack(): boolean {
+    if (this.resetConfirmation?.dataset.active === 'true') {
+      this.closeResetConfirmation();
+      return true;
+    }
+    if (this.nameEntryElement?.dataset.active === 'true') return false;
+    if (this.rootElement?.dataset.panel && this.rootElement.dataset.panel !== 'home') {
+      this.showPanel('home');
+      return true;
+    }
+    return false;
   }
 
   private showPanel(panel: MainMenuPanel): void {

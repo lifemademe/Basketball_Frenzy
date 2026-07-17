@@ -38,6 +38,13 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private renderedAiLosses = -1;
   private renderedPlayerRiskCards = -1;
   private renderedAiRiskCards = -1;
+  private renderedOwner: VersusOwner | null = null;
+  private renderedRound = -1;
+  private renderedAction = '';
+  private renderedPressurePercent = -1;
+  private renderedPressureState = '';
+  private renderedCatching: boolean | null = null;
+  private renderedReturnLocked: boolean | null = null;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -89,39 +96,48 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   ): void {
     const clampedPressure = Math.max(0, Math.min(1, pressure));
     const ownerRiskCards = owner === 'player' ? playerRiskCards : aiRiskCards;
-    if (this.rootElement) {
-      this.rootElement.dataset.owner = owner;
-      this.rootElement.dataset.catching = catching ? 'true' : 'false';
-      this.rootElement.dataset.returnLocked = returnLocked ? 'true' : 'false';
-      this.rootElement.dataset.playerRisk = playerRiskCards === 0 ? 'empty' : 'ready';
-      this.rootElement.dataset.aiRisk = aiRiskCards === 0 ? 'empty' : 'ready';
-      this.rootElement.dataset.pressure = clampedPressure >= 1
-        ? 'critical'
-        : clampedPressure >= 0.68
-          ? 'warning'
-          : 'calm';
-    }
-    if (this.roundElement) this.roundElement.textContent = `ROUND ${round}`;
-    if (this.ownerElement) this.ownerElement.textContent = owner === 'player' ? 'YOUR POSSESSION' : 'AI POSSESSION';
-    if (this.actionElement) {
-      this.actionElement.textContent = receiving
-        ? 'BALL IN TRANSIT'
-        : catching
-          ? returnLocked
-            ? 'SECURE THE CATCH'
-            : owner === 'player'
-              ? 'CATCH WINDOW - LEFT: RETURN'
-              : 'AI RETURN WINDOW'
-          : ownerRiskCards === 0
-            ? 'NO RISK CARDS - CLEAN PASSES ONLY'
+    const pressurePercent = Math.round(clampedPressure * 100);
+    const pressureState = clampedPressure >= 1
+      ? 'critical'
+      : clampedPressure >= 0.68
+        ? 'warning'
+        : 'calm';
+    const action = receiving
+      ? 'BALL IN TRANSIT'
+      : catching
+        ? returnLocked
+          ? 'SECURE THE CATCH'
+          : owner === 'player'
+            ? 'CATCH WINDOW - LEFT: RETURN'
+            : 'AI RETURN WINDOW'
+        : ownerRiskCards === 0
+          ? 'NO RISK CARDS - CLEAN PASSES ONLY'
           : clampedPressure >= 1
             ? 'LANE OVERDRIVE - PASS OR POWER'
             : owner === 'player'
               ? 'LEFT: PASS - RIGHT: POWER'
               : 'READ THE AI';
+    if (this.rootElement) {
+      if (owner !== this.renderedOwner) this.rootElement.dataset.owner = owner;
+      if (catching !== this.renderedCatching) this.rootElement.dataset.catching = catching ? 'true' : 'false';
+      if (returnLocked !== this.renderedReturnLocked) {
+        this.rootElement.dataset.returnLocked = returnLocked ? 'true' : 'false';
+      }
+      if (playerRiskCards !== this.renderedPlayerRiskCards) {
+        this.rootElement.dataset.playerRisk = playerRiskCards === 0 ? 'empty' : 'ready';
+      }
+      if (aiRiskCards !== this.renderedAiRiskCards) {
+        this.rootElement.dataset.aiRisk = aiRiskCards === 0 ? 'empty' : 'ready';
+      }
+      if (pressureState !== this.renderedPressureState) this.rootElement.dataset.pressure = pressureState;
     }
-    if (this.pressureElement) {
-      this.pressureElement.style.width = `${Math.round(clampedPressure * 100)}%`;
+    if (this.roundElement && round !== this.renderedRound) this.roundElement.textContent = `ROUND ${round}`;
+    if (this.ownerElement && owner !== this.renderedOwner) {
+      this.ownerElement.textContent = owner === 'player' ? 'YOUR POSSESSION' : 'AI POSSESSION';
+    }
+    if (this.actionElement && action !== this.renderedAction) this.actionElement.textContent = action;
+    if (this.pressureElement && pressurePercent !== this.renderedPressurePercent) {
+      this.pressureElement.style.width = `${pressurePercent}%`;
     }
     if (playerLosses !== this.renderedPlayerLosses) {
       this.renderedPlayerLosses = playerLosses;
@@ -139,6 +155,13 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
       this.renderedAiRiskCards = aiRiskCards;
       this.renderRiskCards(this.aiRiskCardsElement, aiRiskCards);
     }
+    this.renderedOwner = owner;
+    this.renderedRound = round;
+    this.renderedAction = action;
+    this.renderedPressurePercent = pressurePercent;
+    this.renderedPressureState = pressureState;
+    this.renderedCatching = catching;
+    this.renderedReturnLocked = returnLocked;
   }
 
   public setTutorialLayout(active: boolean): void {
@@ -228,5 +251,12 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.renderedAiLosses = -1;
     this.renderedPlayerRiskCards = -1;
     this.renderedAiRiskCards = -1;
+    this.renderedOwner = null;
+    this.renderedRound = -1;
+    this.renderedAction = '';
+    this.renderedPressurePercent = -1;
+    this.renderedPressureState = '';
+    this.renderedCatching = null;
+    this.renderedReturnLocked = null;
   }
 }

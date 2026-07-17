@@ -5,12 +5,17 @@ import { DribbleBall, type DribbleBallState, type DribbleSide } from './dribble-
 import { playBasketballBounce } from './dribble-bounce-audio.js';
 import { hideDribbleBootScreen } from './dribble-boot-screen.js';
 import { DribbleComboPopup } from './dribble-combo-popup.js';
+import {
+  DribbleControllerNavigation,
+  type ControllerMenuDirection,
+} from './dribble-controller-navigation.js';
 import { DribbleDeveloperPanel } from './dribble-developer-panel.js';
 import {
   DribbleDifficultyDirector,
   type DribbleIntensityTier,
 } from './dribble-difficulty-director.js';
 import { DribbleImpactBurst } from './dribble-impact-burst.js';
+import { playGamepadImpactFeedback } from './dribble-input-feedback.js';
 import { DribbleAmbientDust } from './dribble-ambient-dust.js';
 import {
   playDribbleEventCue,
@@ -68,6 +73,7 @@ import {
 } from './dribble-status-hud.js';
 import { DribbleTarget, type TargetKind } from './dribble-target.js';
 import { DribbleTelemetry } from './dribble-telemetry.js';
+import { DribbleTouchControls } from './dribble-touch-controls.js';
 import {
   DribbleTutorialDirector,
   type DribbleTutorialMode,
@@ -191,6 +197,8 @@ interface CourtMaterialSlot {
 
 @ENGINE.GameClass()
 export class DribbleGameplayManager extends ENGINE.Actor {
+  private static readonly developerToolsEnabled = false;
+
   private ball: DribbleBall | null = null;
   private ambientDust: DribbleAmbientDust | null = null;
   private courtModel: ENGINE.ModelMeshComponent | null = null;
@@ -209,6 +217,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private versusHud: DribbleVersusHud | null = null;
   private developerPanel: DribbleDeveloperPanel | null = null;
   private achievementToast: ENGINE.Achievement | null = null;
+  private touchControls: DribbleTouchControls | null = null;
+  private controllerNavigation: DribbleControllerNavigation | null = null;
   private spawnTimer = 0.9;
   private elapsedTime = 0;
   private score = 0;
@@ -265,6 +275,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private impactBurstCursor = 0;
   private comboPopupCursor = 0;
   private previousGameCursor: string | null = null;
+  private previousMenuCursorProperty: string | null = null;
   private scoreStarAssetUrl = '';
   private readonly lanes = [-0.95, 0, 0.95];
   private readonly frenzyDuration = 5.5;
@@ -403,6 +414,49 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     return actionWorked ? isBoost ? 'boost' : 'transfer' : null;
   }
 
+  public handleSideAction(side: DribbleSide): DribbleInputAction {
+    const action = side === 'left' ? this.handleLeftClick() : this.handleRightClick();
+    if (action === 'boost') {
+      const pawn = this.getWorld()?.getActorsByPredicate(actor => (
+        typeof (actor as unknown as { playPowerBounceCameraImpulse?: unknown })
+          .playPowerBounceCameraImpulse === 'function'
+      ))[0] as unknown as {
+        playPowerBounceCameraImpulse?: (inputSide: DribbleSide) => void;
+      } | undefined;
+      pawn?.playPowerBounceCameraImpulse?.(side);
+    }
+    return action;
+  }
+
+  public showDirectionalInputFeedback(side: DribbleSide, accepted: boolean): void {
+    this.touchControls?.pulse(side, accepted);
+  }
+
+  public isControllerMenuActive(): boolean {
+    return this.gameState === 'menu' || this.gameState === 'paused' || this.gameState === 'gameOver';
+  }
+
+  public navigateControllerMenu(direction: ControllerMenuDirection): boolean {
+    if (!this.isControllerMenuActive()) return false;
+    this.controllerNavigation?.setNavigationActive(true);
+    return this.controllerNavigation?.move(direction) ?? false;
+  }
+
+  public confirmControllerMenuSelection(): boolean {
+    if (!this.isControllerMenuActive()) return false;
+    this.controllerNavigation?.setNavigationActive(true);
+    return this.controllerNavigation?.confirm() ?? false;
+  }
+
+  public cancelControllerMenuSelection(): boolean {
+    if (!this.isControllerMenuActive()) return false;
+    const handled = this.gameState === 'menu'
+      ? this.mainMenu?.handleControllerBack() ?? false
+      : (this.overlay?.handleControllerBack(), true);
+    if (handled) this.controllerNavigation?.refresh();
+    return handled;
+  }
+
   public togglePause(): void {
     if (this.gameState === 'menu' || this.gameState === 'gameOver') {
       return;
@@ -416,6 +470,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   public toggleDeveloperPanel(): void {
+    if (!DribbleGameplayManager.developerToolsEnabled) return;
     this.developerPanelVisible = !this.developerPanelVisible;
     if (this.developerPanelVisible) {
       this.refreshDeveloperPanel();
@@ -426,6 +481,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   public exportTelemetryReport(): void {
+    if (!DribbleGameplayManager.developerToolsEnabled) return;
     const snapshot = this.telemetry.getSnapshot();
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), ...snapshot }, null, 2)], {
       type: 'application/json',
@@ -591,7 +647,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     this.elapsedTime += deltaTime;
     this.compactActiveTargets();
-    this.updateDeveloperTelemetry(deltaTime);
+    if (DribbleGameplayManager.developerToolsEnabled) {
+      this.updateDeveloperTelemetry(deltaTime);
+    }
     this.updateRunCoach();
     this.processQueuedBoostTransfer();
     if (this.tutorialActive) {
@@ -682,6 +740,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.timingMeter?.destroy();
     this.juiceHud?.destroy();
     this.achievementToast?.destroy();
+    this.touchControls?.destroy();
+    this.controllerNavigation?.destroy();
     this.tutorialHud?.destroy();
     this.versusHud?.destroy();
     this.developerPanel?.destroy();
@@ -694,6 +754,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.timingMeter = null;
     this.juiceHud = null;
     this.achievementToast = null;
+    this.touchControls = null;
+    this.controllerNavigation = null;
     this.tutorialHud = null;
     this.versusHud = null;
     this.developerPanel = null;
@@ -705,6 +767,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (gameContainer && this.previousGameCursor !== null) {
       gameContainer.style.cursor = this.previousGameCursor;
       this.previousGameCursor = null;
+    }
+    if (gameContainer && this.previousMenuCursorProperty !== null) {
+      if (this.previousMenuCursorProperty) {
+        gameContainer.style.setProperty('--dribble-menu-cursor', this.previousMenuCursorProperty);
+      } else {
+        gameContainer.style.removeProperty('--dribble-menu-cursor');
+      }
+      this.previousMenuCursorProperty = null;
     }
     for (const state of this.handAnimations.values()) {
       state.mixer.stopAllAction();
@@ -991,6 +1061,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (gameContainer) {
       this.previousGameCursor = gameContainer.style.cursor;
       gameContainer.style.cursor = 'none';
+      this.previousMenuCursorProperty = gameContainer.style.getPropertyValue('--dribble-menu-cursor');
+      const mouseCursorUrl = await ENGINE.resolveAssetPathsInText(
+        '@project/assets/textures/mouse_cursor.png',
+      );
+      gameContainer.style.setProperty(
+        '--dribble-menu-cursor',
+        `url("${mouseCursorUrl}") 4 3, pointer`,
+      );
     }
 
     this.scoreDisplay = new ENGINE.NumberDisplay(world.uiManager, {
@@ -1060,11 +1138,22 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusHud = new DribbleVersusHud(world.uiManager, {
       visible: false,
     });
-    this.developerPanel = new DribbleDeveloperPanel(world.uiManager, {
+    if (DribbleGameplayManager.developerToolsEnabled) {
+      this.developerPanel = new DribbleDeveloperPanel(world.uiManager, {
+        visible: false,
+      });
+    }
+    this.touchControls = new DribbleTouchControls(world.uiManager, {
       visible: false,
+      container: gameContainer,
+      onAction: side => this.handleSideAction(side),
+    });
+    this.controllerNavigation = new DribbleControllerNavigation(world.uiManager, {
+      visible: false,
+      container: gameContainer,
     });
 
-    await Promise.all([
+    const uiInitializations: Promise<void>[] = [
       this.scoreDisplay.initialize(),
       this.pauseButton.initialize(),
       this.livesDisplay.initialize(),
@@ -1074,10 +1163,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.achievementToast.initialize(),
       this.tutorialHud.initialize(),
       this.versusHud.initialize(),
-      this.developerPanel.initialize(),
+      this.touchControls.initialize(),
+      this.controllerNavigation.initialize(),
       this.mainMenu.initialize(),
       this.overlay.initialize(),
-    ]);
+    ];
+    if (this.developerPanel) uiInitializations.push(this.developerPanel.initialize());
+    await Promise.all(uiInitializations);
     this.scoreDisplay.setPosition({
       'width': 'auto',
       'height': '48px',
@@ -2204,6 +2296,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.ball?.setGameplayActive(false);
     for (const target of this.activeTargets) target.setGameplayActive(false);
     this.spawnImpactBurst(position, 0xff453a, 1.42);
+    playGamepadImpactFeedback(loser === 'ai' ? 'score' : 'hazard');
     playDribbleFeedback(this.getWorld(), loser === 'ai' ? 'round-win' : 'hazard');
     this.versusHud?.showRoundResult(
       loser === 'ai',
@@ -2675,6 +2768,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       0xffca3a,
       bonus ? 1.35 : timingBonus > 0 ? 1.24 : rhythmTarget ? 1.08 : 0.88,
     );
+    playGamepadImpactFeedback('score');
     playDribbleFeedback(world, bonus ? 'star' : timingBonus > 0 ? 'perfect' : 'score');
     if (milestoneAwarded) {
       this.juiceHud?.showPraise(`MILESTONE STAR +${milestoneAwarded}!`, 'gold');
@@ -2707,6 +2801,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.telemetry.recordHazardHit();
     this.livesDisplay?.setLives(this.lives);
     this.spawnImpactBurst(position, 0xff453a, 1.25);
+    playGamepadImpactFeedback('hazard');
     playDribbleFeedback(world, 'hazard');
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/explosion.mp3', {
       volume: 0.48,
@@ -2775,6 +2870,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     this.frenzyTimeRemaining = this.frenzyDuration;
     this.telemetry.recordFrenzy();
+    playGamepadImpactFeedback('frenzy');
     playDribbleFeedback(world, 'frenzy');
     this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
@@ -3247,6 +3343,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private setHudVisible(visible: boolean): void {
+    this.touchControls?.setInputActive(visible);
+    this.controllerNavigation?.setNavigationActive(!visible && this.isControllerMenuActive());
     if (this.gameMode === 'last-bounce' && !this.tutorialActive) {
       const standardComponents = [
         this.scoreDisplay,

@@ -19,7 +19,7 @@
 
 .dribble-main-menu,
 .dribble-main-menu * {
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu button,
@@ -27,7 +27,7 @@
 .dribble-main-menu [role='button'],
 .dribble-main-menu input,
 .dribble-main-menu label {
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu-background {
@@ -185,7 +185,7 @@
   border-radius: 50%;
   background: transparent;
   box-shadow: none;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, grab !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, grab) !important;
   touch-action: none;
   transform: translate3d(0, 0, 0);
   transform-origin: center;
@@ -203,7 +203,7 @@
 
 .dribble-menu-ball[data-grabbed='true'] {
   z-index: 5;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, grabbing !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, grabbing) !important;
   box-shadow: none;
 }
 
@@ -221,13 +221,17 @@
   min-width: 360px;
   height: 100%;
   margin-left: clamp(28px, 5vw, 76px);
-  padding: clamp(20px, 3vh, 38px) 0 24px;
+  padding: clamp(8px, 1.7vh, 20px) 0 20px;
   box-sizing: border-box;
 }
 
 .dribble-main-menu-brand {
   flex: 0 0 auto;
   width: min(390px, 100%);
+}
+
+.dribble-main-menu[data-panel='home'] .dribble-main-menu-brand {
+  transform: translateY(-18px);
 }
 
 .dribble-main-menu-profile {
@@ -425,7 +429,7 @@
 
 .dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
   display: grid;
-  margin-top: clamp(-82px, -7vh, -56px);
+  margin-top: clamp(-116px, -10vh, -82px);
 }
 
 .dribble-main-menu-mode-select,
@@ -727,54 +731,49 @@
   filter: none;
 }
 
-.dribble-main-menu-reset-action {
-  position: fixed;
-  z-index: 5;
-  right: calc(clamp(18px, 2.5vw, 38px) + 88px);
-  bottom: clamp(16px, 2.5vh, 30px);
-  display: none;
-  width: 78px;
-  height: 78px;
-  margin: 0;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+.dribble-main-menu-utility {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, 104px);
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
 }
 
-.dribble-main-menu[data-panel='home'] > .dribble-main-menu-reset-action {
+.dribble-main-menu-reset-action {
+  position: relative;
   display: block;
+  width: 104px;
+  height: 66px;
+  margin: 0;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu-exit-action {
-  position: fixed;
-  z-index: 5;
-  right: clamp(18px, 2.5vw, 38px);
-  bottom: clamp(16px, 2.5vh, 30px);
-  display: none;
-  width: 78px;
-  height: 78px;
-  margin: 0;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
-}
-
-.dribble-main-menu[data-panel='home'] > .dribble-main-menu-exit-action {
+  position: relative;
   display: block;
+  width: 104px;
+  height: 66px;
+  margin: 0;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu-reset-action .ui-button,
 .dribble-main-menu-reset-action .ui-button:hover,
 .dribble-main-menu-reset-action .ui-button:focus-visible {
-  width: 78px;
-  height: 78px;
-  min-height: 78px;
+  width: 104px;
+  height: 66px;
+  min-height: 66px;
   padding: 0;
   overflow: visible;
   border: 0;
-  background: transparent url('@project/assets/textures/Reset.png') center / 110% auto no-repeat !important;
+  background: transparent url('@project/assets/textures/Reset.png') center / contain no-repeat !important;
   box-shadow: none;
   color: transparent;
   font-size: 0;
   filter: none;
   opacity: 1;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu-reset-action .ui-button-label {
@@ -783,15 +782,15 @@
   height: 1px;
   opacity: 0;
   font-size: 0;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu-exit-action .ui-button,
 .dribble-main-menu-exit-action .ui-button:hover,
 .dribble-main-menu-exit-action .ui-button:focus-visible {
-  width: 78px;
-  height: 78px;
-  min-height: 78px;
+  width: 104px;
+  height: 66px;
+  min-height: 66px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -801,7 +800,7 @@
   font-size: 0;
   filter: none;
   opacity: 1;
-  cursor: url('@project/assets/textures/mouse.png') 42 4, pointer !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
   transition: filter 140ms ease, transform 140ms ease;
 }
 
@@ -889,7 +888,7 @@
 
 .dribble-main-menu .dribble-main-menu-reset-action .ui-button:hover,
 .dribble-main-menu .dribble-main-menu-reset-action .ui-button:focus-visible {
-  background: transparent url('@project/assets/textures/Reset.png') center / 110% auto no-repeat !important;
+  background: transparent url('@project/assets/textures/Reset.png') center / contain no-repeat !important;
   border: 0;
   box-shadow: none;
   color: transparent;
@@ -1083,6 +1082,7 @@
 }
 
 .dribble-reset-list > button.dribble-reset-developer {
+  display: none !important;
   --reset-accent: #ff7d88;
   min-height: 44px;
   margin: 2px 12px 0;
@@ -2212,34 +2212,44 @@
     width: calc(100% - 40px);
     min-width: 0;
     margin-left: 20px;
-    padding: 34px 0 20px;
+    padding: 18px 0 16px;
   }
 
   .dribble-main-menu-profile {
-    top: 16px;
-    right: 16px;
-    gap: 12px;
-    padding: 9px 11px;
+    top: 14px;
+    right: 14px;
+    gap: 9px;
+    padding: 7px 9px;
   }
 
   .dribble-profile-currency {
-    min-width: 54px;
+    min-width: 48px;
   }
 
   .dribble-profile-records {
-    min-width: 164px;
-    padding-left: 12px;
+    min-width: 148px;
+    padding-left: 10px;
   }
 
   .dribble-profile-score-grid {
-    grid-template-columns: repeat(2, minmax(68px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(60px, 1fr));
+    gap: 8px;
+  }
+
+  .dribble-main-menu-profile small {
+    font-size: 10px;
+    line-height: 12px;
+  }
+
+  .dribble-main-menu-profile img {
+    width: 24px;
+    height: 24px;
   }
 
   .dribble-profile-currency b,
   .dribble-profile-mode-score strong {
-    font-size: 22px;
-    line-height: 24px;
+    font-size: 19px;
+    line-height: 21px;
   }
 
   .dribble-menu-ball {
@@ -2248,8 +2258,18 @@
   }
 
   .dribble-main-menu-logo {
-    width: min(390px, 100%);
-    height: 235px;
+    width: min(340px, 94%);
+    height: 185px;
+  }
+
+  .dribble-main-menu[data-panel='home'] .dribble-main-menu-brand {
+    padding-top: 90px;
+    box-sizing: border-box;
+    transform: none;
+  }
+
+  .dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
+    margin-top: -6px;
   }
 
   .dribble-main-menu-panel {
@@ -2343,44 +2363,71 @@
   }
 
   .dribble-main-menu-home .ui-button {
-    min-height: 104px;
+    min-height: 82px;
+  }
+
+  .dribble-main-menu-play {
+    margin-bottom: -10px;
+  }
+
+  .dribble-main-menu-achievements-action {
+    margin-bottom: -8px;
+  }
+
+  .dribble-main-menu-utility {
+    grid-template-columns: repeat(2, 86px);
+    gap: 8px;
+    margin-top: 0;
   }
 
   .dribble-main-menu-reset-action {
-    right: 84px;
-    bottom: 12px;
-    width: 64px;
-    height: 64px;
+    right: auto;
+    bottom: auto;
+    width: 86px;
+    height: 52px;
   }
 
   .dribble-main-menu-reset-action .ui-button {
-    width: 64px;
-    height: 64px;
-    min-height: 64px;
+    width: 86px;
+    height: 52px;
+    min-height: 52px;
   }
 
   .dribble-main-menu-exit-action {
-    right: 12px;
-    bottom: 12px;
-    width: 64px;
-    height: 64px;
+    right: auto;
+    bottom: auto;
+    width: 86px;
+    height: 52px;
   }
 
   .dribble-main-menu-exit-action .ui-button {
-    width: 64px;
-    height: 64px;
-    min-height: 64px;
+    width: 86px;
+    height: 52px;
+    min-height: 52px;
   }
 
   .dribble-main-menu-play .ui-button,
   .dribble-main-menu-play .ui-button.size-large {
-    min-height: 92px;
-    font-size: 50px !important;
+    height: 118px;
+    min-height: 0;
+    font-size: 42px !important;
   }
 
   .dribble-main-menu-play .ui-button-label {
-    font-size: 50px !important;
-    transform: translateY(-5px);
+    font-size: 42px !important;
+    transform: translateY(-4px);
+  }
+
+  .dribble-main-menu-achievements-action .ui-button,
+  .dribble-main-menu .dribble-main-menu-achievements-action .ui-button:hover,
+  .dribble-main-menu .dribble-main-menu-achievements-action .ui-button:focus-visible {
+    height: 112px;
+    min-height: 0;
+    font-size: 32px;
+  }
+
+  .dribble-main-menu-achievements-action .ui-button-label {
+    font-size: 32px;
   }
 }
 

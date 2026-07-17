@@ -25,8 +25,6 @@
   <button class="dribble-menu-ball" data-menu-ball type="button" aria-label="Drag and bounce the basketball">
     <canvas data-menu-ball-canvas aria-hidden="true"></canvas>
   </button>
-  <div class="dribble-main-menu-action dribble-main-menu-reset-action" data-menu-reset-slot></div>
-  <div class="dribble-main-menu-action dribble-main-menu-exit-action" data-menu-exit-slot></div>
   <section class="dribble-main-menu-content" aria-label="Basketball Frenzy main menu">
     <header class="dribble-main-menu-brand">
       <div class="dribble-main-menu-logo">
@@ -64,6 +62,10 @@
       <div class="dribble-main-menu-action dribble-main-menu-tutorial" data-menu-how-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-settings-action" data-menu-settings-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-shop-action" data-menu-shop-slot></div>
+      <div class="dribble-main-menu-utility" aria-label="System options">
+        <div class="dribble-main-menu-action dribble-main-menu-reset-action" data-menu-reset-slot></div>
+        <div class="dribble-main-menu-action dribble-main-menu-exit-action" data-menu-exit-slot></div>
+      </div>
     </nav>
 
     <section class="dribble-main-menu-panel dribble-main-menu-mode-select" aria-label="Choose difficulty">
@@ -344,7 +346,7 @@
           <span><b>Sound Settings</b><small>Restore the default mix</small></span>
           <strong aria-hidden="true">&rsaquo;</strong>
         </button>
-        <button class="dribble-reset-developer" type="button" data-reset-choice="freshStart" aria-pressed="false">
+        <button class="dribble-reset-developer" type="button" data-reset-choice="freshStart" aria-pressed="false" aria-hidden="true" data-controller-nav="false" hidden>
           <span><b>DEV: Fresh Start</b><small>Erase all local player data on next launch</small></span>
           <strong aria-hidden="true">&rsaquo;</strong>
         </button>
