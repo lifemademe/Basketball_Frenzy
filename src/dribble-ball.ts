@@ -113,9 +113,14 @@ export class DribbleBall extends ENGINE.Actor {
   private transferStart = new THREE.Vector3();
   private catchTime = 0;
   private catchEnabled = false;
+  private currentTransferCatchEnabled = false;
+  private queuedArrivalBoost: DribbleSide | null = null;
+  private queuedBoostTransferTo: DribbleSide | null = null;
+  private receptionBoostWindow = 0;
   private boostTime = 0;
   private boostStart = new THREE.Vector3();
   private boostBouncePlayed = false;
+  private boostLaunchedFromHand = false;
   private gameplayActive = true;
   private trail: DribbleBallTrail | null = null;
   private ballModel: ENGINE.ModelMeshComponent | null = null;
@@ -242,6 +247,26 @@ export class DribbleBall extends ENGINE.Actor {
     return this.startBoost('right');
   }
 
+  public queueBoostOnArrival(side: DribbleSide): boolean {
+    if (this.transferTime <= 0 || this.transferTo !== side) return false;
+    this.queuedArrivalBoost = side;
+    return true;
+  }
+
+  public queueTransferAfterBoost(to: DribbleSide): boolean {
+    const from: DribbleSide = to === 'left' ? 'right' : 'left';
+    if (this.boostTime <= 0 || this.side !== from || !this.isBoostDescending()) return false;
+    this.queuedBoostTransferTo = to;
+    return true;
+  }
+
+  public consumeQueuedBoostTransfer(): DribbleSide | null {
+    if (!this.queuedBoostTransferTo || !this.isBoostReturningToHand()) return null;
+    const transferTo = this.queuedBoostTransferTo;
+    this.rootComponent.position.set(this.lanes[this.side].x, this.handY, this.laneZ);
+    return this.startTransfer(this.side, transferTo) ? transferTo : null;
+  }
+
   public setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
     if (!active) this.blackHoleDebris?.deactivate();
@@ -250,7 +275,14 @@ export class DribbleBall extends ENGINE.Actor {
 
   public setCatchEnabled(enabled: boolean): void {
     this.catchEnabled = enabled;
-    if (!enabled) this.catchTime = 0;
+    if (!enabled) {
+      this.catchTime = 0;
+      this.currentTransferCatchEnabled = false;
+    }
+  }
+
+  public setCurrentTransferCatchEnabled(enabled: boolean): void {
+    if (this.transferTime > 0) this.currentTransferCatchEnabled = enabled;
   }
 
   public setFrenzyActive(active: boolean): void {
@@ -280,7 +312,12 @@ export class DribbleBall extends ENGINE.Actor {
     this.phase = 0;
     this.transferTime = 0;
     this.catchTime = 0;
+    this.currentTransferCatchEnabled = false;
+    this.queuedArrivalBoost = null;
+    this.queuedBoostTransferTo = null;
+    this.receptionBoostWindow = 0;
     this.boostTime = 0;
+    this.boostLaunchedFromHand = false;
     this.transferFrom = side;
     this.transferTo = side === 'left' ? 'right' : 'left';
     this.bounceCycle = 0;
@@ -334,6 +371,7 @@ export class DribbleBall extends ENGINE.Actor {
       return;
     }
 
+    this.receptionBoostWindow = Math.max(0, this.receptionBoostWindow - deltaTime);
     this.phase += deltaTime * 5.8;
 
     if (this.transferTime > 0) {
@@ -347,12 +385,19 @@ export class DribbleBall extends ENGINE.Actor {
       if (this.transferTime >= DribbleBall.transferDuration) {
         this.side = this.transferTo;
         this.transferTime = 0;
-        this.catchTime = this.catchEnabled ? 0.001 : 0;
+        const launchOnArrival = this.queuedArrivalBoost === this.side;
+        this.queuedArrivalBoost = null;
+        this.catchTime = this.catchEnabled && this.currentTransferCatchEnabled && !launchOnArrival
+          ? 0.001
+          : 0;
+        this.currentTransferCatchEnabled = false;
+        this.receptionBoostWindow = 0.14;
         this.phase = Math.PI / 2;
         this.bounceCycle = 0;
         this.rootComponent.scale.setScalar(1);
         this.rootComponent.position.set(this.lanes[this.side].x, this.handY, this.laneZ);
-        if (this.catchTime > 0) this.playCatchSound();
+        if (launchOnArrival) this.beginBoost(true);
+        else if (this.catchTime > 0) this.playCatchSound();
       }
     } else if (this.catchTime > 0) {
       this.catchTime = Math.min(this.catchTime + deltaTime, DribbleBall.catchDuration);
@@ -367,13 +412,16 @@ export class DribbleBall extends ENGINE.Actor {
       this.boostTime = Math.min(this.boostTime + deltaTime, DribbleBall.boostDuration);
       const boostProgress = this.boostTime / DribbleBall.boostDuration;
       this.updateBoostPosition(boostProgress);
-      if (boostProgress >= 0.18 && !this.boostBouncePlayed) {
+      const impactThreshold = this.boostLaunchedFromHand ? 0.02 : 0.18;
+      if (boostProgress >= impactThreshold && !this.boostBouncePlayed) {
         this.boostBouncePlayed = true;
         this.completedBounces += 1;
         this.playBounceSound();
       }
       if (this.boostTime >= DribbleBall.boostDuration) {
         this.boostTime = 0;
+        this.boostLaunchedFromHand = false;
+        this.queuedBoostTransferTo = null;
         this.phase = 0;
         this.bounceCycle = 0;
         this.rootComponent.scale.setScalar(1);
@@ -493,6 +541,11 @@ export class DribbleBall extends ENGINE.Actor {
     this.transferTime = 0.001;
     this.catchTime = 0;
     this.boostTime = 0;
+    this.boostLaunchedFromHand = false;
+    this.currentTransferCatchEnabled = false;
+    this.queuedArrivalBoost = null;
+    this.queuedBoostTransferTo = null;
+    this.receptionBoostWindow = 0;
     this.transferBouncePlayed = false;
     this.transferStart.copy(this.rootComponent.position);
     return true;
@@ -505,15 +558,28 @@ export class DribbleBall extends ENGINE.Actor {
       && Math.abs(this.rootComponent.position.y - this.handY) <= handHeightTolerance;
   }
 
+  private isBoostDescending(): boolean {
+    const boostProgress = this.boostTime / DribbleBall.boostDuration;
+    return boostProgress >= (this.boostLaunchedFromHand ? 0.5 : 0.59);
+  }
+
   private startBoost(side: DribbleSide): boolean {
-    if (this.transferTime > 0 || this.catchTime > 0 || this.boostTime > 0 || this.side !== side) {
+    if (this.transferTime > 0 || this.boostTime > 0 || this.side !== side) {
       return false;
     }
 
+    this.beginBoost(this.catchTime > 0 || this.receptionBoostWindow > 0);
+    return true;
+  }
+
+  private beginBoost(fromHand: boolean): void {
+    this.catchTime = 0;
+    this.receptionBoostWindow = 0;
+    this.queuedBoostTransferTo = null;
     this.boostTime = 0.001;
     this.boostBouncePlayed = false;
+    this.boostLaunchedFromHand = fromHand;
     this.boostStart.copy(this.rootComponent.position);
-    return true;
   }
 
   private updateBouncePosition(_deltaTime: number): void {
@@ -574,6 +640,19 @@ export class DribbleBall extends ENGINE.Actor {
   private updateBoostPosition(progress: number): void {
     const lane = this.lanes[this.side];
     const boostedY = this.floorY + (this.handY - this.floorY) * 2;
+
+    if (this.boostLaunchedFromHand) {
+      const arc = Math.pow(Math.sin(progress * Math.PI), 0.88);
+      this.rootComponent.position.set(
+        lane.x,
+        THREE.MathUtils.lerp(this.handY, boostedY, arc),
+        this.laneZ,
+      );
+      this.rootComponent.scale.set(1 - arc * 0.07, 1 + arc * 0.18, 1 - arc * 0.07);
+      this.rootComponent.rotation.x += 0.2;
+      this.rootComponent.rotation.z += this.side === 'left' ? 0.14 : -0.14;
+      return;
+    }
 
     if (progress < 0.18) {
       const impactProgress = THREE.MathUtils.smootherstep(progress / 0.18, 0, 1);
