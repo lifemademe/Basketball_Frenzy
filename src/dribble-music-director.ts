@@ -12,6 +12,8 @@ export class DribbleMusicDirector {
   private musicVolume = 0.55;
   private paused = false;
   private intensity = 0;
+  private calloutDuck = 1;
+  private calloutDuckTimer: ReturnType<typeof setTimeout> | null = null;
 
   public constructor(private readonly world: ENGINE.World) {}
 
@@ -52,9 +54,25 @@ export class DribbleMusicDirector {
     this.applyBusVolume(0.16);
   }
 
+  public duckForCallout(durationSeconds = 1.15): void {
+    if (this.calloutDuckTimer) clearTimeout(this.calloutDuckTimer);
+    this.calloutDuck = 0.72;
+    this.applyBusVolume(0.06);
+    this.calloutDuckTimer = setTimeout(() => {
+      this.calloutDuck = 1;
+      this.calloutDuckTimer = null;
+      this.applyBusVolume(0.28);
+    }, Math.max(0, durationSeconds) * 1000);
+  }
+
   public stop(): void {
     this.state = 'none';
     this.transitionToken += 1;
+    if (this.calloutDuckTimer) {
+      clearTimeout(this.calloutDuckTimer);
+      this.calloutDuckTimer = null;
+    }
+    this.calloutDuck = 1;
     if (this.handle) this.world.globalAudioManager.stopSound(this.handle);
     this.handle = null;
   }
@@ -91,7 +109,7 @@ export class DribbleMusicDirector {
     const intensityLift = this.state === 'gameplay'
       ? 0.9 + this.intensity * 0.1
       : 1;
-    this.setBusVolume(this.musicVolume * ducking * intensityLift, rampSeconds);
+    this.setBusVolume(this.musicVolume * ducking * intensityLift * this.calloutDuck, rampSeconds);
   }
 
   private setBusVolume(volume: number, rampSeconds = 0): void {

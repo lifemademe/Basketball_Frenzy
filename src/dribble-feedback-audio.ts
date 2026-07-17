@@ -9,7 +9,7 @@ const eventCuePaths: Readonly<Record<DribbleEventCue, string>> = {
 };
 
 const eventCueVolumes: Readonly<Record<DribbleEventCue, number>> = {
-  'frenzy-start': 0.68,
+  'frenzy-start': 0.48,
   'mode-start': 0.62,
 };
 

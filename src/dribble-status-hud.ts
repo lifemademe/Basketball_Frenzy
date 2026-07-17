@@ -201,7 +201,8 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
     const lostLife = nextLives < this.lives;
     const gainedLife = nextLives > this.lives;
     this.lives = nextLives;
-    this.renderHearts();
+    const changedIndex = lostLife ? nextLives : nextLives - 1;
+    this.renderHearts(lostLife ? 'lost' : gainedLife ? 'gained' : null, changedIndex);
 
     if ((lostLife || gainedLife) && this.rootElement) {
       if (this.hitTimer) clearTimeout(this.hitTimer);
@@ -231,15 +232,23 @@ export class DribbleLivesDisplay extends ENGINE.BaseUIComponent<DribbleLivesDisp
     this.renderHearts();
   }
 
-  private renderHearts(): void {
+  private renderHearts(change: 'lost' | 'gained' | null = null, changedIndex = -1): void {
     if (!this.heartsElement) {
       return;
+    }
+    if (this.rootElement) {
+      this.rootElement.dataset.critical = this.lives === 1 && this.maxLives > 1 ? 'true' : 'false';
+      this.rootElement.setAttribute(
+        'aria-label',
+        `${this.lives} of ${this.maxLives} ${this.maxLives === 1 ? 'life' : 'lives'} remaining`,
+      );
     }
     this.heartsElement.replaceChildren();
     for (let index = 0; index < this.maxLives; index += 1) {
       const heart = document.createElement('span');
       heart.className = 'dribble-life-heart';
       heart.dataset.active = index < this.lives ? 'true' : 'false';
+      if (change && index === changedIndex) heart.dataset.change = change;
       heart.innerHTML = this.heartMarkup;
       this.heartsElement.appendChild(heart);
     }

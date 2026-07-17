@@ -268,6 +268,24 @@ export class DribbleBall extends ENGINE.Actor {
     return this.startTransfer(this.side, transferTo) ? transferTo : null;
   }
 
+  public predictBounceHeight(seconds: number, startAtHand = false): number {
+    const predictedPhase = (startAtHand ? Math.PI / 2 : this.phase) + Math.max(0, seconds) * 5.8;
+    const bounce = Math.abs(Math.sin(predictedPhase));
+    return THREE.MathUtils.lerp(this.floorY, this.handY, bounce);
+  }
+
+  public predictHeightAfterBoost(seconds: number, forceFromHand?: boolean): number {
+    const elapsed = Math.max(0, seconds);
+    if (elapsed >= DribbleBall.boostDuration) {
+      const bounce = Math.abs(Math.sin((elapsed - DribbleBall.boostDuration) * 5.8));
+      return THREE.MathUtils.lerp(this.floorY, this.handY, bounce);
+    }
+    const progress = elapsed / DribbleBall.boostDuration;
+    const fromHand = forceFromHand
+      ?? (this.catchTime > 0 || this.receptionBoostWindow > 0);
+    return this.calculateBoostHeight(progress, fromHand, this.rootComponent.position.y);
+  }
+
   public setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
     if (!active) this.blackHoleDebris?.deactivate();
@@ -640,13 +658,12 @@ export class DribbleBall extends ENGINE.Actor {
 
   private updateBoostPosition(progress: number): void {
     const lane = this.lanes[this.side];
-    const boostedY = this.floorY + (this.handY - this.floorY) * 2;
 
     if (this.boostLaunchedFromHand) {
       const arc = Math.pow(Math.sin(progress * Math.PI), 0.88);
       this.rootComponent.position.set(
         lane.x,
-        THREE.MathUtils.lerp(this.handY, boostedY, arc),
+        this.calculateBoostHeight(progress, true, this.handY),
         this.laneZ,
       );
       this.rootComponent.scale.set(1 - arc * 0.07, 1 + arc * 0.18, 1 - arc * 0.07);
@@ -669,7 +686,7 @@ export class DribbleBall extends ENGINE.Actor {
       const arc = Math.pow(Math.sin(arcProgress * Math.PI), 0.88);
       this.rootComponent.position.set(
         lane.x,
-        THREE.MathUtils.lerp(this.floorY, boostedY, arc),
+        this.calculateBoostHeight(progress, false, this.boostStart.y),
         this.laneZ,
       );
       this.rootComponent.scale.set(1 - arc * 0.07, 1 + arc * 0.18, 1 - arc * 0.07);
@@ -677,6 +694,22 @@ export class DribbleBall extends ENGINE.Actor {
 
     this.rootComponent.rotation.x += 0.2;
     this.rootComponent.rotation.z += this.side === 'left' ? 0.14 : -0.14;
+  }
+
+  private calculateBoostHeight(progress: number, fromHand: boolean, startY: number): number {
+    const clampedProgress = THREE.MathUtils.clamp(progress, 0, 1);
+    const boostedY = this.floorY + (this.handY - this.floorY) * 2;
+    if (fromHand) {
+      const arc = Math.pow(Math.sin(clampedProgress * Math.PI), 0.88);
+      return THREE.MathUtils.lerp(this.handY, boostedY, arc);
+    }
+    if (clampedProgress < 0.18) {
+      const impactProgress = THREE.MathUtils.smootherstep(clampedProgress / 0.18, 0, 1);
+      return THREE.MathUtils.lerp(startY, this.floorY, impactProgress);
+    }
+    const arcProgress = (clampedProgress - 0.18) / 0.82;
+    const arc = Math.pow(Math.sin(arcProgress * Math.PI), 0.88);
+    return THREE.MathUtils.lerp(this.floorY, boostedY, arc);
   }
 
   private playBounceSound(): void {

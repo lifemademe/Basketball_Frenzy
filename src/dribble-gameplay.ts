@@ -105,6 +105,12 @@ interface VersusAiStyle {
   patienceScale: number;
 }
 
+interface VersusAiTrajectoryRead {
+  clearance: number;
+  threat: DribbleTarget | null;
+  timeToContact: number;
+}
+
 const versusAiStyles: readonly VersusAiStyle[] = [
   {
     name: 'ACE',
@@ -293,8 +299,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private versusSpawnCount = 0;
   private versusQueuedAiAction: 'return' | 'boost' | null = null;
   private versusQueuedAiActionTimer = 0;
+  private versusQueuedAiActionWasRisky = false;
+  private versusAiRiskDefenseStreak = 0;
   private versusTrickyPassCooldown = 0;
-  private versusLastEvaluatedAirThreat: DribbleTarget | null = null;
+  private readonly versusAiHesitatedThreats = new WeakSet<DribbleTarget>();
   private versusRecoveryCooldown = 0;
   private versusRecoveryGateSequence = 0;
   private versusPlayerRiskCards = 3;
@@ -1072,7 +1080,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     ]);
     this.scoreDisplay.setPosition({
       'width': 'auto',
-      'height': 'auto',
+      'height': '48px',
+      'min-height': '48px',
+      'box-sizing': 'border-box',
       'position': 'fixed',
       'top': '28px',
       'right': '28px',
@@ -1082,7 +1092,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'align-items': 'center',
       'justify-content': 'flex-end',
       'gap': '8px',
-      'padding': '7px 12px 7px 9px',
+      'padding': '5px 11px 5px 8px',
       'border': '1px solid rgba(255, 255, 255, 0.14)',
       'border-radius': '8px',
       'background-color': 'rgba(7, 11, 18, 0.62)',
@@ -1099,21 +1109,21 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }, '.ui-number-display-header');
     this.scoreDisplay.setPosition({
       'display': 'inline-flex',
-      'width': '44px',
-      'height': '36px',
+      'width': '40px',
+      'height': '34px',
       'flex-shrink': '0',
     }, '.ui-number-display-icon');
     this.scoreDisplay.setPosition({
       'display': 'block',
-      'width': '44px',
-      'height': '36px',
+      'width': '40px',
+      'height': '34px',
       'object-fit': 'contain',
     }, '.ui-number-display-icon img');
     this.scoreDisplay.setPosition({
       'position': 'relative',
       'display': 'block',
-      'width': '44px',
-      'height': '36px',
+      'width': '40px',
+      'height': '34px',
     }, '.score-star-icon');
     this.scoreDisplay.setPosition({
       'position': 'absolute',
@@ -1138,8 +1148,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }, '.score-star-balance');
     this.scoreDisplay.setPosition({
       'font-weight': '700',
-      'font-size': '36px',
-      'line-height': '40px',
+      'font-size': '34px',
+      'line-height': '36px',
       'color': '#ffffff',
       'letter-spacing': '0',
     }, '.ui-number-display-value');
@@ -1460,6 +1470,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusPlayerReturns = 0;
     this.versusAiReturns = 0;
     this.versusDangerPasses = 0;
+    this.versusAiRiskDefenseStreak = 0;
     this.versusRecoveryGateSequence = 0;
     this.versusPlayerRiskCards = this.versusMaximumRiskCards;
     this.versusAiRiskCards = this.versusMaximumRiskCards;
@@ -1483,8 +1494,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusOwner = startingSide === 'left' ? 'ai' : 'player';
     this.versusQueuedAiAction = null;
     this.versusQueuedAiActionTimer = 0;
+    this.versusQueuedAiActionWasRisky = false;
+    this.versusAiRiskDefenseStreak = Math.max(0, this.versusAiRiskDefenseStreak - 1);
     this.versusTrickyPassCooldown = THREE.MathUtils.randFloat(1.6, 2.4);
-    this.versusLastEvaluatedAirThreat = null;
     this.versusRecoveryCooldown = THREE.MathUtils.randFloat(5.5, 7.5);
     this.versusPressureWarningStage = 0;
     this.ball?.reset(startingSide);
@@ -1510,15 +1522,18 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     const difficulty = THREE.MathUtils.clamp(this.elapsedTime / 75, 0, 1);
+    const rallyHeat = THREE.MathUtils.smoothstep(this.versusCurrentRally, 6, 18);
+    const paceDifficulty = THREE.MathUtils.clamp(difficulty + rallyHeat * 0.18, 0, 1);
     this.telemetry.update(this.elapsedTime, this.score, difficulty);
     this.versusTrickyPassCooldown = Math.max(0, this.versusTrickyPassCooldown - deltaTime);
     this.versusRecoveryCooldown = Math.max(0, this.versusRecoveryCooldown - deltaTime);
     this.spawnTimer -= deltaTime;
     if (this.spawnTimer <= 0) {
-      const spawned = this.trySpawnVersusRecoveryGate(difficulty)
-        || this.spawnVersusHazard(difficulty);
+      const spawned = this.trySpawnVersusRecoveryGate(paceDifficulty)
+        || this.spawnVersusHazard(paceDifficulty);
       if (spawned) {
-        const baseInterval = THREE.MathUtils.lerp(1.12, 0.62, difficulty);
+        const baseInterval = THREE.MathUtils.lerp(1.12, 0.62, paceDifficulty)
+          * THREE.MathUtils.lerp(1, 0.74, rallyHeat);
         this.spawnTimer = THREE.MathUtils.randFloat(baseInterval * 0.92, baseInterval * 1.08);
       } else {
         this.spawnTimer = 0.08;
@@ -1530,15 +1545,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusPossessionTime += deltaTime;
     this.updateVersusPossession(ballState);
     this.updateVersusAi(deltaTime, ballState, difficulty);
+    const pressureDuration = this.versusPressureDuration * THREE.MathUtils.lerp(1, 0.8, rallyHeat);
     const pressure = THREE.MathUtils.clamp(
-      this.versusPossessionTime / this.versusPressureDuration,
+      this.versusPossessionTime / pressureDuration,
       0,
       1,
     );
-    this.musicDirector?.setIntensity(Math.max(difficulty, pressure * 0.9));
+    this.musicDirector?.setIntensity(Math.max(paceDifficulty, pressure * 0.9));
     this.updateVersusPressureFeedback(pressure);
-    this.updateTargetSpacing(this.activeTargets, deltaTime, difficulty, {
-      basePace: THREE.MathUtils.lerp(4.45, 7.15, difficulty),
+    this.updateTargetSpacing(this.activeTargets, deltaTime, paceDifficulty, {
+      basePace: THREE.MathUtils.lerp(4.45, 7.15, paceDifficulty)
+        * THREE.MathUtils.lerp(1, 1.12, rallyHeat),
       pressureLaneX: this.versusOwner === 'ai' ? this.lanes[0] : this.lanes[2],
       pressure,
     });
@@ -1583,79 +1600,105 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
+    const aiSkill = this.getVersusAiSkill(difficulty);
+
     if (this.versusQueuedAiAction) {
       this.versusQueuedAiActionTimer = Math.max(0, this.versusQueuedAiActionTimer - deltaTime);
       if (this.versusQueuedAiActionTimer > 0) return;
       const queuedAction = this.versusQueuedAiAction;
       if (queuedAction === 'return') {
         this.versusQueuedAiAction = null;
+        const defendedRiskyPass = this.versusQueuedAiActionWasRisky;
+        this.versusQueuedAiActionWasRisky = false;
         if (this.ball?.transferToRight()) {
+          if (defendedRiskyPass) this.versusAiRiskDefenseStreak += 1;
           this.beginVersusPass('player');
         }
         return;
       }
-      const queuedGroundThreat = this.findVersusGroundThreat('left', 1.2);
-      if (
-        queuedAction === 'boost'
-        && queuedGroundThreat
-        && this.isSafeAiBoostWindow(queuedGroundThreat)
-      ) {
+      const boostRead = this.assessVersusAiTrajectory('left', 'boost', 1.15);
+      if (queuedAction === 'boost' && boostRead.clearance >= 0.08) {
         this.versusQueuedAiAction = null;
+        const defendedRiskyPass = this.versusQueuedAiActionWasRisky;
+        this.versusQueuedAiActionWasRisky = false;
+        if (defendedRiskyPass) this.versusAiRiskDefenseStreak += 1;
         this.ball?.boostLeft();
         return;
       }
       this.versusQueuedAiAction = null;
+      const defendedRiskyPass = this.versusQueuedAiActionWasRisky;
+      this.versusQueuedAiActionWasRisky = false;
+      if (this.ball?.transferToRight()) {
+        if (defendedRiskyPass) this.versusAiRiskDefenseStreak += 1;
+        this.beginVersusPass('player');
+      }
+      return;
     }
 
     this.versusAiDecisionTimer -= deltaTime;
     if (this.versusAiDecisionTimer > 0) return;
     this.versusAiDecisionTimer = (
-      THREE.MathUtils.lerp(0.28, 0.16, difficulty)
-      + THREE.MathUtils.randFloat(0.02, 0.08)
+      THREE.MathUtils.lerp(0.22, 0.12, aiSkill)
+      + THREE.MathUtils.randFloat(0.015, 0.055)
     ) * THREE.MathUtils.clamp(1 - this.versusAiStyle.reactionBonus * 3, 0.86, 1.1);
 
     const recoveryOpportunity = this.findVersusRecovery('left', 1.3);
     const recoveryThreat = this.findVersusGroundThreat('left', 1.3);
+    const recoveryBoostRead = recoveryOpportunity && recoveryThreat
+      ? this.assessVersusAiTrajectory('left', 'boost', 1.22)
+      : null;
     if (
       recoveryOpportunity
       && recoveryThreat
       && this.versusAiRiskCards < this.versusMaximumRiskCards
-      && this.isSafeAiBoostWindow(recoveryThreat)
+      && recoveryBoostRead
+      && recoveryBoostRead.clearance >= 0.1
     ) {
       const recoveryReadChance = THREE.MathUtils.clamp(
-        THREE.MathUtils.lerp(0.82, 0.94, difficulty) + this.versusAiStyle.reactionBonus,
+        THREE.MathUtils.lerp(0.9, 0.985, aiSkill) + this.versusAiStyle.reactionBonus,
         0,
-        0.99,
+        0.997,
       );
-      if (Math.random() < recoveryReadChance) this.ball?.boostLeft();
-      return;
+      if (Math.random() < recoveryReadChance) {
+        this.ball?.boostLeft();
+        return;
+      }
     }
 
-    const threat = this.findVersusThreat('left', 1.55);
-    const rightLaneSafe = this.findVersusThreat('right', 0.95) === null;
-    if (threat) {
-      const timeToContact = this.getTargetTimeToBall(threat);
-      if (timeToContact > 0.25 && timeToContact < 1.22) {
-        const isGroundThreat = threat.rootComponent.position.y < 0.9;
-        const errorChance = THREE.MathUtils.lerp(0.1, 0.035, difficulty)
-          * this.versusAiStyle.errorScale;
-        if (Math.random() < errorChance) return;
-        if (
-          isGroundThreat
-          && this.isSafeAiBoostWindow(threat)
-          && (
-            !rightLaneSafe
-            || Math.random() < THREE.MathUtils.clamp(0.62 * this.versusAiStyle.boostBias, 0, 0.9)
-          )
-        ) {
-          this.ball?.boostLeft();
-        } else if (isGroundThreat && rightLaneSafe) {
-          if (this.ball?.transferToRight()) {
-            this.beginVersusPass('player');
-          }
-        } else if (!isGroundThreat && this.shouldAiMisreadAirThreat(threat, difficulty)) {
-          this.ball?.boostLeft();
+    const holdRead = this.assessVersusAiTrajectory('left', 'hold', 1.35);
+    const threat = holdRead.clearance <= 0.06 ? holdRead.threat : null;
+    if (
+      threat
+      && holdRead.timeToContact > 0.18
+      && holdRead.timeToContact < 1.22
+    ) {
+      if (this.shouldVersusAiHesitate(threat, holdRead.timeToContact, aiSkill)) return;
+
+      const boostRead = this.assessVersusAiTrajectory('left', 'boost', 1.25);
+      const groundThreat = threat.rootComponent.position.y < 0.9;
+      const boostSafe = groundThreat && boostRead.clearance >= 0.08;
+      const defensivePassIsRisky = this.findVersusRiskPassThreat('right') !== null;
+      const passAffordable = !defensivePassIsRisky || this.versusAiRiskCards > 0;
+      const counterAttack = defensivePassIsRisky
+        && this.versusAiRiskCards > 1
+        && this.versusTrickyPassCooldown <= 0;
+      const boostPreference = THREE.MathUtils.clamp(
+        0.7 * this.versusAiStyle.boostBias + aiSkill * 0.12,
+        0.54,
+        0.94,
+      );
+
+      if (boostSafe && (!passAffordable || !counterAttack || Math.random() < boostPreference)) {
+        this.ball?.boostLeft();
+      } else if (passAffordable && this.ball?.transferToRight()) {
+        if (defensivePassIsRisky) {
+          this.versusTrickyPassCooldown = THREE.MathUtils.randFloat(3.6, 5.1);
         }
+        this.beginVersusPass('player');
+      } else if (boostSafe) {
+        this.ball?.boostLeft();
+      }
+      if (boostSafe || passAffordable) {
         return;
       }
     }
@@ -1672,11 +1715,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
           ? 0.48
           : 0.08;
       const trapChance = THREE.MathUtils.clamp(
-        THREE.MathUtils.lerp(0.24, 0.42, difficulty)
+        THREE.MathUtils.lerp(0.26, 0.43, aiSkill)
           * aiRiskDiscipline
           * this.versusAiStyle.trapScale,
         0,
-        0.72,
+        0.7,
       );
       if (this.isVersusRiskPassThreat(playerTrapThreat) && Math.random() < trapChance) {
         if (this.ball?.transferToRight()) {
@@ -1687,8 +1730,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }
     }
 
-    const pressureThreshold = THREE.MathUtils.lerp(2.45, 1.72, difficulty)
+    const pressureThreshold = THREE.MathUtils.lerp(2.4, 1.62, aiSkill)
       * this.versusAiStyle.patienceScale;
+    const rightLaneSafe = this.findVersusThreat('right', 0.95) === null;
     if (this.versusPossessionTime >= pressureThreshold && rightLaneSafe) {
       if (this.ball?.transferToRight()) {
         this.beginVersusPass('player');
@@ -1732,62 +1776,160 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private queueVersusAiReception(dangerPass: boolean): void {
     this.versusQueuedAiAction = null;
     this.versusQueuedAiActionTimer = 0;
-    const threat = this.findVersusThreat(
+    this.versusQueuedAiActionWasRisky = false;
+    const holdRead = this.assessVersusAiTrajectory(
       'left',
-      DribbleBall.transferDuration + 0.75,
+      'hold',
+      DribbleBall.transferDuration + 0.82,
+      DribbleBall.transferDuration,
+      true,
     );
+    const threat = holdRead.clearance <= 0.06 ? holdRead.threat : null;
     if (!threat) return;
     const isGroundThreat = threat.rootComponent.position.y < 0.9;
     if (!isGroundThreat) return;
     const difficulty = THREE.MathUtils.clamp(this.elapsedTime / 75, 0, 1);
-    const reactionChance = THREE.MathUtils.clamp((dangerPass
-      ? THREE.MathUtils.lerp(0.96, 0.995, difficulty)
-      : THREE.MathUtils.lerp(0.82, 0.94, difficulty))
-      + this.versusAiStyle.reactionBonus, 0, 0.998);
+    const aiSkill = this.getVersusAiSkill(difficulty);
+    const contactAfterReception = holdRead.timeToContact - DribbleBall.transferDuration;
+    const trapQuality = THREE.MathUtils.clamp(
+      1 - Math.abs(contactAfterReception - 0.24) / 0.2,
+      0,
+      1,
+    );
+    const rallyFatigue = THREE.MathUtils.smoothstep(this.versusCurrentRally, 5, 16);
+    const defenseStreakPenalty = Math.min(0.2, this.versusAiRiskDefenseStreak * 0.065);
+    const reactionChance = dangerPass
+      ? THREE.MathUtils.clamp(
+        THREE.MathUtils.lerp(0.88, 0.94, aiSkill)
+          - trapQuality * 0.24
+          - rallyFatigue * 0.08
+          - defenseStreakPenalty
+          + this.versusAiStyle.reactionBonus,
+        0.54,
+        0.94,
+      )
+      : THREE.MathUtils.clamp(
+        THREE.MathUtils.lerp(0.93, 0.985, aiSkill) + this.versusAiStyle.reactionBonus,
+        0,
+        0.995,
+      );
     if (Math.random() >= reactionChance) return;
-    const contactAfterReception = this.getTargetTimeToBall(threat) - DribbleBall.transferDuration;
-    const canReceptionBoost = contactAfterReception >= DribbleBall.boostDuration * 0.22
-      && contactAfterReception <= this.versusRiskArrivalWindow + 0.08;
-    const needsImmediateReturn = dangerPass
-      || contactAfterReception < 0.82;
+    const boostRead = this.assessVersusAiTrajectory(
+      'left',
+      'boost',
+      DribbleBall.transferDuration + 0.9,
+      DribbleBall.transferDuration,
+      true,
+    );
+    const canReceptionBoost = boostRead.clearance >= 0.1;
     const receptionBoostChance = THREE.MathUtils.clamp(
-      0.34 * this.versusAiStyle.boostBias,
-      0.18,
-      0.52,
+      (dangerPass ? 0.44 : 0.62) * this.versusAiStyle.boostBias,
+      0.28,
+      0.76,
     );
     this.versusQueuedAiAction = canReceptionBoost
       && Math.random() < receptionBoostChance
       ? 'boost'
-      : needsImmediateReturn
-        ? 'return'
-        : 'boost';
+      : 'return';
+    this.versusQueuedAiActionWasRisky = dangerPass;
+    const riskyReactionDelay = dangerPass ? trapQuality * 0.05 : 0;
     this.versusQueuedAiActionTimer = this.versusQueuedAiAction === 'return'
-      ? THREE.MathUtils.lerp(0.09, 0.045, difficulty) + THREE.MathUtils.randFloat(0.01, 0.045)
-      : THREE.MathUtils.lerp(0.12, 0.07, difficulty) + THREE.MathUtils.randFloat(0.01, 0.04);
+      ? THREE.MathUtils.lerp(0.11, 0.072, aiSkill)
+        + riskyReactionDelay
+        + THREE.MathUtils.randFloat(0.012, 0.04)
+      : THREE.MathUtils.lerp(0.125, 0.08, aiSkill)
+        + riskyReactionDelay
+        + THREE.MathUtils.randFloat(0.012, 0.035);
   }
 
-  private isSafeAiBoostWindow(target: DribbleTarget): boolean {
-    if (target.rootComponent.position.y >= 0.9) return false;
-    const timeToContact = this.getTargetTimeToBall(target);
-    if (timeToContact <= 0.2 || timeToContact > 1.18) return false;
-    if (timeToContact <= DribbleBall.boostDuration) {
-      const boostProgress = timeToContact / DribbleBall.boostDuration;
-      if (boostProgress < 0.18) return false;
-      const arcProgress = (boostProgress - 0.18) / 0.82;
-      const clearance = Math.pow(Math.sin(arcProgress * Math.PI), 0.88);
-      return clearance >= 0.48;
-    }
-
-    const resumedBouncePhase = (timeToContact - DribbleBall.boostDuration) * 5.8;
-    return Math.abs(Math.sin(resumedBouncePhase)) >= 0.58;
+  private getVersusAiSkill(difficulty: number): number {
+    const matchAdjustment = THREE.MathUtils.clamp(
+      (this.versusAiLosses - this.versusPlayerLosses) * 0.045,
+      -0.05,
+      0.1,
+    );
+    const rallyFatigue = THREE.MathUtils.smoothstep(this.versusCurrentRally, 7, 19) * 0.14;
+    return THREE.MathUtils.clamp(
+      0.38 + difficulty * 0.52 + (this.versusRound - 1) * 0.018
+        + matchAdjustment - rallyFatigue,
+      0.34,
+      0.98,
+    );
   }
 
-  private shouldAiMisreadAirThreat(target: DribbleTarget, difficulty: number): boolean {
-    if (this.versusLastEvaluatedAirThreat === target) return false;
-    this.versusLastEvaluatedAirThreat = target;
-    const mistakeChance = THREE.MathUtils.lerp(0.09, 0.045, difficulty)
+  private shouldVersusAiHesitate(
+    target: DribbleTarget,
+    timeToContact: number,
+    aiSkill: number,
+  ): boolean {
+    if (timeToContact <= 0.42 || this.versusAiHesitatedThreats.has(target)) return false;
+    this.versusAiHesitatedThreats.add(target);
+    const mistakeChance = THREE.MathUtils.lerp(0.045, 0.014, aiSkill)
       * this.versusAiStyle.errorScale;
     return Math.random() < mistakeChance;
+  }
+
+  private assessVersusAiTrajectory(
+    side: DribbleSide,
+    action: 'hold' | 'boost',
+    maximumTime: number,
+    actionDelay = 0,
+    startAtHand = false,
+  ): VersusAiTrajectoryRead {
+    const ball = this.ball;
+    if (!ball) {
+      return { clearance: Number.NEGATIVE_INFINITY, threat: null, timeToContact: 0 };
+    }
+    const laneX = side === 'left' ? this.lanes[0] : this.lanes[2];
+    let minimumClearance = Number.POSITIVE_INFINITY;
+    let limitingThreat: DribbleTarget | null = null;
+    let limitingTime = Number.POSITIVE_INFINITY;
+
+    for (const target of this.activeTargets) {
+      if (
+        target.kind !== 'hazard'
+        || target.isRemovalPending()
+        || Math.abs(target.laneX - laneX) > 0.05
+      ) continue;
+      const contactTime = this.getTargetTimeToBall(target);
+      if (contactTime < actionDelay || contactTime > maximumTime) continue;
+      const collisionRadius = action === 'boost'
+        ? target.radius * 0.9 + ball.radius * 0.65
+        : target.radius + ball.radius * 0.85;
+      const contactWindow = Math.min(
+        0.16,
+        (action === 'boost' ? collisionRadius : 0.48)
+          / Math.max(0.01, target.getApproachSpeed()),
+      );
+      const sampleOffsets = [
+        -contactWindow,
+        -contactWindow * 0.5,
+        0,
+        contactWindow * 0.5,
+        contactWindow,
+      ];
+
+      for (const offset of sampleOffsets) {
+        const sampleTime = contactTime + offset;
+        const trajectoryTime = sampleTime - actionDelay;
+        if (trajectoryTime < 0) continue;
+        const ballY = action === 'boost'
+          ? ball.predictHeightAfterBoost(trajectoryTime, startAtHand ? true : undefined)
+          : ball.predictBounceHeight(trajectoryTime, startAtHand);
+        const clearance = Math.abs(target.rootComponent.position.y - ballY) - collisionRadius;
+        if (clearance < minimumClearance) {
+          minimumClearance = clearance;
+          limitingThreat = target;
+          limitingTime = contactTime;
+        }
+      }
+    }
+
+    return {
+      clearance: minimumClearance,
+      threat: limitingThreat,
+      timeToContact: limitingTime,
+    };
   }
 
   private spendVersusRiskCard(owner: VersusOwner): number {
@@ -2048,7 +2190,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!this.versusRoundActive) return;
     const loser = forcedLoser;
     if (loser === 'player') this.versusPlayerLosses += 1;
-    else this.versusAiLosses += 1;
+    else {
+      this.versusAiLosses += 1;
+      this.versusAiRiskDefenseStreak = 0;
+    }
+    this.versusQueuedAiAction = null;
+    this.versusQueuedAiActionTimer = 0;
+    this.versusQueuedAiActionWasRisky = false;
     this.telemetry.recordRound(loser === 'ai');
     if (reason !== 'risk') this.telemetry.recordHazardHit();
     this.versusRoundActive = false;
@@ -2631,6 +2779,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
     this.juiceHud?.showPraise('STAR POWER - FRENZY!', 'gold');
+    this.musicDirector?.duckForCallout(1.15);
     playDribbleEventCue(world, 'frenzy-start');
   }
 
