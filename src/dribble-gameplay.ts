@@ -298,7 +298,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private runHadPriorResult = false;
   private runHighScoreCelebrated = false;
   private runResultCommitted = true;
-  private versusOwner: VersusOwner = 'ai';
+  private versusOwner: VersusOwner = 'player';
   private versusPlayerLosses = 0;
   private versusAiLosses = 0;
   private versusRound = 1;
@@ -1579,7 +1579,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusCurrentRally = 0;
     this.versusAiDecisionTimer = 0.42;
     this.spawnTimer = 0.85;
-    const startingSide: DribbleSide = this.versusRound % 2 === 1 ? 'left' : 'right';
+    const startingSide: DribbleSide = this.versusRound % 2 === 1 ? 'right' : 'left';
     this.versusLastStableSide = startingSide;
     this.versusOwner = startingSide === 'left' ? 'ai' : 'player';
     this.versusQueuedAiAction = null;

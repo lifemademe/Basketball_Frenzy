@@ -198,13 +198,15 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   }
 
   public showRoundResult(playerWon: boolean, title: string, subtitle: string): void {
+    const displayDuration = 1400;
+    const exitDuration = 200;
     if (this.roundResultTimer !== null) clearTimeout(this.roundResultTimer);
     if (this.rootElement) this.rootElement.dataset.roundResult = playerWon ? 'win' : 'loss';
-    this.showCallout(title, subtitle, playerWon ? 'blue' : 'danger', 1400);
+    this.showCallout(title, subtitle, playerWon ? 'blue' : 'danger', displayDuration);
     this.roundResultTimer = setTimeout(() => {
       this.roundResultTimer = null;
       if (this.rootElement) delete this.rootElement.dataset.roundResult;
-    }, 780);
+    }, displayDuration + exitDuration);
   }
 
   private renderLosses(element: HTMLElement | null, losses: number): void {
