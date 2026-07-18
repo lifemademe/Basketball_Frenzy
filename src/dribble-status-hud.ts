@@ -1,6 +1,177 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 import type { DribbleSide } from './dribble-ball.js';
+import { RUN_OBJECTIVE_XP, type RunObjectiveProgress } from './dribble-retention-director.js';
+
+export interface DribbleRunObjectivesHudOptions extends ENGINE.BaseUIComponentOptions {}
+
+export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunObjectivesHudOptions> {
+  public static metadata: ENGINE.UIComponentMetadata = {
+    displayName: 'Dribble Run Objectives HUD',
+    category: 'hud',
+    summary: 'Persistent three-item objective checklist for Classic runs.',
+    useCases: ['run objectives', 'objective checklist', 'progress'],
+    optionsType: 'DribbleRunObjectivesHudOptions',
+    assetPaths: {
+      template: '@project/assets/ui/dribble-run-objectives.html',
+      styles: '@project/assets/ui/dribble-status-hud-layout.css',
+    },
+  };
+
+  private rootElement: HTMLElement | null = null;
+  private listElement: HTMLOListElement | null = null;
+  private lastSignature = '';
+  private readonly itemElements = new Map<string, HTMLLIElement>();
+  private readonly removalTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
+    return {
+      templatePath: DribbleRunObjectivesHud.metadata.assetPaths.template,
+      stylesPath: DribbleRunObjectivesHud.metadata.assetPaths.styles,
+    };
+  }
+
+  protected override getDefaultOptions(): Required<DribbleRunObjectivesHudOptions> {
+    return {
+      position: 'top-right',
+      visible: false,
+      customClasses: [],
+      customStyles: {},
+    };
+  }
+
+  protected override getInitialData(): Record<string, string> {
+    return {};
+  }
+
+  protected override cacheElements(): void {
+    this.rootElement = this.layout?.querySelector('[data-run-objectives]') as HTMLElement | null;
+    this.listElement = this.layout?.querySelector('[data-objectives-list]') as HTMLOListElement | null;
+  }
+
+  public setObjectives(objectives: readonly RunObjectiveProgress[], showHeader = true): void {
+    const signature = objectives
+      .map(objective => `${objective.id}:${objective.completed ? 1 : 0}`)
+      .concat(showHeader ? 'header' : 'compact')
+      .join('|');
+    if (signature === this.lastSignature) return;
+    this.lastSignature = signature;
+    if (!this.listElement) return;
+
+    const currentIds = new Set(objectives.map(objective => objective.id));
+    for (const [id, item] of this.itemElements) {
+      if (currentIds.has(id)) continue;
+      const timer = this.removalTimers.get(id);
+      if (timer) clearTimeout(timer);
+      this.removalTimers.delete(id);
+      item.remove();
+      this.itemElements.delete(id);
+    }
+
+    const completedCount = objectives.filter(objective => objective.completed).length;
+    const allComplete = objectives.length > 0 && completedCount === objectives.length;
+    const completionSummary = this.listElement.querySelector('[data-objectives-complete]');
+    if (!allComplete) completionSummary?.remove();
+    for (const objective of objectives) {
+      let item = this.itemElements.get(objective.id);
+      if (!item && !objective.completed) {
+        item = this.createObjectiveItem(objective);
+        this.itemElements.set(objective.id, item);
+      }
+      if (!item) continue;
+
+      if (objective.completed) {
+        if (item.classList.contains('is-completing')) continue;
+        item.classList.add('is-completing');
+        item.setAttribute('aria-hidden', 'true');
+        const timer = setTimeout(() => {
+          item?.remove();
+          this.itemElements.delete(objective.id);
+          this.removalTimers.delete(objective.id);
+          if (this.itemElements.size === 0 && this.rootElement) {
+            if (allComplete) this.showCompletionSummary();
+            else this.rootElement.dataset.empty = 'true';
+          }
+        }, 240);
+        this.removalTimers.set(objective.id, timer);
+      } else {
+        const timer = this.removalTimers.get(objective.id);
+        if (timer) clearTimeout(timer);
+        this.removalTimers.delete(objective.id);
+        item.classList.remove('is-completing');
+        item.removeAttribute('aria-hidden');
+        const label = item.querySelector('.dribble-run-objective-label');
+        if (label) label.textContent = objective.shortLabel;
+        this.listElement.appendChild(item);
+      }
+    }
+
+    if (allComplete && this.itemElements.size === 0 && this.removalTimers.size === 0) {
+      this.showCompletionSummary();
+    }
+
+    if (this.rootElement) {
+      const hasActiveObjectives = objectives.some(objective => !objective.completed);
+      this.rootElement.dataset.empty = hasActiveObjectives || allComplete || this.removalTimers.size > 0
+        ? 'false'
+        : 'true';
+      this.rootElement.dataset.showHeader = showHeader && hasActiveObjectives ? 'true' : 'false';
+      this.rootElement.setAttribute(
+        'aria-label',
+        `Run objectives, ${completedCount} of ${objectives.length} complete`,
+      );
+    }
+  }
+
+  private createObjectiveItem(objective: RunObjectiveProgress): HTMLLIElement {
+    const item = document.createElement('li');
+    item.dataset.objectiveId = objective.id;
+
+    const marker = document.createElement('span');
+    marker.className = 'dribble-run-objective-marker';
+    marker.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className = 'dribble-run-objective-label';
+    label.textContent = objective.shortLabel;
+
+    const reward = document.createElement('span');
+    reward.className = 'dribble-run-objective-reward';
+    reward.textContent = `+${RUN_OBJECTIVE_XP} XP`;
+
+    item.append(marker, label, reward);
+    this.listElement?.appendChild(item);
+    return item;
+  }
+
+  private showCompletionSummary(): void {
+    if (!this.listElement || this.listElement.querySelector('[data-objectives-complete]')) return;
+    const item = document.createElement('li');
+    item.className = 'dribble-run-objective-complete';
+    item.dataset.objectivesComplete = 'true';
+
+    const marker = document.createElement('span');
+    marker.className = 'dribble-run-objective-check';
+    marker.textContent = '✓';
+    marker.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className = 'dribble-run-objective-label';
+    label.textContent = 'All objectives complete';
+    item.append(marker, label);
+    this.listElement.appendChild(item);
+    if (this.rootElement) this.rootElement.dataset.empty = 'false';
+  }
+
+  protected override onDestroy(): void {
+    for (const timer of this.removalTimers.values()) clearTimeout(timer);
+    this.removalTimers.clear();
+    this.itemElements.clear();
+    this.rootElement = null;
+    this.listElement = null;
+    this.lastSignature = '';
+  }
+}
 
 export interface DribblePauseButtonOptions extends ENGINE.BaseUIComponentOptions {
   onPause?: () => void;
@@ -472,20 +643,22 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     }
   }
 
-  public showPraise(label: string, tone: 'green' | 'gold'): void {
+  public showPraise(label: string, tone: 'green' | 'gold', duration = 760): void {
     if (!this.praiseElement) {
       return;
     }
     if (this.praiseTimer) clearTimeout(this.praiseTimer);
     this.praiseElement.textContent = label;
     this.praiseElement.dataset.tone = tone;
+    this.praiseElement.dataset.long = label.length > 28 ? 'true' : 'false';
+    this.praiseElement.style.setProperty('--praise-duration', `${Math.max(400, duration)}ms`);
     this.praiseElement.classList.remove('is-visible');
     void this.praiseElement.offsetWidth;
     this.praiseElement.classList.add('is-visible');
     this.praiseTimer = setTimeout(() => {
       this.praiseElement?.classList.remove('is-visible');
       this.praiseTimer = null;
-    }, 760);
+    }, Math.max(400, duration));
   }
 
   public showCoach(title: string, body: string, duration = 3200): void {

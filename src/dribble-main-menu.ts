@@ -12,6 +12,8 @@ import {
   getBallPrice,
   getCourtChallenge,
   getCourtPrice,
+  getPlayerLevelProgress,
+  getWeeklyChallenge,
   isBallOwned,
   isCourtOwned,
   wristbandColorHex,
@@ -86,6 +88,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private reducedFlashesInput: HTMLInputElement | null = null;
   private highContrastTargetsInput: HTMLInputElement | null = null;
   private homeStarsElement: HTMLElement | null = null;
+  private playerLevelElement: HTMLElement | null = null;
+  private playerXpElement: HTMLElement | null = null;
+  private playerLevelProgressElement: HTMLElement | null = null;
+  private levelInfoElement: HTMLElement | null = null;
   private normalHighScoreElement: HTMLElement | null = null;
   private hardHighScoreElement: HTMLElement | null = null;
   private shopStarsElement: HTMLElement | null = null;
@@ -103,6 +109,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private courtChallengeCopyElement: HTMLElement | null = null;
   private courtChallengeCountElement: HTMLElement | null = null;
   private courtChallengeStateElement: HTMLElement | null = null;
+  private weeklyChallengeElement: HTMLElement | null = null;
+  private weeklyChallengeTitleElement: HTMLElement | null = null;
+  private weeklyChallengeCopyElement: HTMLElement | null = null;
+  private weeklyChallengeCountElement: HTMLElement | null = null;
+  private weeklyChallengeStateElement: HTMLElement | null = null;
   private wristbandButtons: HTMLButtonElement[] = [];
   private leftWristbandPreview: HTMLElement | null = null;
   private rightWristbandPreview: HTMLElement | null = null;
@@ -385,6 +396,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedFlashesInput = this.layout.querySelector('[data-menu-reduced-flashes]') as HTMLInputElement | null;
     this.highContrastTargetsInput = this.layout.querySelector('[data-menu-high-contrast]') as HTMLInputElement | null;
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
+    this.playerLevelElement = this.layout.querySelector('[data-menu-player-level]') as HTMLElement | null;
+    this.playerXpElement = this.layout.querySelector('[data-menu-player-xp]') as HTMLElement | null;
+    this.playerLevelProgressElement = this.layout.querySelector('[data-menu-level-progress]') as HTMLElement | null;
+    this.levelInfoElement = this.layout.querySelector('[data-level-info]') as HTMLElement | null;
     this.normalHighScoreElement = this.layout.querySelector('[data-menu-normal-high-score]') as HTMLElement | null;
     this.hardHighScoreElement = this.layout.querySelector('[data-menu-hard-high-score]') as HTMLElement | null;
     this.shopStarsElement = this.layout.querySelector('[data-shop-stars]') as HTMLElement | null;
@@ -402,6 +417,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.courtChallengeCopyElement = this.layout.querySelector('[data-court-challenge-copy]') as HTMLElement | null;
     this.courtChallengeCountElement = this.layout.querySelector('[data-court-challenge-count]') as HTMLElement | null;
     this.courtChallengeStateElement = this.layout.querySelector('[data-court-challenge-state]') as HTMLElement | null;
+    this.weeklyChallengeElement = this.layout.querySelector('[data-weekly-challenge]') as HTMLElement | null;
+    this.weeklyChallengeTitleElement = this.layout.querySelector('[data-weekly-challenge-title]') as HTMLElement | null;
+    this.weeklyChallengeCopyElement = this.layout.querySelector('[data-weekly-challenge-copy]') as HTMLElement | null;
+    this.weeklyChallengeCountElement = this.layout.querySelector('[data-weekly-challenge-count]') as HTMLElement | null;
+    this.weeklyChallengeStateElement = this.layout.querySelector('[data-weekly-challenge-state]') as HTMLElement | null;
     this.wristbandButtons = Array.from(this.layout.querySelectorAll('[data-wristband-color]')) as HTMLButtonElement[];
     this.leftWristbandPreview = this.layout.querySelector('[data-wristband-preview="left"]') as HTMLElement | null;
     this.rightWristbandPreview = this.layout.querySelector('[data-wristband-preview="right"]') as HTMLElement | null;
@@ -455,6 +475,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const blackHoleActionSlot = slot('blackhole-action');
     const blueCourtActionSlot = slot('blue-court-action');
     const lightWoodCourtActionSlot = slot('light-wood-court-action');
+    const levelInfoSlot = slot('level-info');
+    const levelInfoCloseSlot = slot('level-info-close');
     if (
       !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot || !multiplayerModeSlot
       || !classicTutorialSlot || !lastBounceTutorialSlot
@@ -464,6 +486,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       || !classicActionSlot || !epicActionSlot
       || !discoActionSlot || !blackHoleActionSlot
       || !blueCourtActionSlot || !lightWoodCourtActionSlot
+      || !levelInfoSlot || !levelInfoCloseSlot
     ) return;
 
     const mounted = await Promise.all([
@@ -472,6 +495,16 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: 'Play',
         onClick: () => this.showPanel('mode-select'),
       }, playSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'i',
+        onClick: () => this.showLevelInfo(),
+      }, levelInfoSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Close',
+        onClick: () => this.hideLevelInfo(),
+      }, levelInfoCloseSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
         label: 'Normal',
@@ -611,6 +644,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleActionButton = mounted[mounted.length - 3];
     this.blueCourtActionButton = mounted[mounted.length - 2];
     this.lightWoodCourtActionButton = mounted[mounted.length - 1];
+    levelInfoSlot.querySelector('button')?.setAttribute('aria-label', 'About Court Level');
     this.playerName = this.loadPlayerName() ?? 'PLAYER';
     this.refreshPlayerNameUi();
     this.setProgression(this.options.progression);
@@ -735,6 +769,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   public handleControllerBack(): boolean {
+    if (this.levelInfoElement?.dataset.active === 'true') {
+      this.hideLevelInfo();
+      return true;
+    }
     if (this.resetConfirmation?.dataset.active === 'true') {
       this.closeResetConfirmation();
       return true;
@@ -748,6 +786,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   private showPanel(panel: MainMenuPanel): void {
+    this.hideLevelInfo(false);
     if (this.rootElement) this.rootElement.dataset.panel = panel;
     if (panel === 'shop' || panel === 'achievements' || panel === 'reset') this.refreshProgressionUi();
     if (panel !== 'reset') this.closeResetConfirmation();
@@ -757,6 +796,21 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.stopBallPhysics();
       this.cancelBallDrag();
     }
+  }
+
+  private showLevelInfo(): void {
+    if (!this.levelInfoElement) return;
+    this.levelInfoElement.dataset.active = 'true';
+    this.levelInfoElement.setAttribute('aria-hidden', 'false');
+    this.stopBallPhysics();
+    this.cancelBallDrag();
+  }
+
+  private hideLevelInfo(resumeBall = true): void {
+    if (!this.levelInfoElement || this.levelInfoElement.dataset.active !== 'true') return;
+    this.levelInfoElement.dataset.active = 'false';
+    this.levelInfoElement.setAttribute('aria-hidden', 'true');
+    if (resumeBall && this.rootElement?.dataset.panel === 'home') this.startBallPhysics();
   }
 
   private showPlayerNameEntryIfNeeded(): void {
@@ -836,6 +890,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private refreshProgressionUi(): void {
     const { stars, normalHighScore, hardHighScore, equippedBall, equippedCourt } = this.progression;
     if (this.homeStarsElement) this.homeStarsElement.textContent = String(stars);
+    const level = getPlayerLevelProgress(this.progression.playerXp);
+    if (this.playerLevelElement) this.playerLevelElement.textContent = String(level.level);
+    if (this.playerXpElement) this.playerXpElement.textContent = `${level.current} / ${level.required} XP`;
+    this.playerLevelProgressElement?.style.setProperty('--player-level-progress', String(level.progress));
     if (this.normalHighScoreElement) this.normalHighScoreElement.textContent = String(normalHighScore);
     if (this.hardHighScoreElement) this.hardHighScoreElement.textContent = String(hardHighScore);
     if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
@@ -956,6 +1014,25 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         ? 'COMPLETE'
         : `+${challenge.reward} STAR`;
     }
+    const weekly = getWeeklyChallenge(this.progression);
+    const weeklyProgress = Math.min(weekly.goal, this.progression.weeklyChallengeProgress);
+    this.weeklyChallengeElement?.style.setProperty(
+      '--court-challenge-progress',
+      String(weeklyProgress / weekly.goal),
+    );
+    if (this.weeklyChallengeElement) {
+      this.weeklyChallengeElement.dataset.complete = String(this.progression.weeklyChallengeCompleted);
+    }
+    if (this.weeklyChallengeTitleElement) this.weeklyChallengeTitleElement.textContent = weekly.title;
+    if (this.weeklyChallengeCopyElement) this.weeklyChallengeCopyElement.textContent = weekly.description;
+    if (this.weeklyChallengeCountElement) {
+      this.weeklyChallengeCountElement.textContent = `${weeklyProgress} / ${weekly.goal}`;
+    }
+    if (this.weeklyChallengeStateElement) {
+      this.weeklyChallengeStateElement.textContent = this.progression.weeklyChallengeCompleted
+        ? 'COMPLETE'
+        : `+${weekly.reward} STARS`;
+    }
   }
 
   private refreshBallStatus(element: HTMLElement | null, cosmetic: BallCosmetic): void {
@@ -1012,6 +1089,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   protected override onHide(): void {
+    this.hideLevelInfo(false);
     this.stopBallPhysics();
     this.cancelBallDrag();
     this.disposeMenuBallModel();
@@ -1357,6 +1435,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedFlashesInput = null;
     this.highContrastTargetsInput = null;
     this.homeStarsElement = null;
+    this.playerLevelElement = null;
+    this.playerXpElement = null;
+    this.playerLevelProgressElement = null;
+    this.levelInfoElement = null;
     this.normalHighScoreElement = null;
     this.hardHighScoreElement = null;
     this.shopStarsElement = null;
@@ -1385,6 +1467,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.courtChallengeCopyElement = null;
     this.courtChallengeCountElement = null;
     this.courtChallengeStateElement = null;
+    this.weeklyChallengeElement = null;
+    this.weeklyChallengeTitleElement = null;
+    this.weeklyChallengeCopyElement = null;
+    this.weeklyChallengeCountElement = null;
+    this.weeklyChallengeStateElement = null;
     this.nameEntryElement = null;
     this.playerNameInput = null;
     this.playerNameStatus = null;

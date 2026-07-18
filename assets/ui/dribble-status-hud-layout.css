@@ -13,15 +13,139 @@
   font-weight: 400;
 }
 
+.dribble-run-objectives {
+  position: fixed;
+  top: 86px;
+  right: 28px;
+  width: max-content;
+  max-width: calc(100vw - 56px);
+  padding: 8px 11px 32px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 7px 7px 0 0;
+  background: linear-gradient(180deg, rgba(25, 33, 44, 0.74) 0%, rgba(25, 33, 44, 0.5) 54%, rgba(25, 33, 44, 0) 100%);
+  box-shadow: none;
+  color: rgba(249, 244, 226, 0.9);
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  pointer-events: none;
+  text-align: left;
+  text-shadow: none;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.dribble-run-objectives[data-empty='true'] {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.dribble-run-objectives-title {
+  max-height: 14px;
+  margin-bottom: 5px;
+  overflow: hidden;
+  color: rgba(255, 220, 99, 0.72);
+  font: 700 9px/12px Arial, sans-serif;
+  opacity: 1;
+  transition: max-height 180ms ease, margin 180ms ease, opacity 140ms ease;
+}
+
+.dribble-run-objectives[data-show-header='false'] .dribble-run-objectives-title {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+}
+
+.dribble-run-objectives-list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  list-style: none;
+}
+
+.dribble-run-objectives-list li {
+  display: grid;
+  max-height: 18px;
+  margin-bottom: 2px;
+  overflow: hidden;
+  grid-template-columns: 4px auto auto;
+  align-items: center;
+  justify-content: start;
+  gap: 7px;
+  color: rgba(249, 244, 226, 0.9);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 17px;
+  opacity: 1;
+  transform: translateX(0);
+  transition: max-height 240ms cubic-bezier(0.2, 0.75, 0.24, 1),
+    margin 240ms cubic-bezier(0.2, 0.75, 0.24, 1),
+    opacity 150ms ease, transform 220ms ease;
+}
+
+.dribble-run-objectives-list li:last-child {
+  margin-bottom: 0;
+}
+
+.dribble-run-objectives-list li.is-completing {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+.dribble-run-objective-marker {
+  width: 4px;
+  height: 4px;
+  margin-top: 0;
+  border-radius: 1px;
+  background: rgba(255, 208, 74, 0.86);
+  box-shadow: none;
+}
+
+.dribble-run-objective-label {
+  white-space: nowrap;
+}
+
+.dribble-run-objective-reward {
+  margin-left: 5px;
+  color: rgba(255, 220, 99, 0.64);
+  font: 700 9px/17px Arial, sans-serif;
+  white-space: nowrap;
+}
+
+.dribble-run-objectives-list .dribble-run-objective-complete {
+  max-height: 20px;
+  margin: 0;
+  grid-template-columns: 13px auto;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 12px;
+  opacity: 1;
+  animation: dribble-objective-complete-in 260ms cubic-bezier(0.2, 0.78, 0.24, 1) both;
+}
+
+.dribble-run-objective-check {
+  width: 13px;
+  flex: 0 0 13px;
+  color: rgba(113, 230, 160, 0.9);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+
 .dribble-lives {
   display: flex;
   flex-direction: column;
   gap: 0;
-  min-width: 150px;
-  padding: 0;
+  width: max-content;
+  min-width: 0;
+  padding: 5px 8px;
   box-sizing: border-box;
-  border: 0;
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(25, 33, 44, 0.72);
   box-shadow: none;
   color: #e8eaed;
   font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
@@ -30,8 +154,8 @@
 
 .dribble-lives.top-left {
   position: fixed;
-  top: 33px;
-  left: 88px;
+  top: 28px;
+  left: 84px;
 }
 
 .dribble-timing-header {
@@ -92,10 +216,6 @@
 
 .dribble-lives[data-healed='true'] {
   animation: dribble-lives-healed 320ms ease-out;
-}
-
-.dribble-lives[data-healed='true'] .dribble-life-heart[data-active='true'] {
-  filter: hue-rotate(92deg) saturate(1.25) contrast(1.08) drop-shadow(0 2px 1px rgba(0, 0, 0, 0.52));
 }
 
 .dribble-timing {
@@ -585,8 +705,13 @@
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.52), 0 0 20px rgba(255, 202, 58, 0.95);
 }
 
+.dribble-score-praise[data-long='true'] {
+  font-size: 34px;
+  line-height: 1.08;
+}
+
 .dribble-score-praise.is-visible {
-  animation: dribble-score-praise 760ms cubic-bezier(0.18, 0.82, 0.25, 1) both;
+  animation: dribble-score-praise var(--praise-duration, 760ms) cubic-bezier(0.18, 0.82, 0.25, 1) both;
 }
 
 .dribble-coach {
@@ -676,6 +801,11 @@
   100% { opacity: 0; transform: translate(-50%, -30px) scale(0.92) rotate(1deg); }
 }
 
+@keyframes dribble-objective-complete-in {
+  0% { opacity: 0; transform: translateX(-7px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
 @keyframes dribble-frenzy-ambient-pulse {
   from { opacity: 0.26; }
   to { opacity: 0.72; }
@@ -723,9 +853,44 @@
 }
 
 @media (max-width: 720px) {
+  .dribble-run-objectives {
+    top: 68px;
+    right: 18px;
+    width: max-content;
+    max-width: calc(100vw - 36px);
+    padding: 7px 9px 27px;
+  }
+
+  .dribble-run-objectives-title {
+    margin-bottom: 3px;
+    font-size: 8px;
+    line-height: 11px;
+  }
+
+  .dribble-run-objectives-list li {
+    gap: 5px;
+    max-height: 15px;
+    font-size: 11px;
+    line-height: 15px;
+  }
+
+  .dribble-run-objective-marker {
+    margin-top: 0;
+  }
+
+  .dribble-run-objective-reward {
+    margin-left: 4px;
+    font-size: 8px;
+    line-height: 15px;
+  }
+
+  .dribble-run-objectives-list .dribble-run-objective-complete {
+    font-size: 11px;
+  }
+
   .dribble-lives.top-left {
-    top: 23px;
-    left: 72px;
+    top: 18px;
+    left: 68px;
   }
 
   .ui-number-display.top-right {
@@ -757,6 +922,10 @@
     min-height: 34px;
   }
 
+  .dribble-lives {
+    padding: 4px 6px;
+  }
+
   .dribble-timing {
     width: min(300px, calc(100vw - 180px));
     min-width: 170px;
@@ -775,9 +944,18 @@
   .dribble-score-praise {
     font-size: 32px;
   }
+
+  .dribble-score-praise[data-long='true'] {
+    max-width: min(390px, calc(100vw - 36px));
+    font-size: 25px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .dribble-run-objectives,
+  .dribble-run-objectives-title,
+  .dribble-run-objectives-list li,
+  .dribble-run-objectives-list .dribble-run-objective-complete,
   .dribble-lives[data-hit='true'],
   .dribble-lives[data-healed='true'],
   .dribble-life-heart[data-change],
@@ -796,6 +974,10 @@
 }
 
 [data-reduced-motion='true'] .dribble-timing[data-active='false'] .dribble-timing-track::after,
+[data-reduced-motion='true'] .dribble-run-objectives,
+[data-reduced-motion='true'] .dribble-run-objectives-title,
+[data-reduced-motion='true'] .dribble-run-objectives-list li,
+[data-reduced-motion='true'] .dribble-run-objectives-list .dribble-run-objective-complete,
 [data-reduced-motion='true'] .dribble-lives[data-hit='true'],
 [data-reduced-motion='true'] .dribble-lives[data-healed='true'],
 [data-reduced-motion='true'] .dribble-life-heart[data-change],

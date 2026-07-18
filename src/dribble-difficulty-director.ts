@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import type { DribbleGameMode } from './dribble-main-menu.js';
 
-export type DribbleIntensityTier = 'warmup' | 'flow' | 'heat' | 'overdrive';
+export type DribbleIntensityTier = 'warmup' | 'heating' | 'on-fire' | 'overtime';
 
 export class DribbleDifficultyDirector {
   private mode: DribbleGameMode = 'normal';
@@ -82,11 +82,11 @@ export class DribbleDifficultyDirector {
 
   public takeTierChange(): DribbleIntensityTier | null {
     const nextTier: DribbleIntensityTier = this.intensity >= 0.82
-      ? 'overdrive'
+      ? 'overtime'
       : this.intensity >= 0.56
-        ? 'heat'
+        ? 'on-fire'
         : this.intensity >= 0.24
-          ? 'flow'
+          ? 'heating'
           : 'warmup';
     if (nextTier === this.tier) return null;
     const previousTier = this.tier;
@@ -95,9 +95,9 @@ export class DribbleDifficultyDirector {
   }
 
   private getTierRank(tier: DribbleIntensityTier): number {
-    if (tier === 'overdrive') return 3;
-    if (tier === 'heat') return 2;
-    if (tier === 'flow') return 1;
+    if (tier === 'overtime') return 3;
+    if (tier === 'on-fire') return 2;
+    if (tier === 'heating') return 1;
     return 0;
   }
 }

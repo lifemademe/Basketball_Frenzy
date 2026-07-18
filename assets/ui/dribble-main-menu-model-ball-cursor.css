@@ -289,6 +289,251 @@
   line-height: 29px;
 }
 
+.dribble-profile-level {
+  --player-level-progress: 0;
+  display: grid;
+  min-width: 116px;
+  align-content: center;
+  gap: 2px;
+  padding-left: 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dribble-profile-level-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.dribble-level-info-action {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+}
+
+.dribble-level-info-action::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(101, 213, 255, 0.58);
+  border-radius: 50%;
+  background: rgba(29, 113, 157, 0.3);
+  color: #bceeff;
+  content: 'i';
+  font: 700 11px/1 Arial, sans-serif;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  place-items: center;
+  transition: border-color 130ms ease, background-color 130ms ease, color 130ms ease, box-shadow 130ms ease;
+}
+
+.dribble-level-info-action .ui-button {
+  position: relative !important;
+  z-index: 1;
+  display: grid !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  place-items: center !important;
+}
+
+.dribble-level-info-action .ui-button > * {
+  display: grid !important;
+  line-height: 1 !important;
+  place-items: center !important;
+  transform: none !important;
+}
+
+.dribble-level-info-action .ui-button:hover,
+.dribble-level-info-action .ui-button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dribble-level-info-action:has(.ui-button:hover)::before,
+.dribble-level-info-action:has(.ui-button:focus-visible)::before,
+.dribble-level-info-action:has(.ui-button[data-controller-focus='true'])::before {
+  border-color: #ffdc63;
+  background: rgba(255, 220, 99, 0.18);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(255, 220, 99, 0.2);
+}
+
+.dribble-profile-level > span {
+  color: #65d5ff;
+  font-size: 13px;
+  line-height: 15px;
+}
+
+.dribble-profile-level > span b {
+  color: #ffffff;
+  font-size: 21px;
+}
+
+.dribble-profile-level-track {
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.dribble-profile-level-track i {
+  display: block;
+  width: calc(var(--player-level-progress) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #65d5ff, #ffdc63);
+  box-shadow: 0 0 8px rgba(101, 213, 255, 0.5);
+  transition: width 240ms ease-out;
+}
+
+.dribble-profile-level em {
+  color: rgba(218, 242, 255, 0.72);
+  font: 700 8px/10px Arial, sans-serif;
+  font-style: normal;
+}
+
+.dribble-level-info {
+  position: fixed;
+  z-index: 18;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgba(3, 8, 20, 0.68);
+}
+
+.dribble-level-info[data-active='true'] {
+  display: flex;
+  animation: dribble-name-entry-fade 180ms ease-out both;
+}
+
+.dribble-level-info-panel {
+  position: relative;
+  width: min(430px, calc(100vw - 32px));
+  padding: 34px 34px 28px;
+  box-sizing: border-box;
+  border: 1px solid rgba(101, 213, 255, 0.56);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(8, 39, 91, 0.98), rgba(5, 18, 50, 0.98));
+  box-shadow: 0 20px 46px rgba(0, 6, 24, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.dribble-level-info-panel > small {
+  color: #65d5ff;
+  font: 700 11px/14px Arial, sans-serif;
+}
+
+.dribble-level-info-panel h2 {
+  margin: 3px 0 5px;
+  color: #ffffff;
+  font-size: 38px;
+  line-height: 41px;
+}
+
+.dribble-level-info-panel p {
+  margin: 0 0 18px;
+  color: rgba(229, 244, 255, 0.82);
+  font: 400 15px/20px Arial, sans-serif;
+}
+
+.dribble-level-info-list {
+  display: grid;
+  margin-bottom: 16px;
+  border-top: 1px solid rgba(101, 213, 255, 0.18);
+}
+
+.dribble-level-info-list > div {
+  display: grid;
+  min-height: 42px;
+  grid-template-columns: 112px 1fr;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(101, 213, 255, 0.18);
+}
+
+.dribble-level-info-list strong {
+  color: #ffdc63;
+  font: 700 11px/14px Arial, sans-serif;
+}
+
+.dribble-level-info-list span {
+  color: #ffffff;
+  font: 400 13px/17px Arial, sans-serif;
+}
+
+.dribble-level-info-panel > .dribble-level-info-note {
+  margin: 0;
+  color: rgba(188, 238, 255, 0.76);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.dribble-level-info-panel > .dribble-level-info-close {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 20px;
+  width: 48px !important;
+  height: 48px;
+  margin: 0 !important;
+}
+
+.dribble-level-info-close .ui-button,
+.dribble-level-info-close .ui-button:hover,
+.dribble-level-info-close .ui-button:focus-visible {
+  display: grid !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent url('@project/assets/textures/close.png') center / 40px auto no-repeat !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  filter: none;
+  place-items: center !important;
+  transform: none;
+  transition: filter 130ms ease, transform 130ms ease;
+}
+
+.dribble-main-menu .dribble-level-info-close .ui-button:hover,
+.dribble-main-menu .dribble-level-info-close .ui-button:focus-visible {
+  outline: none !important;
+  filter: brightness(1.15) saturate(1.1);
+  transform: scale(1.1) rotate(3deg);
+}
+
+.dribble-main-menu .dribble-level-info-close .ui-button:active {
+  filter: brightness(0.94);
+  transform: scale(0.96);
+}
+
 .dribble-profile-records {
   display: grid;
   gap: 3px;
@@ -1400,19 +1645,34 @@
   font-size: 17px;
 }
 
+.dribble-challenge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+  gap: 7px;
+  margin: 0 5px 9px;
+}
+
 .dribble-court-challenge {
   --court-challenge-progress: 0;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 3px 14px;
-  margin: 0 5px 9px;
+  min-height: 106px;
+  margin: 0;
   padding: 8px 12px 10px;
   overflow: hidden;
   border: 1px solid rgba(255, 211, 79, 0.58);
   border-radius: 7px;
   background: rgba(10, 23, 91, 0.88);
   box-sizing: border-box;
+}
+
+.dribble-weekly-challenge {
+  border-color: rgba(177, 119, 255, 0.58);
+  background: rgba(35, 21, 105, 0.88);
 }
 
 .dribble-court-challenge > div:first-child {
@@ -1434,12 +1694,15 @@
 }
 
 .dribble-court-challenge > div:first-child span {
-  overflow: hidden;
+  display: block;
+  min-height: 26px;
+  overflow: visible;
   color: #b9c5f0;
   font-size: 11px;
   line-height: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .dribble-court-challenge > b {
@@ -1476,10 +1739,11 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: #ffffff;
+  color: #fff8dc;
   font-size: 9px;
+  font-weight: 700;
   line-height: 10px;
-  text-shadow: 0 1px 2px #000000;
+  text-shadow: none;
 }
 
 .dribble-court-challenge[data-complete='true'] {
@@ -1561,13 +1825,13 @@
 .dribble-achievement-progress {
   --achievement-progress: 0;
   position: relative;
-  height: 16px;
-  margin-top: 8px;
+  height: 10px;
+  margin-top: 6px;
   overflow: hidden;
-  border: 1px solid rgba(255, 211, 79, 0.38);
-  border-radius: 8px;
-  background: rgba(3, 8, 51, 0.72);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.52);
+  border: 0;
+  border-radius: 5px;
+  background: rgba(2, 7, 42, 0.76);
+  box-shadow: none;
 }
 
 .dribble-achievement-progress i {
@@ -1585,12 +1849,11 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: #ffffff;
-  font-size: 12px;
-  line-height: 1;
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.95),
-    0 0 4px rgba(0, 0, 0, 0.72);
+  color: #fff8dc;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 10px;
+  text-shadow: none;
   pointer-events: none;
 }
 
@@ -2262,6 +2525,19 @@
     min-width: 48px;
   }
 
+  .dribble-profile-level {
+    min-width: 96px;
+    padding-left: 9px;
+  }
+
+  .dribble-profile-level > span b {
+    font-size: 17px;
+  }
+
+  .dribble-profile-level em {
+    font-size: 7px;
+  }
+
   .dribble-profile-records {
     min-width: 148px;
     padding-left: 10px;
@@ -2482,6 +2758,22 @@
 
   .dribble-main-menu-achievements-action .ui-button-label {
     font-size: 32px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dribble-challenge-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .dribble-court-challenge {
+    min-height: 92px;
+    padding: 7px 10px 9px;
+  }
+
+  .dribble-achievements-list {
+    max-height: calc(100% - 228px);
   }
 }
 

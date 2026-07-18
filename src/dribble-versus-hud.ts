@@ -32,6 +32,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private calloutTitleElement: HTMLElement | null = null;
   private calloutSubtitleElement: HTMLElement | null = null;
   private opponentNameElement: HTMLElement | null = null;
+  private opponentStyleElement: HTMLElement | null = null;
   private calloutTimer: ReturnType<typeof setTimeout> | null = null;
   private roundResultTimer: ReturnType<typeof setTimeout> | null = null;
   private renderedPlayerLosses = -1;
@@ -80,6 +81,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.calloutTitleElement = this.layout?.querySelector('[data-versus-callout-title]') as HTMLElement | null;
     this.calloutSubtitleElement = this.layout?.querySelector('[data-versus-callout-subtitle]') as HTMLElement | null;
     this.opponentNameElement = this.layout?.querySelector('[data-versus-opponent-name]') as HTMLElement | null;
+    this.opponentStyleElement = this.layout?.querySelector('[data-versus-opponent-style]') as HTMLElement | null;
   }
 
   public setMatchState(
@@ -174,8 +176,9 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     else delete this.rootElement.dataset.tutorialFocus;
   }
 
-  public setOpponentName(name: string): void {
+  public setOpponentName(name: string, style = ''): void {
     if (this.opponentNameElement) this.opponentNameElement.textContent = name;
+    if (this.opponentStyleElement) this.opponentStyleElement.textContent = style;
   }
 
   public showCallout(
@@ -249,6 +252,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.calloutTitleElement = null;
     this.calloutSubtitleElement = null;
     this.opponentNameElement = null;
+    this.opponentStyleElement = null;
     this.renderedPlayerLosses = -1;
     this.renderedAiLosses = -1;
     this.renderedPlayerRiskCards = -1;

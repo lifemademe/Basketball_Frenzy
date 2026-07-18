@@ -18,6 +18,7 @@ export interface DribbleTelemetryReport {
   frenzyActivations: number;
   passes: number;
   riskyPasses: number;
+  counterReads: number;
   roundsWon: number;
   roundsLost: number;
   longestRally: number;
@@ -52,6 +53,7 @@ export class DribbleTelemetry {
       frenzyActivations: 0,
       passes: 0,
       riskyPasses: 0,
+      counterReads: 0,
       roundsWon: 0,
       roundsLost: 0,
       longestRally: 0,
@@ -96,6 +98,10 @@ export class DribbleTelemetry {
     this.current.passes += 1;
     if (risky) this.current.riskyPasses += 1;
     this.current.longestRally = Math.max(this.current.longestRally, rally);
+  }
+
+  public recordCounterRead(): void {
+    if (this.current) this.current.counterReads += 1;
   }
 
   public recordRound(playerWon: boolean): void {

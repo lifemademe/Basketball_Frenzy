@@ -47,6 +47,9 @@ export interface DribbleProgressionState {
   hardHighScore: number;
   normalRunsCompleted: number;
   hardRunsCompleted: number;
+  lastBounceMatches: number;
+  lastBounceWins: number;
+  playerXp: number;
   stars: number;
   leftWristbandColor: WristbandColor;
   rightWristbandColor: WristbandColor;
@@ -64,6 +67,10 @@ export interface DribbleProgressionState {
   courtChallengeId: CourtChallengeId;
   courtChallengeProgress: number;
   courtChallengeCompleted: boolean;
+  weeklyChallengeWeek: string;
+  weeklyChallengeId: CourtChallengeId;
+  weeklyChallengeProgress: number;
+  weeklyChallengeCompleted: boolean;
 }
 
 export interface CourtChallengeDefinition {
@@ -102,6 +109,33 @@ const courtChallenges: readonly CourtChallengeDefinition[] = [
   },
 ];
 
+const weeklyChallenges: readonly CourtChallengeDefinition[] = [
+  {
+    id: 'scoreSprint',
+    title: 'Weekly Scorer',
+    description: 'Score 5,000 points in one run.',
+    metric: 'score',
+    goal: 5000,
+    reward: 3,
+  },
+  {
+    id: 'hazardRun',
+    title: 'Defensive Wall',
+    description: 'Avoid 30 hazards in one run.',
+    metric: 'hazards',
+    goal: 30,
+    reward: 3,
+  },
+  {
+    id: 'rallyMaster',
+    title: 'Rally Legend',
+    description: 'Reach a 20-pass Last Bounce rally.',
+    metric: 'rally',
+    goal: 20,
+    reward: 3,
+  },
+];
+
 export const epicBallPrice = 5;
 export const discoBallPrice = 10;
 export const blackHoleBallPrice = 20;
@@ -111,11 +145,15 @@ const storageKey = 'basketball-frenzy-progression-v1';
 
 export function createDefaultProgressionState(): DribbleProgressionState {
   const challenge = getChallengeForDate(getLocalDateKey());
+  const weeklyChallenge = getChallengeForWeek(getLocalWeekKey());
   return {
     normalHighScore: 0,
     hardHighScore: 0,
     normalRunsCompleted: 0,
     hardRunsCompleted: 0,
+    lastBounceMatches: 0,
+    lastBounceWins: 0,
+    playerXp: 0,
     stars: 0,
     leftWristbandColor: 'orange',
     rightWristbandColor: 'blue',
@@ -133,6 +171,10 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     courtChallengeId: challenge.id,
     courtChallengeProgress: 0,
     courtChallengeCompleted: false,
+    weeklyChallengeWeek: getLocalWeekKey(),
+    weeklyChallengeId: weeklyChallenge.id,
+    weeklyChallengeProgress: 0,
+    weeklyChallengeCompleted: false,
   };
 }
 
@@ -155,6 +197,9 @@ export function loadProgression(): DribbleProgressionState {
       hardHighScore: sanitizeCount(parsed.hardHighScore),
       normalRunsCompleted: sanitizeCount(parsed.normalRunsCompleted),
       hardRunsCompleted: sanitizeCount(parsed.hardRunsCompleted),
+      lastBounceMatches: sanitizeCount(parsed.lastBounceMatches),
+      lastBounceWins: sanitizeCount(parsed.lastBounceWins),
+      playerXp: sanitizeCount(parsed.playerXp),
       stars: sanitizeCount(parsed.stars),
       leftWristbandColor: isWristbandColor(parsed.leftWristbandColor) ? parsed.leftWristbandColor : 'orange',
       rightWristbandColor: isWristbandColor(parsed.rightWristbandColor) ? parsed.rightWristbandColor : 'blue',
@@ -176,6 +221,14 @@ export function loadProgression(): DribbleProgressionState {
         : 'scoreSprint',
       courtChallengeProgress: sanitizeCount(parsed.courtChallengeProgress),
       courtChallengeCompleted: parsed.courtChallengeCompleted === true,
+      weeklyChallengeWeek: typeof parsed.weeklyChallengeWeek === 'string'
+        ? parsed.weeklyChallengeWeek
+        : '',
+      weeklyChallengeId: isCourtChallengeId(parsed.weeklyChallengeId)
+        ? parsed.weeklyChallengeId
+        : 'scoreSprint',
+      weeklyChallengeProgress: sanitizeCount(parsed.weeklyChallengeProgress),
+      weeklyChallengeCompleted: parsed.weeklyChallengeCompleted === true,
     };
     if (loaded.normalRunsCompleted === 0 && loaded.normalHighScore > 0) loaded.normalRunsCompleted = 1;
     if (loaded.hardRunsCompleted === 0 && loaded.hardHighScore > 0) loaded.hardRunsCompleted = 1;
@@ -222,25 +275,45 @@ export function getCourtChallenge(
     ?? courtChallenges[0];
 }
 
+export function getWeeklyChallenge(
+  state: DribbleProgressionState,
+): CourtChallengeDefinition {
+  return weeklyChallenges.find(challenge => challenge.id === state.weeklyChallengeId)
+    ?? weeklyChallenges[0];
+}
+
 export function recordCourtChallengeProgress(
   state: DribbleProgressionState,
   metric: CourtChallengeMetric,
   value: number,
 ): DribbleProgressionState {
   const refreshed = refreshCourtChallenge(state);
-  const challenge = getCourtChallenge(refreshed);
-  if (refreshed.courtChallengeCompleted || challenge.metric !== metric) {
-    return refreshed === state ? state : persist(refreshed);
+  let next = refreshed;
+  let reward = 0;
+  const daily = getCourtChallenge(next);
+  if (!next.courtChallengeCompleted && daily.metric === metric) {
+    const progress = Math.min(daily.goal, Math.max(next.courtChallengeProgress, sanitizeCount(value)));
+    const completed = progress >= daily.goal;
+    reward += completed && !next.courtChallengeCompleted ? daily.reward : 0;
+    next = {
+      ...next,
+      courtChallengeProgress: progress,
+      courtChallengeCompleted: completed,
+    };
   }
-  const progress = Math.min(challenge.goal, Math.max(refreshed.courtChallengeProgress, sanitizeCount(value)));
-  if (progress === refreshed.courtChallengeProgress) return refreshed;
-  const completed = progress >= challenge.goal;
-  return persist({
-    ...refreshed,
-    stars: refreshed.stars + (completed ? challenge.reward : 0),
-    courtChallengeProgress: progress,
-    courtChallengeCompleted: completed,
-  });
+  const weekly = getWeeklyChallenge(next);
+  if (!next.weeklyChallengeCompleted && weekly.metric === metric) {
+    const progress = Math.min(weekly.goal, Math.max(next.weeklyChallengeProgress, sanitizeCount(value)));
+    const completed = progress >= weekly.goal;
+    reward += completed && !next.weeklyChallengeCompleted ? weekly.reward : 0;
+    next = {
+      ...next,
+      weeklyChallengeProgress: progress,
+      weeklyChallengeCompleted: completed,
+    };
+  }
+  if (next === state) return state;
+  return persist({ ...next, stars: next.stars + reward });
 }
 
 export function awardStars(state: DribbleProgressionState, amount: number): DribbleProgressionState {
@@ -248,6 +321,52 @@ export function awardStars(state: DribbleProgressionState, amount: number): Drib
     ...state,
     stars: state.stars + sanitizeCount(amount),
   });
+}
+
+export function awardCareerXp(
+  state: DribbleProgressionState,
+  amount: number,
+): DribbleProgressionState {
+  const xp = sanitizeCount(amount);
+  return xp === 0 ? state : persist({ ...state, playerXp: state.playerXp + xp });
+}
+
+export function recordLastBounceResult(
+  state: DribbleProgressionState,
+  playerWon: boolean,
+): DribbleProgressionState {
+  return persist({
+    ...state,
+    lastBounceMatches: state.lastBounceMatches + 1,
+    lastBounceWins: state.lastBounceWins + (playerWon ? 1 : 0),
+  });
+}
+
+export function getPlayerLevelProgress(playerXp: number): {
+  level: number;
+  current: number;
+  required: number;
+  progress: number;
+  nextUnlock: string;
+} {
+  const xp = sanitizeCount(playerXp);
+  let level = 1;
+  let levelStart = 0;
+  let levelEnd = getXpForLevel(2);
+  while (xp >= levelEnd && level < 50) {
+    level += 1;
+    levelStart = levelEnd;
+    levelEnd = getXpForLevel(level + 1);
+  }
+  const current = xp - levelStart;
+  const required = Math.max(1, levelEnd - levelStart);
+  return {
+    level,
+    current,
+    required,
+    progress: Math.min(1, current / required),
+    nextUnlock: getLevelUnlockLabel(level + 1),
+  };
 }
 
 export function recordRunResult(
@@ -460,15 +579,29 @@ function isCourtChallengeId(value: unknown): value is CourtChallengeId {
 
 function refreshCourtChallenge(state: DribbleProgressionState): DribbleProgressionState {
   const date = getLocalDateKey();
-  if (state.courtChallengeDate === date) return state;
-  const challenge = getChallengeForDate(date);
-  return {
-    ...state,
-    courtChallengeDate: date,
-    courtChallengeId: challenge.id,
-    courtChallengeProgress: 0,
-    courtChallengeCompleted: false,
-  };
+  const week = getLocalWeekKey();
+  let refreshed = state;
+  if (state.courtChallengeDate !== date) {
+    const challenge = getChallengeForDate(date);
+    refreshed = {
+      ...refreshed,
+      courtChallengeDate: date,
+      courtChallengeId: challenge.id,
+      courtChallengeProgress: 0,
+      courtChallengeCompleted: false,
+    };
+  }
+  if (state.weeklyChallengeWeek !== week) {
+    const challenge = getChallengeForWeek(week);
+    refreshed = {
+      ...refreshed,
+      weeklyChallengeWeek: week,
+      weeklyChallengeId: challenge.id,
+      weeklyChallengeProgress: 0,
+      weeklyChallengeCompleted: false,
+    };
+  }
+  return refreshed;
 }
 
 function getChallengeForDate(date: string): CourtChallengeDefinition {
@@ -476,11 +609,37 @@ function getChallengeForDate(date: string): CourtChallengeDefinition {
   return courtChallenges[Math.abs(dayNumber) % courtChallenges.length];
 }
 
+function getChallengeForWeek(week: string): CourtChallengeDefinition {
+  const weekNumber = Math.floor(new Date(`${week}T12:00:00`).getTime() / (86_400_000 * 7));
+  return weeklyChallenges[Math.abs(weekNumber) % weeklyChallenges.length];
+}
+
+function getXpForLevel(level: number): number {
+  const completedLevels = Math.max(0, level - 1);
+  return completedLevels * 300 + completedLevels * completedLevels * 90;
+}
+
+function getLevelUnlockLabel(level: number): string {
+  const unlocks = ['Trail Style', 'Wristband Pattern', 'Court Light', 'Victory Title'];
+  return unlocks[Math.max(0, level - 2) % unlocks.length];
+}
+
 function getLocalDateKey(): string {
   const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalWeekKey(): string {
+  const monday = new Date();
+  monday.setHours(0, 0, 0, 0);
+  const daysSinceMonday = (monday.getDay() + 6) % 7;
+  monday.setDate(monday.getDate() - daysSinceMonday);
+  const year = monday.getFullYear();
+  const month = String(monday.getMonth() + 1).padStart(2, '0');
+  const day = String(monday.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 

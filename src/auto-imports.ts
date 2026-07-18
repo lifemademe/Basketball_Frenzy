@@ -17,6 +17,7 @@ import './dribble-music-director.ts';
 import './dribble-overlay.ts';
 import './dribble-pattern-director.ts';
 import './dribble-progression.ts';
+import './dribble-retention-director.ts';
 import './dribble-status-hud.ts';
 import './dribble-target.ts';
 import './dribble-telemetry.ts';

@@ -11,7 +11,7 @@
   display: grid;
   place-items: center;
   width: 72px;
-  height: 64px;
+  height: 70px;
   opacity: 0.58;
   transform: translateY(-50%) scale(0.9);
   transition: opacity 140ms ease, transform 140ms ease, filter 140ms ease;
@@ -28,7 +28,7 @@
 .dribble-side-hint img {
   display: block;
   width: 64px;
-  height: 56px;
+  height: 64px;
   object-fit: contain;
   user-select: none;
 }
@@ -44,7 +44,7 @@
 @media (max-width: 720px) {
   .dribble-side-hint {
     width: 58px;
-    height: 54px;
+    height: 58px;
   }
 
   .dribble-side-hint-left { left: 8px; }
@@ -52,7 +52,7 @@
 
   .dribble-side-hint img {
     width: 52px;
-    height: 46px;
+    height: 52px;
   }
 }
 

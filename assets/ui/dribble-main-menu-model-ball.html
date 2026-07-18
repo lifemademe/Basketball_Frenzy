@@ -41,6 +41,15 @@
         <small>STARS</small>
         <span><img src="@project/assets/textures/Star.png" alt=""> <b data-menu-stars>0</b></span>
       </div>
+      <div class="dribble-profile-level">
+        <div class="dribble-profile-level-heading">
+          <small>COURT LEVEL</small>
+          <div class="dribble-main-menu-action dribble-level-info-action" data-menu-level-info-slot></div>
+        </div>
+        <span>LV <b data-menu-player-level>1</b></span>
+        <div class="dribble-profile-level-track" data-menu-level-progress><i></i></div>
+        <em data-menu-player-xp>0 / 390 XP</em>
+      </div>
       <div class="dribble-profile-records">
         <small>BEST SCORES</small>
         <div class="dribble-profile-score-grid">
@@ -55,6 +64,21 @@
         </div>
       </div>
     </div>
+
+    <section class="dribble-level-info" data-level-info data-active="false" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dribble-level-info-title">
+      <div class="dribble-level-info-panel">
+        <div class="dribble-main-menu-action dribble-level-info-close" data-menu-level-info-close-slot></div>
+        <small>PLAYER PROGRESSION</small>
+        <h2 id="dribble-level-info-title">Court Level</h2>
+        <p>Earn XP at the end of every completed run.</p>
+        <div class="dribble-level-info-list">
+          <div><strong>PERFORMANCE</strong><span>Score, timing and rallies</span></div>
+          <div><strong>OBJECTIVES</strong><span>+25 XP each</span></div>
+          <div><strong>MODE BONUS</strong><span>Difficulty and match results</span></div>
+        </div>
+        <p class="dribble-level-info-note">XP carries between sessions and records your court progress.</p>
+      </div>
+    </section>
 
     <nav class="dribble-main-menu-panel dribble-main-menu-home" aria-label="Main menu">
       <div class="dribble-main-menu-action dribble-main-menu-play" data-menu-play-slot></div>
@@ -263,18 +287,32 @@
         <span>CAREER PROGRESS</span>
         <strong><b data-achievement-count>0</b> / 5 COMPLETE</strong>
       </div>
-      <article class="dribble-court-challenge" data-court-challenge data-complete="false">
-        <div>
-          <small>COURT CHALLENGE</small>
-          <strong data-court-challenge-title>Score Sprint</strong>
-          <span data-court-challenge-copy>Score 2,500 points in one run.</span>
-        </div>
-        <b data-court-challenge-state>+1 STAR</b>
-        <div class="dribble-court-challenge-progress">
-          <i></i>
-          <span data-court-challenge-count>0 / 2500</span>
-        </div>
-      </article>
+      <div class="dribble-challenge-grid">
+        <article class="dribble-court-challenge" data-court-challenge data-complete="false">
+          <div>
+            <small>DAILY</small>
+            <strong data-court-challenge-title>Score Sprint</strong>
+            <span data-court-challenge-copy>Score 2,500 points in one run.</span>
+          </div>
+          <b data-court-challenge-state>+1 STAR</b>
+          <div class="dribble-court-challenge-progress">
+            <i></i>
+            <span data-court-challenge-count>0 / 2500</span>
+          </div>
+        </article>
+        <article class="dribble-court-challenge dribble-weekly-challenge" data-weekly-challenge data-complete="false">
+          <div>
+            <small>WEEKLY</small>
+            <strong data-weekly-challenge-title>Weekly Scorer</strong>
+            <span data-weekly-challenge-copy>Score 5,000 points in one run.</span>
+          </div>
+          <b data-weekly-challenge-state>+3 STARS</b>
+          <div class="dribble-court-challenge-progress">
+            <i></i>
+            <span data-weekly-challenge-count>0 / 5000</span>
+          </div>
+        </article>
+      </div>
       <div class="dribble-achievements-list">
         <article class="dribble-achievement" data-achievement-id="score10000" data-unlocked="false">
           <div class="dribble-achievement-icon"><img src="@project/assets/textures/10000pointsinonegame.png" alt=""></div>

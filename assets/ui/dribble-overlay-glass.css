@@ -224,6 +224,46 @@
   line-height: 22px;
 }
 
+.dribble-overlay-summary .dribble-overlay-career-progress {
+  grid-column: 1 / -1;
+  display: grid;
+  min-height: 61px;
+  grid-template-columns: 1fr auto;
+  align-content: center;
+  gap: 1px 10px;
+  border-color: rgba(255, 220, 99, 0.5);
+  background: linear-gradient(90deg, rgba(4, 37, 112, 0.48), rgba(106, 72, 8, 0.3));
+}
+
+.dribble-overlay-career-progress > span {
+  max-width: none;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.dribble-overlay-career-progress > strong {
+  color: #ffdc63;
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.dribble-overlay-career-progress > small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: rgba(218, 242, 255, 0.76);
+  font-size: 9px;
+  line-height: 11px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dribble-overlay-career-progress > .dribble-overlay-xp-breakdown {
+  color: rgba(255, 231, 137, 0.84);
+  font-size: 8px;
+  line-height: 10px;
+}
+
 .dribble-overlay-actions {
   display: grid;
   grid-template-columns: 58fr 36fr;

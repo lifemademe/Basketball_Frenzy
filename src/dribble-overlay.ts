@@ -13,6 +13,14 @@ export interface DribbleRunSummary {
   hazardsAvoided: number;
   starsEarned: number;
   elapsedSeconds: number;
+  objectivesCompleted: number;
+  objectiveCount: number;
+  performanceXp: number;
+  objectiveXp: number;
+  bonusXp: number;
+  xpEarned: number;
+  playerLevel: number;
+  nextObjective: string;
 }
 
 export interface DribbleVersusSummary {
@@ -21,7 +29,16 @@ export interface DribbleVersusSummary {
   playerReturns: number;
   aiReturns: number;
   dangerPasses: number;
+  counterReads: number;
   elapsedSeconds: number;
+  objectivesCompleted: number;
+  objectiveCount: number;
+  performanceXp: number;
+  objectiveXp: number;
+  bonusXp: number;
+  xpEarned: number;
+  playerLevel: number;
+  nextObjective: string;
 }
 
 export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions> {
@@ -51,6 +68,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   private summaryAvoidedElement: HTMLElement | null = null;
   private summaryStarsElement: HTMLElement | null = null;
   private summaryTimeElement: HTMLElement | null = null;
+  private summaryObjectivesElement: HTMLElement | null = null;
+  private summaryXpElement: HTMLElement | null = null;
+  private summaryXpBreakdownElement: HTMLElement | null = null;
+  private summaryNextElement: HTMLElement | null = null;
   private summaryLabelElements: HTMLElement[] = [];
 
   private readonly stopPointerEvent = (event: Event): void => {
@@ -111,6 +132,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.summaryAvoidedElement = this.layout.querySelector('[data-summary-avoided]') as HTMLElement | null;
     this.summaryStarsElement = this.layout.querySelector('[data-summary-stars]') as HTMLElement | null;
     this.summaryTimeElement = this.layout.querySelector('[data-summary-time]') as HTMLElement | null;
+    this.summaryObjectivesElement = this.layout.querySelector('[data-summary-objectives]') as HTMLElement | null;
+    this.summaryXpElement = this.layout.querySelector('[data-summary-xp]') as HTMLElement | null;
+    this.summaryXpBreakdownElement = this.layout.querySelector('[data-summary-xp-breakdown]') as HTMLElement | null;
+    this.summaryNextElement = this.layout.querySelector('[data-summary-next]') as HTMLElement | null;
     this.summaryLabelElements = [
       this.layout.querySelector('[data-summary-combo-label]'),
       this.layout.querySelector('[data-summary-hits-label]'),
@@ -222,12 +247,20 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
         goodHits: summary.longestRally,
         perfectSwitches: summary.playerReturns,
         hazardsAvoided: summary.aiReturns,
-        starsEarned: summary.dangerPasses,
+        starsEarned: summary.counterReads,
         elapsedSeconds: summary.elapsedSeconds,
+        objectivesCompleted: summary.objectivesCompleted,
+        objectiveCount: summary.objectiveCount,
+        performanceXp: summary.performanceXp,
+        objectiveXp: summary.objectiveXp,
+        bonusXp: summary.bonusXp,
+        xpEarned: summary.xpEarned,
+        playerLevel: summary.playerLevel,
+        nextObjective: summary.nextObjective,
       },
       summaryKind: 'versus',
     });
-    this.setSummaryLabels(['ROUNDS', 'LONGEST RALLY', 'YOUR RETURNS', 'AI RETURNS', 'DANGER PASSES', 'MATCH TIME']);
+    this.setSummaryLabels(['ROUNDS', 'LONGEST RALLY', 'YOUR RETURNS', 'AI RETURNS', 'COUNTER READS', 'MATCH TIME']);
     this.show();
   }
 
@@ -270,6 +303,20 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
           : `+${content.summary.starsEarned}`;
       }
       if (this.summaryTimeElement) this.summaryTimeElement.textContent = this.formatDuration(content.summary.elapsedSeconds);
+      if (this.summaryObjectivesElement) {
+        this.summaryObjectivesElement.textContent = `${content.summary.objectivesCompleted} / ${content.summary.objectiveCount} OBJECTIVES`;
+      }
+      if (this.summaryXpElement) {
+        this.summaryXpElement.textContent = `+${content.summary.xpEarned} XP  ·  LEVEL ${content.summary.playerLevel}`;
+      }
+      if (this.summaryXpBreakdownElement) {
+        this.summaryXpBreakdownElement.textContent = [
+          `PERFORMANCE +${content.summary.performanceXp}`,
+          `OBJECTIVES +${content.summary.objectiveXp}`,
+          `BONUS +${content.summary.bonusXp}`,
+        ].join('  ·  ');
+      }
+      if (this.summaryNextElement) this.summaryNextElement.textContent = content.summary.nextObjective;
     }
   }
 
@@ -303,6 +350,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.summaryAvoidedElement = null;
     this.summaryStarsElement = null;
     this.summaryTimeElement = null;
+    this.summaryObjectivesElement = null;
+    this.summaryXpElement = null;
+    this.summaryXpBreakdownElement = null;
+    this.summaryNextElement = null;
     this.summaryLabelElements = [];
   }
 }

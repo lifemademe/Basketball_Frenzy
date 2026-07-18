@@ -4,7 +4,7 @@ import type { DribbleGameMode } from './dribble-main-menu.js';
 import type { TargetKind } from './dribble-target.js';
 
 export type PatternLane = 'left' | 'center' | 'right';
-export type PatternHeight = 'low' | 'normal';
+export type PatternHeight = 'low' | 'normal' | 'high';
 
 export interface DribblePatternStep {
   kind: Extract<TargetKind, 'score' | 'hazard'>;
@@ -136,6 +136,47 @@ const patterns: readonly DribblePatternDefinition[] = [
     ],
   },
   {
+    id: 'rhythm-ladder',
+    label: 'RHYTHM LADDER',
+    minDifficulty: 0.18,
+    weight: 0.94,
+    steps: [
+      { kind: 'score', lane: 'left' },
+      { kind: 'score', lane: 'center', intervalScale: 0.92 },
+      { kind: 'score', lane: 'right', intervalScale: 0.9 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.86 },
+      { kind: 'score', lane: 'center', intervalScale: 0.9 },
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.86 },
+    ],
+  },
+  {
+    id: 'pump-fake',
+    label: 'PUMP FAKE',
+    minDifficulty: 0.38,
+    weight: 0.78,
+    steps: [
+      { kind: 'hazard', lane: 'left', height: 'high' },
+      { kind: 'score', lane: 'right', intervalScale: 0.92 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.86 },
+      { kind: 'score', lane: 'center', intervalScale: 0.9 },
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.86 },
+    ],
+  },
+  {
+    id: 'clutch-window',
+    label: 'CLUTCH WINDOW',
+    minDifficulty: 0.58,
+    weight: 0.66,
+    steps: [
+      { kind: 'hazard', lane: 'center', height: 'low', speedScale: 1.03 },
+      { kind: 'score', lane: 'left', intervalScale: 0.82 },
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.8 },
+      { kind: 'score', lane: 'right', intervalScale: 0.82, speedScale: 1.04 },
+      { kind: 'hazard', lane: 'right', height: 'high', intervalScale: 0.8 },
+      { kind: 'score', lane: 'center', intervalScale: 0.86 },
+    ],
+  },
+  {
     id: 'hard-crossfire',
     label: 'CROSSFIRE',
     minDifficulty: 0.18,
@@ -148,6 +189,21 @@ const patterns: readonly DribblePatternDefinition[] = [
       { kind: 'score', lane: 'left', intervalScale: 0.84 },
       { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.8 },
       { kind: 'score', lane: 'center', intervalScale: 0.86 },
+    ],
+  },
+  {
+    id: 'hard-overtime-press',
+    label: 'OVERTIME PRESS',
+    minDifficulty: 0.78,
+    weight: 0.64,
+    modes: ['hard'],
+    steps: [
+      { kind: 'hazard', lane: 'left', height: 'low', speedScale: 1.06 },
+      { kind: 'hazard', lane: 'center', height: 'high', intervalScale: 0.76 },
+      { kind: 'score', lane: 'right', intervalScale: 0.76, speedScale: 1.06 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.74 },
+      { kind: 'score', lane: 'left', intervalScale: 0.76, speedScale: 1.07 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.74 },
     ],
   },
   {

@@ -115,7 +115,7 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
     const container = this.options.container;
     if (!container) return [];
     const activeScope = container.querySelector<HTMLElement>(
-      '[data-reset-confirmation][data-active="true"], [data-name-entry][data-active="true"]',
+      '[data-reset-confirmation][data-active="true"], [data-name-entry][data-active="true"], [data-level-info][data-active="true"]',
     ) ?? container;
     const candidates = Array.from(activeScope.querySelectorAll<HTMLElement>(
       'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]',
@@ -155,6 +155,10 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
       '[data-name-entry][data-active="true"] [data-player-name-input]',
     );
     if (nameInput && focusable.includes(nameInput)) return nameInput;
+    const levelInfoClose = this.options.container?.querySelector<HTMLElement>(
+      '[data-level-info][data-active="true"] [data-menu-level-info-close-slot] button',
+    );
+    if (levelInfoClose && focusable.includes(levelInfoClose)) return levelInfoClose;
     const root = this.options.container?.querySelector<HTMLElement>('[data-main-menu]');
     const panel = root && this.isElementVisible(root) ? root.dataset.panel : undefined;
     const selectors = panel === 'home'

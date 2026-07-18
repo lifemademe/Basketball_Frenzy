@@ -124,6 +124,21 @@
   line-height: 24px;
 }
 
+.dribble-versus-opponent {
+  display: grid;
+  min-width: 0;
+  line-height: 1;
+}
+
+.dribble-versus-opponent em {
+  overflow: hidden;
+  color: #ffca3a;
+  font: 700 8px/9px Arial, sans-serif;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dribble-versus-rounds {
   display: flex;
   gap: 4px;
