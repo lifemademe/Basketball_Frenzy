@@ -931,9 +931,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (cached) return cached;
     const texturePath = cosmetic === 'blue'
       ? '@project/assets/textures/court.png'
-      : cosmetic === 'light-wood'
-        ? '@project/assets/textures/court_light_wood.png'
-        : '@project/assets/textures/court_green.png';
+      : '@project/assets/textures/court_light_wood.png';
     const texture = await ENGINE.resourceManager.loadTexture(ENGINE.AssetPath.fromString(texturePath));
     if (!texture) return null;
     texture.flipY = false;

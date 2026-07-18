@@ -1,5 +1,5 @@
 export type BallCosmetic = 'classic' | 'epic' | 'disco' | 'blackhole';
-export type CourtCosmetic = 'blue' | 'light-wood' | 'green';
+export type CourtCosmetic = 'blue' | 'light-wood';
 export type WristbandColor = 'orange' | 'blue' | 'lime' | 'pink' | 'white' | 'purple';
 export type WristbandSide = 'left' | 'right';
 export type CourtChallengeId = 'scoreSprint' | 'hazardRun' | 'rallyMaster';
@@ -55,7 +55,6 @@ export interface DribbleProgressionState {
   blackHoleBallOwned: boolean;
   equippedBall: BallCosmetic;
   lightWoodCourtOwned: boolean;
-  greenCourtOwned: boolean;
   equippedCourt: CourtCosmetic;
   classicTutorialCompleted: boolean;
   lastBounceTutorialCompleted: boolean;
@@ -125,7 +124,6 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     blackHoleBallOwned: false,
     equippedBall: 'classic',
     lightWoodCourtOwned: false,
-    greenCourtOwned: false,
     equippedCourt: 'blue',
     classicTutorialCompleted: false,
     lastBounceTutorialCompleted: false,
@@ -146,6 +144,7 @@ export function loadProgression(): DribbleProgressionState {
     const parsed = JSON.parse(stored) as Partial<DribbleProgressionState> & {
       highScore?: unknown;
       redCourtOwned?: unknown;
+      greenCourtOwned?: unknown;
     };
     const legacyHighScore = sanitizeCount(parsed.highScore);
     const epicBallOwned = parsed.epicBallOwned === true;
@@ -164,7 +163,6 @@ export function loadProgression(): DribbleProgressionState {
       blackHoleBallOwned,
       equippedBall: isBallCosmetic(parsed.equippedBall) ? parsed.equippedBall : 'classic',
       lightWoodCourtOwned: parsed.lightWoodCourtOwned === true,
-      greenCourtOwned: parsed.greenCourtOwned === true,
       equippedCourt: isCourtCosmetic(parsed.equippedCourt) ? parsed.equippedCourt : 'blue',
       classicTutorialCompleted: parsed.classicTutorialCompleted === true,
       lastBounceTutorialCompleted: parsed.lastBounceTutorialCompleted === true,
@@ -192,7 +190,7 @@ export function loadProgression(): DribbleProgressionState {
         || loaded.blackHoleBallOwned
         || loaded.lightWoodCourtOwned
         || parsed.redCourtOwned === true
-        || loaded.greenCourtOwned
+        || parsed.greenCourtOwned === true
       ) {
         loaded.achievements.firstPurchase = true;
       }
@@ -368,12 +366,9 @@ export function purchaseCourt(
 ): DribbleProgressionState {
   const price = getCourtPrice(cosmetic);
   if (isCourtOwned(state, cosmetic) || state.stars < price) return state;
-  const ownership = cosmetic === 'light-wood'
-    ? { lightWoodCourtOwned: true }
-    : { greenCourtOwned: true };
   return persist({
     ...state,
-    ...ownership,
+    lightWoodCourtOwned: true,
     stars: state.stars - price,
     equippedCourt: cosmetic,
     achievements: {
@@ -444,8 +439,7 @@ export function isCourtOwned(
   cosmetic: CourtCosmetic,
 ): boolean {
   if (cosmetic === 'blue') return true;
-  if (cosmetic === 'light-wood') return state.lightWoodCourtOwned;
-  return state.greenCourtOwned;
+  return state.lightWoodCourtOwned;
 }
 
 function isBallCosmetic(value: unknown): value is BallCosmetic {
@@ -453,7 +447,7 @@ function isBallCosmetic(value: unknown): value is BallCosmetic {
 }
 
 function isCourtCosmetic(value: unknown): value is CourtCosmetic {
-  return value === 'blue' || value === 'light-wood' || value === 'green';
+  return value === 'blue' || value === 'light-wood';
 }
 
 function isWristbandColor(value: unknown): value is WristbandColor {

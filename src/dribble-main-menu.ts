@@ -96,7 +96,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private blackHoleStatusElement: HTMLElement | null = null;
   private blueCourtStatusElement: HTMLElement | null = null;
   private lightWoodCourtStatusElement: HTMLElement | null = null;
-  private greenCourtStatusElement: HTMLElement | null = null;
   private achievementCountElement: HTMLElement | null = null;
   private achievementRows: HTMLElement[] = [];
   private courtChallengeElement: HTMLElement | null = null;
@@ -129,7 +128,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private blackHoleActionButton: ENGINE.Button | null = null;
   private blueCourtActionButton: ENGINE.Button | null = null;
   private lightWoodCourtActionButton: ENGINE.Button | null = null;
-  private greenCourtActionButton: ENGINE.Button | null = null;
   private progression = createDefaultProgressionState();
   private menuBall: HTMLButtonElement | null = null;
   private menuBallCanvas: HTMLCanvasElement | null = null;
@@ -397,7 +395,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = this.layout.querySelector('[data-shop-blackhole-status]') as HTMLElement | null;
     this.blueCourtStatusElement = this.layout.querySelector('[data-shop-blue-court-status]') as HTMLElement | null;
     this.lightWoodCourtStatusElement = this.layout.querySelector('[data-shop-light-wood-court-status]') as HTMLElement | null;
-    this.greenCourtStatusElement = this.layout.querySelector('[data-shop-green-court-status]') as HTMLElement | null;
     this.achievementCountElement = this.layout.querySelector('[data-achievement-count]') as HTMLElement | null;
     this.achievementRows = Array.from(this.layout.querySelectorAll('[data-achievement-id]')) as HTMLElement[];
     this.courtChallengeElement = this.layout.querySelector('[data-court-challenge]') as HTMLElement | null;
@@ -435,6 +432,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const normalModeSlot = slot('normal-mode');
     const hardModeSlot = slot('hard-mode');
     const lastBounceModeSlot = slot('last-bounce-mode');
+    const multiplayerModeSlot = slot('multiplayer-mode');
     const classicTutorialSlot = slot('classic-tutorial');
     const lastBounceTutorialSlot = slot('last-bounce-tutorial');
     const nameConfirmSlot = slot('name-confirm');
@@ -457,9 +455,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const blackHoleActionSlot = slot('blackhole-action');
     const blueCourtActionSlot = slot('blue-court-action');
     const lightWoodCourtActionSlot = slot('light-wood-court-action');
-    const greenCourtActionSlot = slot('green-court-action');
     if (
-      !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot
+      !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot || !multiplayerModeSlot
       || !classicTutorialSlot || !lastBounceTutorialSlot
       || !nameConfirmSlot || !modeBackSlot || !tutorialBackSlot
       || !howSlot || !settingsSlot || !shopSlot || !resetSlot || !exitSlot || !achievementsSlot || !howBackSlot
@@ -467,7 +464,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       || !classicActionSlot || !epicActionSlot
       || !discoActionSlot || !blackHoleActionSlot
       || !blueCourtActionSlot || !lightWoodCourtActionSlot
-      || !greenCourtActionSlot
     ) return;
 
     const mounted = await Promise.all([
@@ -491,6 +487,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: 'Last Bounce',
         onClick: () => this.options.onPlay('last-bounce'),
       }, lastBounceModeSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Multiplayer',
+        disabled: true,
+      }, multiplayerModeSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
         label: 'Classic',
@@ -603,19 +604,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: `Buy - ${alternateCourtPrice} Stars`,
         onClick: () => this.handleCourtAction('light-wood'),
       }, lightWoodCourtActionSlot),
-      this.mountChild(ENGINE.Button, {
-        ...ENGINE.Button.presets.primaryLarge,
-        label: `Buy - ${alternateCourtPrice} Stars`,
-        onClick: () => this.handleCourtAction('green'),
-      }, greenCourtActionSlot),
     ]);
-    this.classicActionButton = mounted[mounted.length - 7];
-    this.epicActionButton = mounted[mounted.length - 6];
-    this.discoActionButton = mounted[mounted.length - 5];
-    this.blackHoleActionButton = mounted[mounted.length - 4];
-    this.blueCourtActionButton = mounted[mounted.length - 3];
-    this.lightWoodCourtActionButton = mounted[mounted.length - 2];
-    this.greenCourtActionButton = mounted[mounted.length - 1];
+    this.classicActionButton = mounted[mounted.length - 6];
+    this.epicActionButton = mounted[mounted.length - 5];
+    this.discoActionButton = mounted[mounted.length - 4];
+    this.blackHoleActionButton = mounted[mounted.length - 3];
+    this.blueCourtActionButton = mounted[mounted.length - 2];
+    this.lightWoodCourtActionButton = mounted[mounted.length - 1];
     this.playerName = this.loadPlayerName() ?? 'PLAYER';
     this.refreshPlayerNameUi();
     this.setProgression(this.options.progression);
@@ -853,7 +848,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.refreshBallStatus(this.blackHoleStatusElement, 'blackhole');
     this.refreshCourtStatus(this.blueCourtStatusElement, 'blue');
     this.refreshCourtStatus(this.lightWoodCourtStatusElement, 'light-wood');
-    this.refreshCourtStatus(this.greenCourtStatusElement, 'green');
     if (this.rootElement) {
       this.rootElement.dataset.epicOwned = this.progression.epicBallOwned ? 'true' : 'false';
       this.rootElement.dataset.epicEquipped = equippedBall === 'epic' ? 'true' : 'false';
@@ -865,7 +859,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.refreshBallAction(this.blackHoleActionButton, 'blackhole');
     this.refreshCourtAction(this.blueCourtActionButton, 'blue');
     this.refreshCourtAction(this.lightWoodCourtActionButton, 'light-wood');
-    this.refreshCourtAction(this.greenCourtActionButton, 'green');
     if (this.rootElement) this.rootElement.dataset.equippedCourt = equippedCourt;
     this.refreshAchievementsUi();
     this.refreshWristbandUi();
@@ -879,7 +872,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       !this.progression.lightWoodCourtOwned
         ? { name: 'Light Wood Court', price: alternateCourtPrice }
         : null,
-      !this.progression.greenCourtOwned ? { name: 'Green Court', price: alternateCourtPrice } : null,
       !this.progression.discoBallOwned ? { name: 'Disco Ball', price: discoBallPrice } : null,
       !this.progression.blackHoleBallOwned
         ? { name: 'Black Hole', price: blackHoleBallPrice }
@@ -1375,7 +1367,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = null;
     this.blueCourtStatusElement = null;
     this.lightWoodCourtStatusElement = null;
-    this.greenCourtStatusElement = null;
     this.wristbandButtons = [];
     this.leftWristbandPreview = null;
     this.rightWristbandPreview = null;
@@ -1405,7 +1396,6 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleActionButton = null;
     this.blueCourtActionButton = null;
     this.lightWoodCourtActionButton = null;
-    this.greenCourtActionButton = null;
     this.menuBall = null;
     this.menuBallCanvas = null;
   }

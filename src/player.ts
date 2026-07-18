@@ -14,7 +14,7 @@ import {
 @ENGINE.GameClass()
 export class FirstPersonPlayer extends ENGINE.CharacterPawn {
   private static readonly powerBounceImpulseDuration = 0.24;
-  private static readonly gameplayCameraPullback = 0.08;
+  private static readonly gameplayCameraPullback = -0.17;
   private static readonly gameplayCameraDownwardPitch = THREE.MathUtils.degToRad(12);
   private static readonly gameplayCameraFov = 70;
 
