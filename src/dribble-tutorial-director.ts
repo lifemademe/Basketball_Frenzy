@@ -1,4 +1,5 @@
 import type { DribbleSide } from './dribble-ball.js';
+import { t, type TranslationKey } from './dribble-localization.js';
 import type { TargetKind } from './dribble-target.js';
 
 export type TutorialLane = 'left' | 'center' | 'right' | 'active';
@@ -195,7 +196,13 @@ export class DribbleTutorialDirector {
 
   public getLesson(): TutorialLesson {
     const lessons = this.getLessons();
-    return lessons[Math.min(this.lessonIndex, lessons.length - 1)];
+    const lesson = lessons[Math.min(this.lessonIndex, lessons.length - 1)];
+    return {
+      ...lesson,
+      title: t(`lesson.${lesson.id}.title` as TranslationKey),
+      instruction: t(`lesson.${lesson.id}.instruction` as TranslationKey),
+      control: t(`lesson.${lesson.id}.control` as TranslationKey),
+    };
   }
 
   public getLessonNumber(): number {

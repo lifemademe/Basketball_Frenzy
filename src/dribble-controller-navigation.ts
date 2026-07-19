@@ -73,7 +73,7 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
     const focusable = this.getFocusableElements();
     if (focusable.length === 0) return false;
 
-    if (this.adjustRange(direction)) return true;
+    if (this.adjustRange(direction) || this.adjustSelect(direction)) return true;
     const current = this.getCurrentElement(focusable);
     const next = current
       ? this.findDirectionalCandidate(current, focusable, direction)
@@ -115,10 +115,10 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
     const container = this.options.container;
     if (!container) return [];
     const activeScope = container.querySelector<HTMLElement>(
-      '[data-reset-confirmation][data-active="true"], [data-name-entry][data-active="true"], [data-level-info][data-active="true"]',
+      '[data-reset-confirmation][data-active="true"], [data-language-entry][data-active="true"], [data-name-entry][data-active="true"], [data-level-info][data-active="true"]',
     ) ?? container;
     const candidates = Array.from(activeScope.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]',
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]',
     ));
     return candidates.filter(element => (
       !element.matches('[data-menu-ball], [data-controller-nav="false"]')
@@ -250,6 +250,20 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
     input.value = String(Math.max(minimum, Math.min(maximum, nextValue)));
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
+    this.updateFrame();
+    return true;
+  }
+
+  private adjustSelect(direction: ControllerMenuDirection): boolean {
+    if (!(this.focusedElement instanceof HTMLSelectElement)) return false;
+    if (direction !== 'left' && direction !== 'right') return false;
+    const offset = direction === 'right' ? 1 : -1;
+    const maximumIndex = this.focusedElement.options.length - 1;
+    this.focusedElement.selectedIndex = Math.max(
+      0,
+      Math.min(maximumIndex, this.focusedElement.selectedIndex + offset),
+    );
+    this.focusedElement.dispatchEvent(new Event('change', { bubbles: true }));
     this.updateFrame();
     return true;
   }

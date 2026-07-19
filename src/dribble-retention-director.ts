@@ -1,4 +1,5 @@
 import type { DribbleGameMode } from './dribble-main-menu.js';
+import { t, type TranslationKey } from './dribble-localization.js';
 
 export const RUN_OBJECTIVE_XP = 25;
 
@@ -109,14 +110,16 @@ export class DribbleRetentionDirector {
   }
 
   public getBriefing(): string {
-    return this.objectives.map(objective => objective.shortLabel).join('  |  ');
+    return this.objectives.map(objective => (
+      t(`objective.${objective.id}` as TranslationKey)
+    )).join('  |  ');
   }
 
   private toProgress(objective: RunObjectiveDefinition, current: number): RunObjectiveProgress {
     return {
       id: objective.id,
-      label: objective.label,
-      shortLabel: objective.shortLabel,
+      label: t(`objective.${objective.id}` as TranslationKey),
+      shortLabel: t(`objective.${objective.id}` as TranslationKey),
       current: Math.min(current, objective.target),
       target: objective.target,
       completed: this.completed.has(objective.id) || current >= objective.target,

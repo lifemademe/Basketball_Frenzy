@@ -1,4 +1,5 @@
 import * as ENGINE from '@gnsx/genesys.js';
+import { t } from './dribble-localization.js';
 
 export interface DribbleOverlayOptions extends ENGINE.BaseUIComponentOptions {
   onResume?: () => void;
@@ -73,6 +74,9 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   private summaryXpBreakdownElement: HTMLElement | null = null;
   private summaryNextElement: HTMLElement | null = null;
   private summaryLabelElements: HTMLElement[] = [];
+  private resumeButton: ENGINE.Button | null = null;
+  private restartButton: ENGINE.Button | null = null;
+  private mainMenuButton: ENGINE.Button | null = null;
 
   private readonly stopPointerEvent = (event: Event): void => {
     event.stopPropagation();
@@ -109,9 +113,9 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
 
   protected override getInitialData(): Record<string, string> {
     return {
-      title: 'PAUSED',
-      subtitle: 'Take a breath. The court is waiting.',
-      scoreLabel: 'CURRENT SCORE',
+      title: t('overlay.paused'),
+      subtitle: t('overlay.pauseSubtitle'),
+      scoreLabel: t('common.currentScore'),
       score: '0',
     };
   }
@@ -153,23 +157,26 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
       return;
     }
 
-    await Promise.all([
+    const [resumeButton, restartButton, mainMenuButton] = await Promise.all([
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.successLarge,
-        label: 'Resume',
+        label: t('overlay.resume'),
         onClick: () => this.options.onResume(),
       }, this.resumeSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
-        label: 'Restart',
+        label: t('overlay.restart'),
         onClick: () => this.options.onRestart(),
       }, restartSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
-        label: 'Main Menu',
+        label: t('overlay.mainMenu'),
         onClick: () => this.options.onMainMenu(),
       }, mainMenuSlot),
     ]);
+    this.resumeButton = resumeButton;
+    this.restartButton = restartButton;
+    this.mainMenuButton = mainMenuButton;
 
     this.closeButton?.addEventListener('pointerdown', this.stopPointerEvent);
     this.closeButton?.addEventListener('mousedown', this.stopPointerEvent);
@@ -177,11 +184,12 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   }
 
   public showPause(score: number): void {
+    this.refreshButtonLabels();
     this.setContent({
       mode: 'pause',
-      title: 'PAUSED',
-      subtitle: 'Take a breath. The court is waiting.',
-      scoreLabel: 'CURRENT SCORE',
+      title: t('overlay.paused'),
+      subtitle: t('overlay.pauseSubtitle'),
+      scoreLabel: t('common.currentScore'),
       score,
       showResume: true,
       summary: null,
@@ -202,12 +210,13 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     summary: DribbleRunSummary,
     completedRun = false,
   ): void {
+    this.refreshButtonLabels();
     const modeLabel = mode === 'hard' ? 'Hard' : 'Normal';
     this.setContent({
       mode: 'game-over',
-      title: completedRun ? 'RUN COMPLETE' : 'GAME OVER',
+      title: completedRun ? t('overlay.runComplete') : t('overlay.gameOver'),
       subtitle: completedRun ? `Final bucket made · ${modeLabel} best: ${highScore}` : `${modeLabel} best: ${highScore}`,
-      scoreLabel: completedRun ? 'FINAL SCORE' : 'POINTS',
+      scoreLabel: completedRun ? 'FINAL SCORE' : t('common.points'),
       score,
       showResume: false,
       summary,
@@ -217,9 +226,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   }
 
   public showVersusPause(playerLosses: number, aiLosses: number): void {
+    this.refreshButtonLabels();
     this.setContent({
       mode: 'pause',
-      title: 'PAUSED',
+      title: t('overlay.paused'),
       subtitle: 'Last Bounce match in progress.',
       scoreLabel: 'ROUND LOSSES  ·  YOU / AI',
       score: `${playerLosses} - ${aiLosses}`,
@@ -236,9 +246,10 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     aiLosses: number,
     summary: DribbleVersusSummary,
   ): void {
+    this.refreshButtonLabels();
     this.setContent({
       mode: 'game-over',
-      title: playerWon ? 'VICTORY' : 'DEFEAT',
+      title: playerWon ? t('overlay.victory') : t('overlay.defeat'),
       subtitle: playerWon ? 'You outplayed the left hand.' : 'The AI held its nerve.',
       scoreLabel: 'ROUND LOSSES  ·  YOU / AI',
       score: `${playerLosses} - ${aiLosses}`,
@@ -327,6 +338,12 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     }
   }
 
+  private refreshButtonLabels(): void {
+    this.resumeButton?.setLabel(t('overlay.resume'));
+    this.restartButton?.setLabel(t('overlay.restart'));
+    this.mainMenuButton?.setLabel(t('overlay.mainMenu'));
+  }
+
   private formatDuration(seconds: number): string {
     const wholeSeconds = Math.max(0, Math.floor(seconds));
     const minutes = Math.floor(wholeSeconds / 60);
@@ -356,5 +373,8 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.summaryXpBreakdownElement = null;
     this.summaryNextElement = null;
     this.summaryLabelElements = [];
+    this.resumeButton = null;
+    this.restartButton = null;
+    this.mainMenuButton = null;
   }
 }

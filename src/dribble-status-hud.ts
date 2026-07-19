@@ -1,6 +1,7 @@
 import * as ENGINE from '@gnsx/genesys.js';
 
 import type { DribbleSide } from './dribble-ball.js';
+import { t } from './dribble-localization.js';
 import { RUN_OBJECTIVE_XP, type RunObjectiveProgress } from './dribble-retention-director.js';
 
 export interface DribbleRunObjectivesHudOptions extends ENGINE.BaseUIComponentOptions {}
@@ -74,18 +75,18 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
     this.timerElement.style.setProperty('--normal-time-remaining', String(ratio));
     if (this.timerLabelElement) {
       this.timerLabelElement.textContent = state === 'complete'
-        ? 'RUN COMPLETE'
+        ? t('hud.runComplete')
         : state === 'final-shot'
-          ? 'FINAL PLAY'
+          ? t('hud.finalShot')
           : state === 'final-push'
             ? 'FINAL PUSH'
-            : 'TIME LEFT';
+            : t('hud.timeLeft');
     }
     if (this.timerValueElement) {
       this.timerValueElement.textContent = state === 'complete'
         ? 'BUCKET MADE'
         : state === 'final-shot'
-          ? 'FINAL SHOT'
+          ? t('hud.finalShot')
           : this.formatClock(remaining);
     }
     this.timerElement.setAttribute(
@@ -102,7 +103,9 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
     if (label === this.modifierLabel) return;
     this.modifierLabel = label;
     if (this.titleElement) {
-      this.titleElement.textContent = label ? `RUN OBJECTIVES · ${label}` : 'RUN OBJECTIVES';
+      this.titleElement.textContent = label
+        ? `${t('hud.runObjectives')} · ${label}`
+        : t('hud.runObjectives');
     }
   }
 
@@ -214,7 +217,7 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
 
     const label = document.createElement('span');
     label.className = 'dribble-run-objective-label';
-    label.textContent = 'All objectives complete';
+    label.textContent = t('hud.allObjectives');
     item.append(marker, label);
     this.listElement.appendChild(item);
     if (this.rootElement) this.rootElement.dataset.empty = 'false';
@@ -542,7 +545,7 @@ export class DribbleTimingMeter extends ENGINE.BaseUIComponent<DribbleTimingMete
   }
 
   protected override getInitialData(): Record<string, string> {
-    return { label: 'CENTER SWITCH', state: 'SCANNING' };
+    return { label: t('hud.centerSwitch'), state: t('hud.scanning') };
   }
 
   protected override cacheElements(): void {
@@ -655,7 +658,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   }
 
   protected override getInitialData(): Record<string, string> {
-    return { label: 'FRENZY MODE', time: '8.0' };
+    return { label: t('hud.frenzy'), time: '8.0' };
   }
 
   protected override cacheElements(): void {

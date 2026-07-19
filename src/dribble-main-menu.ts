@@ -3,6 +3,19 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import {
+  clearSavedLanguage,
+  detectLanguage,
+  getLanguage,
+  languageNames,
+  loadSavedLanguage,
+  setLanguage,
+  supportedLanguages,
+  t,
+  type DribbleLanguage,
+  type TranslationKey,
+} from './dribble-localization.js';
+
+import {
   achievementIds,
   alternateCourtPrice,
   blackHoleBallPrice,
@@ -137,11 +150,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private resetNormalValueElement: HTMLElement | null = null;
   private resetHardValueElement: HTMLElement | null = null;
   private resetAchievementsValueElement: HTMLElement | null = null;
+  private languageEntryElement: HTMLElement | null = null;
+  private languageSelect: HTMLSelectElement | null = null;
   private nameEntryElement: HTMLElement | null = null;
   private playerNameInput: HTMLInputElement | null = null;
   private playerNameStatus: HTMLElement | null = null;
   private modePlayerNameElement: HTMLElement | null = null;
   private playerName = 'PLAYER';
+  private readonly localizedButtons: [ENGINE.Button, TranslationKey][] = [];
   private pendingReset: ResetMenuTarget | null = null;
   private classicActionButton: ENGINE.Button | null = null;
   private epicActionButton: ENGINE.Button | null = null;
@@ -297,6 +313,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onHighContrastTargetsChange(enabled);
   };
 
+  private readonly handleLanguageSelect = (): void => {
+    const language = this.languageSelect?.value as DribbleLanguage | undefined;
+    if (!language || !supportedLanguages.includes(language)) return;
+    setLanguage(language);
+    this.applyLocalization();
+  };
+
   private readonly handleWristbandClick = (event: Event): void => {
     const button = event.currentTarget as HTMLButtonElement;
     const side = button.dataset.wristbandSide as WristbandSide | undefined;
@@ -352,6 +375,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         localStorage.removeItem(reducedMotionKey);
         localStorage.removeItem(reducedFlashesKey);
         localStorage.removeItem(highContrastTargetsKey);
+        clearSavedLanguage();
       } catch {
         // The saved profile may remain when browser storage is unavailable.
       }
@@ -460,6 +484,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.resetNormalValueElement = this.layout.querySelector('[data-reset-normal-value]') as HTMLElement | null;
     this.resetHardValueElement = this.layout.querySelector('[data-reset-hard-value]') as HTMLElement | null;
     this.resetAchievementsValueElement = this.layout.querySelector('[data-reset-achievements-value]') as HTMLElement | null;
+    this.languageEntryElement = this.layout.querySelector('[data-language-entry]') as HTMLElement | null;
+    this.languageSelect = this.layout.querySelector('[data-menu-language]') as HTMLSelectElement | null;
     this.nameEntryElement = this.layout.querySelector('[data-name-entry]') as HTMLElement | null;
     this.playerNameInput = this.layout.querySelector('[data-player-name-input]') as HTMLInputElement | null;
     this.playerNameStatus = this.layout.querySelector('[data-player-name-status]') as HTMLElement | null;
@@ -502,6 +528,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const lightWoodCourtActionSlot = slot('light-wood-court-action');
     const levelInfoSlot = slot('level-info');
     const levelInfoCloseSlot = slot('level-info-close');
+    const languageSlots = supportedLanguages.map(language => (
+      slot(`language-${language.toLowerCase()}`)
+    ));
     if (
       !playSlot || !normalModeSlot || !hardModeSlot || !lastBounceModeSlot || !multiplayerModeSlot
       || !classicTutorialSlot || !lastBounceTutorialSlot
@@ -512,6 +541,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       || !discoActionSlot || !blackHoleActionSlot
       || !blueCourtActionSlot || !lightWoodCourtActionSlot
       || !levelInfoSlot || !levelInfoCloseSlot
+      || languageSlots.some(languageSlot => !languageSlot)
     ) return;
 
     const mounted = await Promise.all([
@@ -662,17 +692,37 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         label: `Buy - ${alternateCourtPrice} Stars`,
         onClick: () => this.handleCourtAction('light-wood'),
       }, lightWoodCourtActionSlot),
+      ...supportedLanguages.map((language, index) => this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: languageNames[language],
+        onClick: () => this.chooseInitialLanguage(language),
+      }, languageSlots[index]!)),
     ]);
-    this.classicActionButton = mounted[mounted.length - 6];
-    this.epicActionButton = mounted[mounted.length - 5];
-    this.discoActionButton = mounted[mounted.length - 4];
-    this.blackHoleActionButton = mounted[mounted.length - 3];
-    this.blueCourtActionButton = mounted[mounted.length - 2];
-    this.lightWoodCourtActionButton = mounted[mounted.length - 1];
+    this.classicActionButton = mounted[23];
+    this.epicActionButton = mounted[24];
+    this.discoActionButton = mounted[25];
+    this.blackHoleActionButton = mounted[26];
+    this.blueCourtActionButton = mounted[27];
+    this.lightWoodCourtActionButton = mounted[28];
+    const localizedButtonEntries: readonly [TranslationKey, number][] = [
+      ['menu.play', 0], ['menu.close', 2], ['mode.normal', 3], ['mode.hard', 4],
+      ['mode.lastBounce', 5], ['mode.multiplayer', 6], ['tutorial.classic', 7],
+      ['mode.lastBounce', 8], ['name.confirm', 9], ['menu.back', 10], ['menu.back', 11],
+      ['menu.tutorial', 12], ['menu.settings', 13], ['menu.shop', 14], ['menu.reset', 15],
+      ['menu.exit', 16], ['menu.achievements', 17], ['menu.back', 18], ['menu.back', 19],
+      ['menu.back', 20], ['menu.close', 21], ['menu.back', 22],
+    ];
+    for (const [key, index] of localizedButtonEntries) {
+      this.localizedButtons.push([mounted[index], key]);
+    }
     levelInfoSlot.querySelector('button')?.setAttribute('aria-label', 'About Court Level');
     this.playerName = this.loadPlayerName() ?? 'PLAYER';
     this.refreshPlayerNameUi();
     this.setProgression(this.options.progression);
+    const savedLanguage = loadSavedLanguage();
+    if (!savedLanguage && this.loadPlayerName()) setLanguage(detectLanguage());
+    if (this.languageSelect) this.languageSelect.value = getLanguage();
+    this.applyLocalization();
 
     const volume = this.loadVolume(masterVolumeKey, defaultMasterVolume);
     const musicVolume = this.loadVolume(musicVolumeKey, defaultMusicVolume);
@@ -708,6 +758,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedMotionInput?.addEventListener('change', this.handleReducedMotionInput);
     this.reducedFlashesInput?.addEventListener('change', this.handleReducedFlashesInput);
     this.highContrastTargetsInput?.addEventListener('change', this.handleHighContrastTargetsInput);
+    this.languageSelect?.addEventListener('change', this.handleLanguageSelect);
     this.playerNameInput?.addEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.addEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.addEventListener('click', this.handleResetConfirm);
@@ -726,7 +777,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     window.addEventListener('resize', this.handleMenuResize);
     this.showPanel('home');
     await this.preloadCriticalMenuAssets();
-    this.showPlayerNameEntryIfNeeded();
+    this.showFirstLaunchEntryIfNeeded();
     void this.setupMenuBallModel();
     requestAnimationFrame(() => {
       this.resetMenuBall();
@@ -802,7 +853,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.closeResetConfirmation();
       return true;
     }
-    if (this.nameEntryElement?.dataset.active === 'true') return false;
+    if (
+      this.languageEntryElement?.dataset.active === 'true'
+      || this.nameEntryElement?.dataset.active === 'true'
+    ) return false;
     if (this.rootElement?.dataset.panel === 'reset') {
       this.showPanel('settings');
       return true;
@@ -842,6 +896,23 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (resumeBall && this.rootElement?.dataset.panel === 'home') this.startBallPhysics();
   }
 
+  private showFirstLaunchEntryIfNeeded(): void {
+    if (!loadSavedLanguage()) {
+      if (this.languageEntryElement) this.languageEntryElement.dataset.active = 'true';
+      this.stopBallPhysics();
+      return;
+    }
+    this.showPlayerNameEntryIfNeeded();
+  }
+
+  private chooseInitialLanguage(language: DribbleLanguage): void {
+    setLanguage(language);
+    if (this.languageSelect) this.languageSelect.value = language;
+    this.applyLocalization();
+    if (this.languageEntryElement) this.languageEntryElement.dataset.active = 'false';
+    window.setTimeout(() => this.showPlayerNameEntryIfNeeded(), 120);
+  }
+
   private showPlayerNameEntryIfNeeded(): void {
     if (this.loadPlayerName()) return;
     if (this.nameEntryElement) this.nameEntryElement.dataset.active = 'true';
@@ -852,7 +923,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private confirmPlayerName(): void {
     const name = this.sanitizePlayerName(this.playerNameInput?.value ?? '').trim();
     if (name.length < 2) {
-      if (this.playerNameStatus) this.playerNameStatus.textContent = 'Enter at least 2 characters.';
+      if (this.playerNameStatus) this.playerNameStatus.textContent = t('name.error');
       this.playerNameInput?.focus();
       return;
     }
@@ -889,6 +960,29 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   private refreshPlayerNameUi(): void {
     if (this.modePlayerNameElement) this.modePlayerNameElement.textContent = this.playerName;
+  }
+
+  private applyLocalization(): void {
+    if (!this.layout) return;
+    document.documentElement.lang = getLanguage();
+    this.rootElement?.setAttribute('lang', getLanguage());
+    const translatedElements = Array.from(
+      this.layout.querySelectorAll('[data-i18n]'),
+    ) as HTMLElement[];
+    for (const element of translatedElements) {
+      const key = element.dataset.i18n as TranslationKey | undefined;
+      if (key) element.textContent = t(key);
+    }
+    const translatedInputs = Array.from(
+      this.layout.querySelectorAll('[data-i18n-placeholder]'),
+    ) as HTMLInputElement[];
+    for (const element of translatedInputs) {
+      const key = element.dataset.i18nPlaceholder as TranslationKey | undefined;
+      if (key) element.placeholder = t(key);
+    }
+    for (const [button, key] of this.localizedButtons) button.setLabel(t(key));
+    if (this.languageSelect) this.languageSelect.value = getLanguage();
+    this.refreshProgressionUi();
   }
 
   public setProgression(progression: DribbleProgressionState): void {
@@ -934,7 +1028,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
     this.refreshShopGoal();
     if (this.classicStatusElement) {
-      this.classicStatusElement.textContent = equippedBall === 'classic' ? 'EQUIPPED' : 'OWNED';
+      this.classicStatusElement.textContent = equippedBall === 'classic'
+        ? t('shop.equipped')
+        : t('shop.owned');
     }
     this.refreshBallStatus(this.epicStatusElement, 'epic');
     this.refreshBallStatus(this.discoStatusElement, 'disco');
@@ -945,7 +1041,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.rootElement.dataset.epicOwned = this.progression.epicBallOwned ? 'true' : 'false';
       this.rootElement.dataset.epicEquipped = equippedBall === 'epic' ? 'true' : 'false';
     }
-    this.classicActionButton?.setLabel(equippedBall === 'classic' ? 'Equipped' : 'Equip');
+    this.classicActionButton?.setLabel(
+      equippedBall === 'classic' ? t('shop.equipped') : t('shop.equip'),
+    );
     this.classicActionButton?.setDisabled(equippedBall === 'classic');
     this.refreshBallAction(this.epicActionButton, 'epic');
     this.refreshBallAction(this.discoActionButton, 'disco');
@@ -972,7 +1070,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     ].filter((unlock): unlock is { name: string; price: number } => unlock !== null);
     const next = unlocks.sort((a, b) => a.price - b.price)[0] ?? null;
     if (!next) {
-      this.shopGoalElement.textContent = 'Collection complete';
+      this.shopGoalElement.textContent = t('shop.complete');
       return;
     }
     const remaining = Math.max(0, next.price - this.progression.stars);
@@ -1032,7 +1130,17 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         && this.progression.achievements[achievement];
       row.dataset.unlocked = unlocked ? 'true' : 'false';
       const state = row.querySelector('.dribble-achievement-state');
-      if (state) state.textContent = unlocked ? 'COMPLETE' : 'LOCKED';
+      if (state) state.textContent = unlocked ? t('achievements.complete') : t('achievements.locked');
+      if (achievement) {
+        const title = row.querySelector('.dribble-achievement-copy h3');
+        const description = row.querySelector('.dribble-achievement-copy p');
+        if (title) {
+          title.textContent = t(`achievement.${achievement}.title` as TranslationKey);
+        }
+        if (description) {
+          description.textContent = t(`achievement.${achievement}.description` as TranslationKey);
+        }
+      }
       if (achievement === 'playTutorial') {
         const progress = row.querySelector('[data-tutorial-achievement-progress]') as HTMLElement | null;
         const count = row.querySelector('[data-tutorial-achievement-count]') as HTMLElement | null;
@@ -1051,14 +1159,22 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (this.courtChallengeElement) {
       this.courtChallengeElement.dataset.complete = String(this.progression.courtChallengeCompleted);
     }
-    if (this.courtChallengeTitleElement) this.courtChallengeTitleElement.textContent = challenge.title;
-    if (this.courtChallengeCopyElement) this.courtChallengeCopyElement.textContent = challenge.description;
+    if (this.courtChallengeTitleElement) {
+      this.courtChallengeTitleElement.textContent = t(
+        `challenge.${challenge.id}.title` as TranslationKey,
+      );
+    }
+    if (this.courtChallengeCopyElement) {
+      this.courtChallengeCopyElement.textContent = t(
+        `challenge.${challenge.id}.description` as TranslationKey,
+      );
+    }
     if (this.courtChallengeCountElement) {
       this.courtChallengeCountElement.textContent = `${progress} / ${challenge.goal}`;
     }
     if (this.courtChallengeStateElement) {
       this.courtChallengeStateElement.textContent = this.progression.courtChallengeCompleted
-        ? 'COMPLETE'
+        ? t('achievements.complete')
         : `+${challenge.reward} STAR`;
     }
     const weekly = getWeeklyChallenge(this.progression);
@@ -1070,14 +1186,22 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (this.weeklyChallengeElement) {
       this.weeklyChallengeElement.dataset.complete = String(this.progression.weeklyChallengeCompleted);
     }
-    if (this.weeklyChallengeTitleElement) this.weeklyChallengeTitleElement.textContent = weekly.title;
-    if (this.weeklyChallengeCopyElement) this.weeklyChallengeCopyElement.textContent = weekly.description;
+    if (this.weeklyChallengeTitleElement) {
+      this.weeklyChallengeTitleElement.textContent = t(
+        `challenge.weekly.${weekly.id}.title` as TranslationKey,
+      );
+    }
+    if (this.weeklyChallengeCopyElement) {
+      this.weeklyChallengeCopyElement.textContent = t(
+        `challenge.weekly.${weekly.id}.description` as TranslationKey,
+      );
+    }
     if (this.weeklyChallengeCountElement) {
       this.weeklyChallengeCountElement.textContent = `${weeklyProgress} / ${weekly.goal}`;
     }
     if (this.weeklyChallengeStateElement) {
       this.weeklyChallengeStateElement.textContent = this.progression.weeklyChallengeCompleted
-        ? 'COMPLETE'
+        ? t('achievements.complete')
         : `+${weekly.reward} STARS`;
     }
   }
@@ -1085,23 +1209,23 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private refreshBallStatus(element: HTMLElement | null, cosmetic: BallCosmetic): void {
     if (!element) return;
     element.textContent = !isBallOwned(this.progression, cosmetic)
-      ? 'LOCKED'
+      ? t('shop.locked')
       : this.progression.equippedBall === cosmetic
-        ? 'EQUIPPED'
-        : 'OWNED';
+        ? t('shop.equipped')
+        : t('shop.owned');
   }
 
   private refreshBallAction(button: ENGINE.Button | null, cosmetic: BallCosmetic): void {
     if (!button) return;
     const price = getBallPrice(cosmetic);
     if (!isBallOwned(this.progression, cosmetic)) {
-      button.setLabel(`Buy - ${price} ${price === 1 ? 'Star' : 'Stars'}`);
+      button.setLabel(t('shop.buy', { price }));
       button.setDisabled(this.progression.stars < price);
     } else if (this.progression.equippedBall === cosmetic) {
-      button.setLabel('Equipped');
+      button.setLabel(t('shop.equipped'));
       button.setDisabled(true);
     } else {
-      button.setLabel('Equip');
+      button.setLabel(t('shop.equip'));
       button.setDisabled(false);
     }
   }
@@ -1109,23 +1233,23 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private refreshCourtStatus(element: HTMLElement | null, cosmetic: CourtCosmetic): void {
     if (!element) return;
     element.textContent = !isCourtOwned(this.progression, cosmetic)
-      ? 'LOCKED'
+      ? t('shop.locked')
       : this.progression.equippedCourt === cosmetic
-        ? 'EQUIPPED'
-        : 'OWNED';
+        ? t('shop.equipped')
+        : t('shop.owned');
   }
 
   private refreshCourtAction(button: ENGINE.Button | null, cosmetic: CourtCosmetic): void {
     if (!button) return;
     const price = getCourtPrice(cosmetic);
     if (!isCourtOwned(this.progression, cosmetic)) {
-      button.setLabel(`Buy - ${price} ${price === 1 ? 'Star' : 'Stars'}`);
+      button.setLabel(t('shop.buy', { price }));
       button.setDisabled(this.progression.stars < price);
     } else if (this.progression.equippedCourt === cosmetic) {
-      button.setLabel('Equipped');
+      button.setLabel(t('shop.equipped'));
       button.setDisabled(true);
     } else {
-      button.setLabel('Equip');
+      button.setLabel(t('shop.equip'));
       button.setDisabled(false);
     }
   }
@@ -1468,6 +1592,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedMotionInput?.removeEventListener('change', this.handleReducedMotionInput);
     this.reducedFlashesInput?.removeEventListener('change', this.handleReducedFlashesInput);
     this.highContrastTargetsInput?.removeEventListener('change', this.handleHighContrastTargetsInput);
+    this.languageSelect?.removeEventListener('change', this.handleLanguageSelect);
     this.playerNameInput?.removeEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.removeEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.removeEventListener('click', this.handleResetConfirm);
@@ -1497,6 +1622,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedMotionInput = null;
     this.reducedFlashesInput = null;
     this.highContrastTargetsInput = null;
+    this.languageEntryElement = null;
+    this.languageSelect = null;
     this.homeStarsElement = null;
     this.playerLevelElement = null;
     this.playerXpElement = null;
@@ -1512,6 +1639,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = null;
     this.blueCourtStatusElement = null;
     this.lightWoodCourtStatusElement = null;
+    this.localizedButtons.length = 0;
     this.wristbandButtons = [];
     this.levelCourtTitleElement = null;
     this.levelNextRewardElement = null;

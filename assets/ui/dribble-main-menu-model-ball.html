@@ -2,10 +2,23 @@
   <div class="dribble-main-menu-background" aria-hidden="true">
     <img src="@project/assets/textures/main-menu-background.png" alt="">
   </div>
+  <section class="dribble-language-entry" data-language-entry data-active="false" aria-label="Choose language">
+    <div class="dribble-language-entry-card">
+      <h1 data-i18n="language.title">CHOOSE YOUR LANGUAGE</h1>
+      <p data-i18n="language.subtitle">You can change this anytime in Settings</p>
+      <div class="dribble-language-grid">
+        <div class="dribble-main-menu-action" data-menu-language-de-slot></div>
+        <div class="dribble-main-menu-action" data-menu-language-en-slot></div>
+        <div class="dribble-main-menu-action" data-menu-language-es-slot></div>
+        <div class="dribble-main-menu-action" data-menu-language-fr-slot></div>
+        <div class="dribble-main-menu-action" data-menu-language-pt-br-slot></div>
+      </div>
+    </div>
+  </section>
   <section class="dribble-name-entry" data-name-entry data-active="false" aria-label="Create player profile">
     <div class="dribble-name-entry-card">
-      <h1>WELCOME!</h1>
-      <p class="dribble-name-entry-subtitle">Enter your username to get started</p>
+      <h1 data-i18n="name.welcome">WELCOME!</h1>
+      <p class="dribble-name-entry-subtitle" data-i18n="name.subtitle">Enter your username to get started</p>
       <input
         id="dribble-player-name"
         class="dribble-name-input"
@@ -16,6 +29,7 @@
         autocomplete="off"
         spellcheck="false"
         placeholder="Enter username..."
+        data-i18n-placeholder="name.placeholder"
         aria-describedby="dribble-name-status"
       >
       <span id="dribble-name-status" class="dribble-name-status" data-player-name-status></span>
@@ -38,12 +52,12 @@
 
     <div class="dribble-main-menu-profile" aria-label="Player progression">
       <div class="dribble-profile-currency">
-        <small>STARS</small>
+        <small data-i18n="profile.stars">STARS</small>
         <span><img src="@project/assets/textures/Star.png" alt=""> <b data-menu-stars>0</b></span>
       </div>
       <div class="dribble-profile-level">
         <div class="dribble-profile-level-heading">
-          <small>COURT LEVEL</small>
+          <small data-i18n="profile.courtLevel">COURT LEVEL</small>
           <div class="dribble-main-menu-action dribble-level-info-action" data-menu-level-info-slot></div>
         </div>
         <span>LV <b data-menu-player-level>1</b></span>
@@ -51,14 +65,14 @@
         <em data-menu-player-xp>0 / 390 XP</em>
       </div>
       <div class="dribble-profile-records">
-        <small>BEST SCORES</small>
+        <small data-i18n="profile.bestScores">BEST SCORES</small>
         <div class="dribble-profile-score-grid">
           <span class="dribble-profile-mode-score dribble-profile-mode-normal">
-            <em>NORMAL</em>
+            <em data-i18n="profile.normal">NORMAL</em>
             <strong data-menu-normal-high-score>0</strong>
           </span>
           <span class="dribble-profile-mode-score dribble-profile-mode-hard">
-            <em>HARD</em>
+            <em data-i18n="profile.hard">HARD</em>
             <strong data-menu-hard-high-score>0</strong>
           </span>
         </div>
@@ -103,8 +117,8 @@
 
     <section class="dribble-main-menu-panel dribble-main-menu-mode-select" aria-label="Choose game mode">
       <div class="dribble-main-menu-panel-heading dribble-mode-heading">
-        <span>CHOOSE YOUR RUN</span>
-        <h2>Game Mode</h2>
+        <span data-i18n="mode.chooseRun">CHOOSE YOUR RUN</span>
+        <h2 data-i18n="mode.title">Game Mode</h2>
       </div>
       <div class="dribble-mode-options">
         <div class="dribble-mode-option dribble-mode-normal">
@@ -113,14 +127,14 @@
             <img src="@project/assets/textures/Heart.png" alt="">
             <img src="@project/assets/textures/Heart.png" alt="">
             <img src="@project/assets/textures/Heart.png" alt="">
-            <span>3 LIVES · 2 MIN · FINAL SHOT</span>
+            <span data-i18n="mode.normalDetail">3 LIVES · 2 MIN · FINAL SHOT</span>
           </div>
         </div>
         <div class="dribble-mode-option dribble-mode-hard">
           <div class="dribble-main-menu-action" data-menu-hard-mode-slot></div>
           <div class="dribble-mode-lives" aria-label="One life, endless escalating run">
             <img src="@project/assets/textures/Heart.png" alt="">
-            <span>1 LIFE · ENDLESS · SCORE x1.25</span>
+            <span data-i18n="mode.hardDetail">1 LIFE · ENDLESS · SCORE x1.25</span>
           </div>
         </div>
         <div class="dribble-mode-option dribble-mode-last-bounce">
@@ -132,8 +146,8 @@
         <div class="dribble-mode-option dribble-mode-multiplayer" aria-label="Multiplayer coming soon">
           <div class="dribble-main-menu-action" data-menu-multiplayer-mode-slot></div>
           <div class="dribble-mode-coming-soon" aria-hidden="true">
-            <strong>COMING SOON</strong>
-            <span>ONLINE</span>
+            <strong data-i18n="mode.comingSoon">COMING SOON</strong>
+            <span data-i18n="mode.online">ONLINE</span>
           </div>
         </div>
       </div>
@@ -142,21 +156,21 @@
 
     <section class="dribble-main-menu-panel dribble-main-menu-tutorial-select" aria-label="Choose tutorial">
       <div class="dribble-main-menu-panel-heading dribble-mode-heading">
-        <h2>Choose Tutorial</h2>
+        <h2 data-i18n="tutorial.choose">Choose Tutorial</h2>
       </div>
       <div class="dribble-mode-options dribble-tutorial-options">
         <div class="dribble-mode-option dribble-mode-normal">
           <div class="dribble-main-menu-action" data-menu-classic-tutorial-slot></div>
           <div class="dribble-tutorial-mode-copy">
-            <strong>CLASSIC</strong>
-            <span>Targets, timing, health and Frenzy</span>
+            <strong data-i18n="tutorial.classic">CLASSIC</strong>
+            <span data-i18n="tutorial.classicDetail">Targets, timing, health and Frenzy</span>
           </div>
         </div>
         <div class="dribble-mode-option dribble-mode-last-bounce">
           <div class="dribble-main-menu-action" data-menu-last-bounce-tutorial-slot></div>
           <div class="dribble-tutorial-mode-copy">
-            <strong>VERSUS AI</strong>
-            <span>Risk Cards, returns and recovery gates</span>
+            <strong data-i18n="tutorial.versusAi">VERSUS AI</strong>
+            <span data-i18n="tutorial.versusDetail">Risk Cards, returns and recovery gates</span>
           </div>
         </div>
       </div>
@@ -180,7 +194,7 @@
     <section class="dribble-main-menu-panel dribble-main-menu-shop" aria-label="Cosmetic shop">
       <div class="dribble-main-menu-panel-heading dribble-shop-heading">
         <div>
-          <h2>Locker</h2>
+          <h2 data-i18n="shop.title">Locker</h2>
           <small data-shop-goal>Next unlock: Epic Ball</small>
         </div>
         <strong><img src="@project/assets/textures/Star.png" alt="Stars"> <b data-shop-stars>0</b></strong>
@@ -291,15 +305,16 @@
     </section>
 
     <section class="dribble-main-menu-panel dribble-main-menu-achievements" aria-label="Achievements">
+      <h2 class="dribble-achievements-title" data-i18n="menu.achievements">Achievements</h2>
       <div class="dribble-main-menu-action dribble-achievements-close" data-menu-achievements-back-slot></div>
       <div class="dribble-achievements-summary">
-        <span>CAREER PROGRESS</span>
-        <strong><b data-achievement-count>0</b> / 5 COMPLETE</strong>
+        <span data-i18n="achievements.career">CAREER PROGRESS</span>
+        <strong><b data-achievement-count>0</b> / 5 <span data-i18n="achievements.complete">COMPLETE</span></strong>
       </div>
       <div class="dribble-challenge-grid">
         <article class="dribble-court-challenge" data-court-challenge data-complete="false">
           <div>
-            <small>DAILY</small>
+            <small data-i18n="achievements.daily">DAILY</small>
             <strong data-court-challenge-title>Score Sprint</strong>
             <span data-court-challenge-copy>Score 2,500 points in one run.</span>
           </div>
@@ -311,7 +326,7 @@
         </article>
         <article class="dribble-court-challenge dribble-weekly-challenge" data-weekly-challenge data-complete="false">
           <div>
-            <small>WEEKLY</small>
+            <small data-i18n="achievements.weekly">WEEKLY</small>
             <strong data-weekly-challenge-title>Weekly Scorer</strong>
             <span data-weekly-challenge-copy>Score 5,000 points in one run.</span>
           </div>
@@ -412,37 +427,47 @@
 
     <section class="dribble-main-menu-panel dribble-main-menu-settings" aria-label="Settings">
       <div class="dribble-main-menu-panel-heading">
-        <h2>Settings</h2>
+        <h2 data-i18n="settings.title">Settings</h2>
       </div>
+      <label class="dribble-main-menu-setting dribble-main-menu-language" for="dribble-menu-language">
+        <span><b data-i18n="settings.language">Language</b></span>
+        <select id="dribble-menu-language" data-menu-language aria-label="Language">
+          <option value="de">Deutsch</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+          <option value="pt-BR">Português (Brasil)</option>
+        </select>
+      </label>
       <label class="dribble-main-menu-setting" for="dribble-menu-volume">
-        <span><b>Master Volume</b><output data-menu-volume-value>80%</output></span>
+        <span><b data-i18n="settings.master">Master Volume</b><output data-menu-volume-value>80%</output></span>
         <input id="dribble-menu-volume" data-menu-volume type="range" min="0" max="100" step="1" value="80">
       </label>
       <label class="dribble-main-menu-setting" for="dribble-menu-music-volume">
-        <span><b>Music</b><output data-menu-music-volume-value>55%</output></span>
+        <span><b data-i18n="settings.music">Music</b><output data-menu-music-volume-value>55%</output></span>
         <input id="dribble-menu-music-volume" data-menu-music-volume type="range" min="0" max="100" step="1" value="55">
       </label>
       <label class="dribble-main-menu-setting" for="dribble-menu-sfx-volume">
-        <span><b>Sound FX</b><output data-menu-sfx-volume-value>80%</output></span>
+        <span><b data-i18n="settings.sfx">Sound FX</b><output data-menu-sfx-volume-value>80%</output></span>
         <input id="dribble-menu-sfx-volume" data-menu-sfx-volume type="range" min="0" max="100" step="1" value="80">
       </label>
       <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-reduced-motion">
-        <span><b>Reduced Motion</b></span>
+        <span><b data-i18n="settings.motion">Reduced Motion</b></span>
         <input id="dribble-menu-reduced-motion" data-menu-reduced-motion type="checkbox">
         <i aria-hidden="true"></i>
       </label>
       <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-reduced-flashes">
-        <span><b>Reduced Flashes</b></span>
+        <span><b data-i18n="settings.flashes">Reduced Flashes</b></span>
         <input id="dribble-menu-reduced-flashes" data-menu-reduced-flashes type="checkbox">
         <i aria-hidden="true"></i>
       </label>
       <label class="dribble-main-menu-setting dribble-main-menu-toggle" for="dribble-menu-high-contrast">
-        <span><b>High Contrast Targets</b></span>
+        <span><b data-i18n="settings.contrast">High Contrast Targets</b></span>
         <input id="dribble-menu-high-contrast" data-menu-high-contrast type="checkbox">
         <i aria-hidden="true"></i>
       </label>
       <div class="dribble-settings-management">
-        <span class="dribble-settings-management-label">PLAYER DATA</span>
+        <span class="dribble-settings-management-label" data-i18n="settings.playerData">PLAYER DATA</span>
         <div class="dribble-main-menu-action dribble-main-menu-settings-reset-action" data-menu-reset-slot></div>
       </div>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-settings-back-slot></div>

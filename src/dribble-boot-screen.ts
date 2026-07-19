@@ -1,4 +1,5 @@
 import * as ENGINE from '@gnsx/genesys.js';
+import { t } from './dribble-localization.js';
 
 const bootSelector = '[data-dribble-boot-screen]';
 const bootProgressTimers = new WeakMap<HTMLElement, number>();
@@ -8,7 +9,7 @@ function setBootProgress(screen: HTMLElement, progress: number): void {
   screen.style.setProperty('--dribble-boot-progress', `${clamped}%`);
   const label = screen.querySelector('[data-dribble-boot-percent]');
   if (label) label.textContent = `${clamped}%`;
-  screen.setAttribute('aria-label', `Loading Basketball Frenzy ${clamped}%`);
+  screen.setAttribute('aria-label', `${t('common.loading')} Basketball Frenzy ${clamped}%`);
 }
 
 export function showDribbleBootScreen(container: HTMLElement): void {
@@ -110,7 +111,7 @@ export function showDribbleBootScreen(container: HTMLElement): void {
         <img data-dribble-boot-logo alt="Basketball Frenzy">
         <i data-dribble-boot-logo-mask aria-hidden="true"></i>
       </div>
-      <span data-dribble-boot-label><b>LOADING</b><b data-dribble-boot-percent>0%</b></span>
+      <span data-dribble-boot-label><b>${t('common.loading').toUpperCase()}</b><b data-dribble-boot-percent>0%</b></span>
     </div>
   `;
   container.appendChild(screen);

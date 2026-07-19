@@ -1,4 +1,5 @@
 import * as ENGINE from '@gnsx/genesys.js';
+import { t } from './dribble-localization.js';
 import type { DribbleTutorialMode } from './dribble-tutorial-director.js';
 
 export interface DribbleTutorialHudOptions extends ENGINE.BaseUIComponentOptions {
@@ -24,6 +25,7 @@ export class DribbleTutorialHud extends ENGINE.BaseUIComponent<DribbleTutorialHu
   private instructionElement: HTMLElement | null = null;
   private controlElement: HTMLElement | null = null;
   private progressElement: HTMLElement | null = null;
+  private exitButton: ENGINE.Button | null = null;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -58,9 +60,9 @@ export class DribbleTutorialHud extends ENGINE.BaseUIComponent<DribbleTutorialHu
   protected override async onInitialize(): Promise<void> {
     const exitSlot = this.layout?.querySelector('[data-tutorial-exit-slot]') as HTMLElement | null;
     if (!exitSlot) return;
-    await this.mountChild(ENGINE.Button, {
+    this.exitButton = await this.mountChild(ENGINE.Button, {
       ...ENGINE.Button.presets.outlineSmall,
-      label: 'Exit Tutorial',
+      label: t('hud.exitTutorial'),
       onClick: () => this.options.onExit(),
     }, exitSlot);
   }
@@ -73,7 +75,13 @@ export class DribbleTutorialHud extends ENGINE.BaseUIComponent<DribbleTutorialHu
     control: string,
   ): void {
     if (this.rootElement) this.rootElement.dataset.complete = 'false';
-    if (this.stepElement) this.stepElement.textContent = `TRAINING ${lessonNumber} / ${lessonCount}`;
+    this.exitButton?.setLabel(t('hud.exitTutorial'));
+    if (this.stepElement) {
+      this.stepElement.textContent = t('hud.training', {
+        current: lessonNumber,
+        total: lessonCount,
+      });
+    }
     if (this.titleElement) this.titleElement.textContent = title;
     if (this.instructionElement) this.instructionElement.textContent = instruction;
     if (this.controlElement) this.controlElement.textContent = control;
@@ -92,14 +100,15 @@ export class DribbleTutorialHud extends ENGINE.BaseUIComponent<DribbleTutorialHu
 
   public showComplete(mode: DribbleTutorialMode = 'classic'): void {
     if (this.rootElement) this.rootElement.dataset.complete = 'true';
-    if (this.stepElement) this.stepElement.textContent = 'TRAINING COMPLETE';
+    this.exitButton?.setLabel(t('hud.exitTutorial'));
+    if (this.stepElement) this.stepElement.textContent = t('hud.trainingComplete');
     if (this.titleElement) this.titleElement.textContent = 'Court Ready!';
     if (this.instructionElement) {
       this.instructionElement.textContent = mode === 'last-bounce'
         ? 'You are ready to outplay the AI. Protect your Risk Cards, read both hazard heights, and use recovery gates wisely.'
         : 'You know every move. Build clean streaks and control all three lanes.';
     }
-    if (this.controlElement) this.controlElement.textContent = 'EXIT TUTORIAL';
+    if (this.controlElement) this.controlElement.textContent = t('hud.exitTutorial');
     if (this.progressElement) this.progressElement.style.setProperty('--tutorial-progress', '1');
   }
 
@@ -110,5 +119,6 @@ export class DribbleTutorialHud extends ENGINE.BaseUIComponent<DribbleTutorialHu
     this.instructionElement = null;
     this.controlElement = null;
     this.progressElement = null;
+    this.exitButton = null;
   }
 }

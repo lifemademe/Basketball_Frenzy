@@ -31,6 +31,7 @@ import {
   type DribbleTutorialSelection,
 } from './dribble-main-menu.js';
 import { DribbleMusicDirector } from './dribble-music-director.js';
+import { t, type TranslationKey } from './dribble-localization.js';
 import {
   DribbleOverlay,
   type DribbleRunSummary,
@@ -91,6 +92,7 @@ import {
   type TutorialEvent,
 } from './dribble-tutorial-director.js';
 import { DribbleTutorialHud } from './dribble-tutorial-hud.js';
+import { DribbleUiAudioFeedback } from './dribble-ui-audio-feedback.js';
 import { DribbleVersusHud, type VersusOwner } from './dribble-versus-hud.js';
 
 type DribbleGameState = 'menu' | 'playing' | 'paused' | 'gameOver';
@@ -232,6 +234,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private juiceHud: DribbleJuiceHud | null = null;
   private runObjectivesHud: DribbleRunObjectivesHud | null = null;
   private mainMenu: DribbleMainMenu | null = null;
+  private uiAudioFeedback: DribbleUiAudioFeedback | null = null;
   private overlay: DribbleOverlay | null = null;
   private tutorialHud: DribbleTutorialHud | null = null;
   private versusHud: DribbleVersusHud | null = null;
@@ -838,6 +841,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusHud?.destroy();
     this.developerPanel?.destroy();
     this.mainMenu?.destroy();
+    this.uiAudioFeedback?.destroy();
     this.overlay?.destroy();
     this.scoreDisplay = null;
     this.pauseButton = null;
@@ -853,6 +857,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusHud = null;
     this.developerPanel = null;
     this.mainMenu = null;
+    this.uiAudioFeedback = null;
     this.overlay = null;
     this.restoreReferenceHands();
     const world = this.getWorld();
@@ -1160,6 +1165,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         '--dribble-menu-cursor',
         `url("${mouseCursorUrl}") 4 3, pointer`,
       );
+      this.uiAudioFeedback = new DribbleUiAudioFeedback(world, gameContainer);
     }
 
     this.scoreDisplay = new ENGINE.NumberDisplay(world.uiManager, {
@@ -2671,7 +2677,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     const phase = this.runDirector.getPhase(this.elapsedTime);
-    if (Math.random() < 0.02 * phase.bonusChanceScale) {
+    const frenzyStarWindowOpen = this.gameMode !== 'normal'
+      || this.elapsedTime < this.normalRunDuration - this.normalFinalPushDuration;
+    if (frenzyStarWindowOpen && Math.random() < 0.02 * phase.bonusChanceScale) {
       return 'bonus';
     }
 
@@ -2946,7 +2954,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.showScorePraise();
     }
     if (brokeHighScore) {
-      this.juiceHud?.showPraise('NEW HIGH SCORE!', 'gold', 1400, 3);
+      this.juiceHud?.showPraise(t('feedback.newHighScore'), 'gold', 1400, 3);
     }
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
       volume: bonus ? 0.86 : 0.62,
@@ -3046,7 +3054,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     playDribbleFeedback(world, 'frenzy');
     this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
-    this.juiceHud?.showPraise('STAR POWER - FRENZY!', 'gold', 1400, 3);
+    this.juiceHud?.showPraise(t('feedback.frenzy'), 'gold', 1400, 3);
     this.musicDirector?.duckForCallout(1.15);
     playDribbleEventCue(world, 'frenzy-start');
   }
@@ -3493,7 +3501,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.normalFinalPushAnnounced = true;
-    this.juiceHud?.showPraise('FINAL PUSH · 15 SECONDS', 'gold', 1500, 3);
+    this.juiceHud?.showPraise(t('feedback.finalPush'), 'gold', 1500, 3);
     this.musicDirector?.duckForCallout(0.75);
     playDribbleFeedback(this.getWorld(), 'perfect');
   }
@@ -3527,7 +3535,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const ballState = this.ball?.getState();
     if (ballState?.side === 'left' && this.ball?.startFinalHandoffToRight()) {
       this.normalFinaleHandoffActive = true;
-      this.juiceHud?.showPraise('FINAL PLAY · RIGHT HAND', 'gold', 1100, 3);
+      this.juiceHud?.showPraise(t('feedback.finalPlay'), 'gold', 1100, 3);
       this.musicDirector?.duckForCallout(0.65);
       playDribbleFeedback(this.getWorld(), 'perfect');
       return;
@@ -3540,7 +3548,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.normalFinaleHandoffActive = false;
     this.normalFinaleShotStarted = true;
     this.normalFinaleShotElapsed = 0;
-    this.juiceHud?.showPraise('FINAL SHOT!', 'gold', 1500, 3);
+    this.juiceHud?.showPraise(t('feedback.finalShot'), 'gold', 1500, 3);
     this.musicDirector?.duckForCallout(1.4);
     playDribbleFeedback(this.getWorld(), 'frenzy');
     if (this.ball?.startFinalShot(this.normalFinalShotTarget)) return;
@@ -3617,6 +3625,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private markNormalFinaleBallSettled(): void {
     if (this.normalFinaleBallSettled) return;
     this.normalFinaleBallSettled = true;
+    this.ball?.setGameplayActive(false);
     this.runObjectivesHud?.setRunTimer(0, this.normalRunDuration, 'complete');
   }
 
@@ -3630,7 +3639,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.scoreDisplay?.setValue(this.score, true);
     this.spawnImpactBurst(this.normalFinalShotTarget, 0xffca3a, 1.65);
     this.juiceHud?.showPraise(
-      `BUCKET! +${this.normalFinalShotBonus}`,
+      t('feedback.bucket', { points: this.normalFinalShotBonus }),
       'gold',
       1500,
       3,
@@ -3796,6 +3805,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const definition = achievementToastDefinitions[achievement];
     this.achievementToastQueue.push({
       ...definition,
+      title: t(`achievement.${achievement}.title` as TranslationKey),
+      description: t(`achievement.${achievement}.description` as TranslationKey),
       iconUrl: this.achievementIconUrls.get(achievement) ?? '',
       duration: 3000,
     });
@@ -4087,7 +4098,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.mainMenu?.setProgression(this.progression);
       this.updateScoreStarCounter();
       this.juiceHud?.showPraise(
-        `ALL OBJECTIVES COMPLETE · +${RUN_OBJECTIVE_XP} XP · STAR +1`,
+        t('feedback.allObjectives', { xp: RUN_OBJECTIVE_XP }),
         'gold',
         2200,
         3,
@@ -4098,7 +4109,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     if (completed.length > 0) {
       this.juiceHud?.showPraise(
-        `OBJECTIVE COMPLETE · +${RUN_OBJECTIVE_XP} XP`,
+        t('feedback.objective', { xp: RUN_OBJECTIVE_XP }),
         'gold',
         1000,
         2,

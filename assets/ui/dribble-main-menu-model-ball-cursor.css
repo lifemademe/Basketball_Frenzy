@@ -63,6 +63,108 @@
   animation: dribble-name-entry-fade 260ms ease-out both;
 }
 
+.dribble-language-entry {
+  position: absolute;
+  z-index: 22;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(3, 8, 20, 0.68);
+  backdrop-filter: blur(9px);
+}
+
+.dribble-language-entry[data-active='true'] {
+  display: flex;
+  animation: dribble-name-entry-fade 260ms ease-out both;
+}
+
+.dribble-language-entry-card {
+  display: flex;
+  width: min(560px, calc(100vw - 34px));
+  min-height: 500px;
+  padding: 78px 70px 66px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 24px 34px rgba(0, 18, 74, 0.42));
+  text-align: center;
+  animation: dribble-name-entry-card 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dribble-language-entry h1 {
+  margin: 0 0 2px;
+  color: #ffffff;
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 46px;
+  text-shadow: 0 4px 0 rgba(11, 67, 165, 0.76);
+}
+
+.dribble-language-entry p {
+  margin: 0 0 22px;
+  color: #9eeaff;
+  font: 600 14px/18px Arial, sans-serif;
+}
+
+.dribble-language-grid {
+  display: grid;
+  width: 100%;
+  max-height: 248px;
+  padding: 3px 9px 3px 3px;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(112, 220, 255, 0.92) rgba(3, 37, 103, 0.42);
+  scrollbar-width: thin;
+}
+
+.dribble-language-grid::-webkit-scrollbar {
+  width: 7px;
+}
+
+.dribble-language-grid::-webkit-scrollbar-track {
+  border-radius: 7px;
+  background: rgba(3, 37, 103, 0.42);
+}
+
+.dribble-language-grid::-webkit-scrollbar-thumb {
+  border: 1px solid rgba(220, 249, 255, 0.58);
+  border-radius: 7px;
+  background: linear-gradient(#85e9ff, #2e9cff);
+}
+
+.dribble-language-grid .ui-button,
+.dribble-language-grid .ui-button:hover,
+.dribble-language-grid .ui-button:focus-visible {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 22px;
+  justify-content: flex-start;
+  border: 1px solid rgba(161, 228, 255, 0.62);
+  border-radius: 7px;
+  background: rgba(5, 53, 132, 0.72);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 23px;
+  text-shadow: none;
+}
+
+.dribble-language-grid .ui-button:hover,
+.dribble-language-grid .ui-button:focus-visible {
+  border-color: #ffda58;
+  background: rgba(11, 102, 206, 0.88);
+  box-shadow: 0 0 0 2px rgba(255, 218, 88, 0.2), 0 7px 16px rgba(0, 24, 78, 0.25);
+  transform: translateY(-1px);
+}
+
 .dribble-name-entry-card {
   position: relative;
   display: flex;
@@ -1289,6 +1391,35 @@
   margin-bottom: 6px;
 }
 
+.dribble-main-menu-language {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dribble-main-menu-language > span {
+  margin: 0 !important;
+}
+
+.dribble-main-menu-language select {
+  width: min(210px, 58%);
+  height: 36px;
+  padding: 0 30px 0 11px;
+  border: 1px solid rgba(170, 232, 255, 0.62);
+  border-radius: 6px;
+  outline: 0;
+  background: rgba(3, 34, 91, 0.78);
+  color: #ffffff;
+  font: 400 17px/20px 'Boogaloo', 'Trebuchet MS', sans-serif;
+}
+
+.dribble-main-menu-language select:focus {
+  border-color: #ffda58;
+  box-shadow: 0 0 0 2px rgba(255, 218, 88, 0.18);
+}
+
 .dribble-main-menu-settings .dribble-main-menu-toggle {
   min-height: 34px;
 }
@@ -1512,9 +1643,8 @@
   display: grid;
   width: 30px;
   height: 30px;
-  border: 1px solid color-mix(in srgb, var(--reset-accent) 62%, white);
-  border-radius: 50%;
-  background: rgba(0, 29, 85, 0.48);
+  border: 0;
+  background: transparent;
   color: var(--reset-accent);
   font-size: 0;
   font-weight: 400;
@@ -1660,9 +1790,37 @@
   min-height: 520px;
   margin-top: 0;
   padding: 92px 42px 38px;
+  flex-direction: column;
+  overflow: hidden;
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/Achievments.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 24px rgba(0, 23, 92, 0.42));
+}
+
+.dribble-main-menu[data-panel='achievements'] .dribble-main-menu-achievements {
+  display: flex;
+}
+
+.dribble-achievements-title {
+  position: absolute;
+  z-index: 2;
+  top: 6.2%;
+  left: 18.0%;
+  width: 31%;
+  margin: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-family: "Boogaloo", "Arial Black", sans-serif;
+  font-size: clamp(21px, 2.35vw, 25px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  text-transform: none;
+  text-shadow: 0 3px 0 rgba(19, 66, 183, 0.92);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .dribble-achievements-close {
@@ -1839,10 +1997,13 @@
 
 .dribble-achievements-list {
   display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 8px;
-  max-height: calc(100% - 132px);
-  padding: 2px 5px 4px;
+  max-height: none;
+  padding: 2px 5px 16px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .dribble-achievement {
@@ -2592,6 +2753,34 @@
 }
 
 @media (max-width: 760px) {
+  .dribble-language-entry-card {
+    width: min(440px, calc(100vw - 20px));
+    min-height: 470px;
+    padding: 68px 42px 58px;
+  }
+
+  .dribble-language-entry h1 {
+    font-size: 34px;
+    line-height: 38px;
+  }
+
+  .dribble-language-entry p {
+    max-width: 300px;
+    font-size: 12px;
+  }
+
+  .dribble-language-grid {
+    max-height: 238px;
+    gap: 6px;
+  }
+
+  .dribble-language-grid .ui-button,
+  .dribble-language-grid .ui-button:hover,
+  .dribble-language-grid .ui-button:focus-visible {
+    min-height: 48px;
+    font-size: 20px;
+  }
+
   .dribble-name-entry-card {
     width: min(430px, calc(100vw - 24px));
     min-height: 400px;
@@ -2865,7 +3054,8 @@
   }
 
   .dribble-achievements-list {
-    max-height: calc(100% - 228px);
+    min-height: 0;
+    max-height: none;
   }
 }
 
