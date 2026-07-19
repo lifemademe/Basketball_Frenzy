@@ -19,7 +19,7 @@
 
 .dribble-main-menu,
 .dribble-main-menu * {
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, pointer) !important;
 }
 
 .dribble-main-menu button,
@@ -27,7 +27,7 @@
 .dribble-main-menu [role='button'],
 .dribble-main-menu input,
 .dribble-main-menu label {
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, pointer) !important;
 }
 
 .dribble-main-menu-background {
@@ -310,7 +310,7 @@
   border-radius: 50%;
   background: transparent;
   box-shadow: none;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, grab) !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, grab) !important;
   touch-action: none;
   transform: translate3d(0, 0, 0);
   transform-origin: center;
@@ -328,7 +328,7 @@
 
 .dribble-menu-ball[data-grabbed='true'] {
   z-index: 5;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, grabbing) !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, grabbing) !important;
   box-shadow: none;
 }
 
@@ -1208,41 +1208,55 @@
   filter: none;
 }
 
+.dribble-main-menu .dribble-main-menu-shop-action,
+.dribble-main-menu .dribble-main-menu-shop-action .ui-button,
+.dribble-main-menu .dribble-main-menu-shop-action .ui-button *,
+.dribble-main-menu .dribble-main-menu-exit-action,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button * {
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, pointer) !important;
+}
+
 .dribble-main-menu-utility {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 104px;
-  justify-content: center;
-  margin-top: 4px;
+  grid-template-columns: 132px;
+  justify-content: start;
+  width: 100%;
+  padding-left: 20px;
+  box-sizing: border-box;
+  margin-top: 2px;
 }
 
 .dribble-main-menu-exit-action {
   position: relative;
   display: block;
-  width: 104px;
-  height: 66px;
+  width: 132px;
+  height: 58px;
   margin: 0;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, pointer) !important;
 }
 
 
 .dribble-main-menu-exit-action .ui-button,
 .dribble-main-menu-exit-action .ui-button:hover,
 .dribble-main-menu-exit-action .ui-button:focus-visible {
-  width: 104px;
-  height: 66px;
-  min-height: 66px;
+  width: 132px;
+  height: 58px;
+  min-height: 58px;
   padding: 0;
   overflow: visible;
   border: 0;
-  background: transparent url('@project/assets/textures/exit.png') center / contain no-repeat !important;
+  outline: 0;
+  background: transparent url('@project/assets/textures/exit.png') center / 160% auto no-repeat !important;
   box-shadow: none;
   color: transparent;
   font-size: 0;
   filter: none;
   opacity: 1;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
-  transition: filter 140ms ease, transform 140ms ease;
+  transform-origin: left center;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, pointer) !important;
+  transition: filter 120ms ease-out, transform 120ms ease-out;
 }
 
 .dribble-main-menu-exit-action .ui-button-label {
@@ -1328,17 +1342,19 @@
 }
 
 .dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
-.dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible {
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button[data-controller-focus='true'] {
   border: 0;
-  background: transparent url('@project/assets/textures/exit.png') center / contain no-repeat !important;
+  outline: 0;
+  background: transparent url('@project/assets/textures/exit.png') center / 160% auto no-repeat !important;
   box-shadow: none;
-  filter: brightness(1.12) saturate(1.1) drop-shadow(0 7px 9px rgba(167, 61, 0, 0.34));
-  transform: translateY(-2px) scale(1.05);
+  filter: brightness(1.13) saturate(1.04);
+  transform: translateX(4px) scale(1.025);
 }
 
 .dribble-main-menu .dribble-main-menu-exit-action .ui-button:active {
-  filter: brightness(0.94);
-  transform: translateY(1px) scale(0.96);
+  filter: brightness(0.88) saturate(0.92);
+  transform: translateX(2px) scale(0.975);
 }
 
 .dribble-main-menu-panel-heading h2 {
@@ -3031,21 +3047,28 @@
   }
 
   .dribble-main-menu-utility {
-    grid-template-columns: 86px;
+    grid-template-columns: 118px;
+    justify-content: start;
+    padding-left: 10px;
+    box-sizing: border-box;
     margin-top: 0;
   }
 
   .dribble-main-menu-exit-action {
     right: auto;
     bottom: auto;
-    width: 86px;
-    height: 52px;
+    width: 118px;
+    height: 58px;
   }
 
-  .dribble-main-menu-exit-action .ui-button {
-    width: 86px;
-    height: 52px;
-    min-height: 52px;
+  .dribble-main-menu .dribble-main-menu-exit-action .ui-button,
+  .dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
+  .dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible,
+  .dribble-main-menu .dribble-main-menu-exit-action .ui-button[data-controller-focus='true'] {
+    width: 118px;
+    height: 58px;
+    min-height: 58px;
+    background-size: 165% auto !important;
   }
 
   .dribble-main-menu-play .ui-button,

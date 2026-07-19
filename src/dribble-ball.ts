@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { DribbleBallTrail } from './dribble-ball-trail.js';
 import { DribbleBlackHoleDebris } from './dribble-blackhole-debris.js';
 import { playBasketballBounce } from './dribble-bounce-audio.js';
+import { PowerBounceSpinAudio } from './dribble-power-bounce-audio.js';
 import type { BallCosmetic } from './dribble-progression.js';
 
 const ballModelPaths: Record<BallCosmetic | 'gold', string> = {
@@ -131,6 +132,7 @@ export class DribbleBall extends ENGINE.Actor {
   private finalShotScorePending = false;
   private finalShotGroundBounceCount = 0;
   private finalShotTime = 0;
+  private cinematicTrailActive = false;
   private readonly finalShotDuration = 4.6;
   private readonly finalShotStart = new THREE.Vector3();
   private readonly finalShotFloor = new THREE.Vector3(0, 0.34, -1.85);
@@ -140,6 +142,7 @@ export class DribbleBall extends ENGINE.Actor {
   private readonly finalShotGroundEnd = new THREE.Vector3();
   private boostLaunchedFromHand = false;
   private gameplayActive = true;
+  private readonly powerBounceSpinAudio = new PowerBounceSpinAudio();
   private trail: DribbleBallTrail | null = null;
   private ballModel: ENGINE.ModelMeshComponent | null = null;
   private equippedCosmetic: BallCosmetic = 'classic';
@@ -310,7 +313,10 @@ export class DribbleBall extends ENGINE.Actor {
 
   public setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
-    if (!active) this.blackHoleDebris?.deactivate();
+    if (!active) {
+      this.blackHoleDebris?.deactivate();
+      this.powerBounceSpinAudio.stop();
+    }
     this.applyCosmeticVisualState();
   }
 
@@ -360,7 +366,12 @@ export class DribbleBall extends ENGINE.Actor {
     this.receptionBoostWindow = 0;
     this.rootComponent.position.set(this.lanes.left.x, this.handY, this.laneZ);
     this.rootComponent.scale.setScalar(1);
-    return this.startTransfer('left', 'right');
+    const started = this.startTransfer('left', 'right');
+    if (started) {
+      this.cinematicTrailActive = true;
+      this.trail?.setPowerBounceActive(true);
+    }
+    return started;
   }
 
   public startFinalShot(target: THREE.Vector3): boolean {
@@ -375,6 +386,8 @@ export class DribbleBall extends ENGINE.Actor {
     this.finalShotScorePending = false;
     this.finalShotGroundBounceCount = 0;
     this.finalShotTime = 0;
+    this.cinematicTrailActive = true;
+    this.trail?.setPowerBounceActive(true);
     this.finalShotStart.copy(this.rootComponent.position);
     this.finalShotTarget.copy(target);
     const cutsceneGroundY = this.radius + 0.02;
@@ -433,7 +446,9 @@ export class DribbleBall extends ENGINE.Actor {
     this.finalShotScorePending = false;
     this.finalShotGroundBounceCount = 0;
     this.finalShotTime = 0;
+    this.cinematicTrailActive = false;
     this.rootComponent.scale.setScalar(1);
+    this.powerBounceSpinAudio.stop();
     this.updateBouncePosition(0);
     this.trail?.setPowerBounceActive(false);
     this.trail?.clear(this.rootComponent.position);
@@ -461,6 +476,7 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   protected override doEndPlay(): void {
+    this.powerBounceSpinAudio.stop(0.02);
     if (this.frenzyPreloadTimer) {
       clearTimeout(this.frenzyPreloadTimer);
       this.frenzyPreloadTimer = null;
@@ -482,9 +498,8 @@ export class DribbleBall extends ENGINE.Actor {
 
     if (this.finalShotActive) {
       this.updateFinalShot(deltaTime);
-      this.trail?.setPowerBounceActive(
-        this.finalShotActive && this.finalShotTime / this.finalShotDuration < 0.6,
-      );
+      this.updateFinalShotSpinAudio();
+      this.trail?.setPowerBounceActive(this.cinematicTrailActive);
       this.trail?.record(this.rootComponent.position);
       this.modelAnimationMixer?.update(deltaTime);
       this.updateCosmeticVisuals(deltaTime);
@@ -532,6 +547,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.boostTime = Math.min(this.boostTime + deltaTime, DribbleBall.boostDuration);
       const boostProgress = this.boostTime / DribbleBall.boostDuration;
       this.updateBoostPosition(boostProgress);
+      this.updatePowerBounceSpinAudio(boostProgress);
       const impactThreshold = this.boostLaunchedFromHand ? 0.02 : 0.18;
       if (boostProgress >= impactThreshold && !this.boostBouncePlayed) {
         this.boostBouncePlayed = true;
@@ -539,6 +555,7 @@ export class DribbleBall extends ENGINE.Actor {
         this.playBounceSound();
       }
       if (this.boostTime >= DribbleBall.boostDuration) {
+        this.powerBounceSpinAudio.stop();
         this.boostTime = 0;
         this.boostLaunchedFromHand = false;
         this.queuedBoostTransferTo = null;
@@ -556,7 +573,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.updateBouncePosition(deltaTime);
     }
 
-    this.trail?.setPowerBounceActive(this.boostTime > 0);
+    this.trail?.setPowerBounceActive(this.boostTime > 0 || this.cinematicTrailActive);
     this.trail?.record(this.rootComponent.position);
     this.modelAnimationMixer?.update(deltaTime);
     this.updateCosmeticVisuals(deltaTime);
@@ -668,6 +685,7 @@ export class DribbleBall extends ENGINE.Actor {
     this.receptionBoostWindow = 0;
     this.transferBouncePlayed = false;
     this.transferStart.copy(this.rootComponent.position);
+    this.powerBounceSpinAudio.stop();
     return true;
   }
 
@@ -700,6 +718,36 @@ export class DribbleBall extends ENGINE.Actor {
     this.boostBouncePlayed = false;
     this.boostLaunchedFromHand = fromHand;
     this.boostStart.copy(this.rootComponent.position);
+  }
+
+  private updatePowerBounceSpinAudio(progress: number): void {
+    const launchProgress = this.boostLaunchedFromHand ? 0 : 0.18;
+    if (progress <= launchProgress) {
+      this.powerBounceSpinAudio.stop();
+      return;
+    }
+    this.powerBounceSpinAudio.update(
+      this.getWorld(),
+      (progress - launchProgress) / (1 - launchProgress),
+      this.frenzyActive ? 'gold' : this.equippedCosmetic,
+      this.rootComponent.position.x,
+    );
+  }
+
+  private updateFinalShotSpinAudio(): void {
+    const progress = this.finalShotTime / this.finalShotDuration;
+    const flightStart = DribbleBall.finalShotPowerBounceEnd;
+    const flightEnd = 0.42;
+    if (progress <= flightStart || progress >= flightEnd) {
+      this.powerBounceSpinAudio.stop();
+      return;
+    }
+    this.powerBounceSpinAudio.update(
+      this.getWorld(),
+      (progress - flightStart) / (flightEnd - flightStart),
+      this.frenzyActive ? 'gold' : this.equippedCosmetic,
+      this.rootComponent.position.x,
+    );
   }
 
   private updateBouncePosition(_deltaTime: number): void {
@@ -916,6 +964,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.finalShotComplete = true;
       this.rootComponent.position.copy(this.finalShotGroundEnd);
       this.rootComponent.scale.setScalar(1);
+      this.cinematicTrailActive = false;
       this.trail?.setPowerBounceActive(false);
     }
   }

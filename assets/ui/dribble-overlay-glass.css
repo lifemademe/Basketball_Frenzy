@@ -21,7 +21,7 @@
 
 .dribble-overlay,
 .dribble-overlay * {
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
+  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, pointer) !important;
 }
 
 .dribble-overlay-backdrop {

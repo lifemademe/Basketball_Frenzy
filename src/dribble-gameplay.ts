@@ -1163,7 +1163,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       );
       gameContainer.style.setProperty(
         '--dribble-menu-cursor',
-        `url("${mouseCursorUrl}") 4 3, pointer`,
+        `url("${mouseCursorUrl}") 3 2, pointer`,
       );
       this.uiAudioFeedback = new DribbleUiAudioFeedback(world, gameContainer);
     }

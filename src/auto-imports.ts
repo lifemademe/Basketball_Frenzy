@@ -17,6 +17,7 @@ import './dribble-main-menu.ts';
 import './dribble-music-director.ts';
 import './dribble-overlay.ts';
 import './dribble-pattern-director.ts';
+import './dribble-power-bounce-audio.ts';
 import './dribble-progression.ts';
 import './dribble-retention-director.ts';
 import './dribble-run-director.ts';
