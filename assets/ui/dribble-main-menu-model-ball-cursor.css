@@ -122,23 +122,46 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-color: rgba(112, 220, 255, 0.92) rgba(3, 37, 103, 0.42);
+}
+
+.dribble-language-grid,
+.dribble-settings-scroll,
+.dribble-shop-inventory,
+.dribble-achievements-list {
+  scrollbar-color: #ffda58 rgba(3, 37, 103, 0.42);
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
 
-.dribble-language-grid::-webkit-scrollbar {
+.dribble-language-grid::-webkit-scrollbar,
+.dribble-settings-scroll::-webkit-scrollbar,
+.dribble-shop-inventory::-webkit-scrollbar,
+.dribble-achievements-list::-webkit-scrollbar {
   width: 7px;
 }
 
-.dribble-language-grid::-webkit-scrollbar-track {
-  border-radius: 7px;
+.dribble-language-grid::-webkit-scrollbar-track,
+.dribble-settings-scroll::-webkit-scrollbar-track,
+.dribble-shop-inventory::-webkit-scrollbar-track,
+.dribble-achievements-list::-webkit-scrollbar-track {
+  border-radius: 4px;
   background: rgba(3, 37, 103, 0.42);
 }
 
-.dribble-language-grid::-webkit-scrollbar-thumb {
-  border: 1px solid rgba(220, 249, 255, 0.58);
-  border-radius: 7px;
-  background: linear-gradient(#85e9ff, #2e9cff);
+.dribble-language-grid::-webkit-scrollbar-thumb,
+.dribble-settings-scroll::-webkit-scrollbar-thumb,
+.dribble-shop-inventory::-webkit-scrollbar-thumb,
+.dribble-achievements-list::-webkit-scrollbar-thumb {
+  border: 1px solid rgba(255, 248, 193, 0.72);
+  border-radius: 4px;
+  background: #ffda58;
+}
+
+.dribble-language-grid::-webkit-scrollbar-thumb:hover,
+.dribble-settings-scroll::-webkit-scrollbar-thumb:hover,
+.dribble-shop-inventory::-webkit-scrollbar-thumb:hover,
+.dribble-achievements-list::-webkit-scrollbar-thumb:hover {
+  background: #fff08a;
 }
 
 .dribble-language-grid .ui-button,
@@ -668,7 +691,7 @@
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
-  background: transparent url('@project/assets/textures/close.png') center / 40px auto no-repeat !important;
+  background: transparent url('@project/assets/textures/close.png') center / 42px auto no-repeat !important;
   box-shadow: none !important;
   color: transparent !important;
   font-size: 0 !important;
@@ -857,6 +880,10 @@
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
+}
+
+.dribble-main-menu-tutorial-select .dribble-mode-heading {
+  text-align: left;
 }
 
 .dribble-tutorial-options {
@@ -1391,6 +1418,15 @@
   margin-bottom: 6px;
 }
 
+.dribble-settings-scroll {
+  height: 100%;
+  padding: 0 8px 26px 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .dribble-main-menu-language {
   display: flex;
   min-height: 38px;
@@ -1434,6 +1470,8 @@
 
 .dribble-main-menu-settings .dribble-main-menu-panel-heading h2 {
   margin-bottom: 12px;
+  font-size: 34px;
+  line-height: 38px;
 }
 
 .dribble-main-menu-settings .dribble-main-menu-setting > span {
@@ -1454,7 +1492,7 @@
   display: block;
   margin: 0 0 5px 3px;
   color: #c8efff;
-  font: 700 10px/12px Arial, sans-serif;
+  font: 700 12px/15px Arial, sans-serif;
   letter-spacing: 0;
 }
 
@@ -1497,21 +1535,12 @@
 }
 
 .dribble-main-menu-settings,
-.dribble-main-menu-shop {
-  width: min(470px, calc(100vw - 34px));
-  height: min(620px, calc(100vh - 24px));
-  min-height: 560px;
-  padding: 76px 58px 126px;
-  box-sizing: border-box;
-  background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
-  filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
-}
-
+.dribble-main-menu-shop,
 .dribble-main-menu-reset {
   width: min(470px, calc(100vw - 34px));
   height: min(620px, calc(100vh - 24px));
   min-height: 560px;
-  padding: 72px 58px 124px;
+  padding: 76px 58px 126px;
   box-sizing: border-box;
   background: transparent url('@project/assets/textures/pause-menu-background.png') center / 100% 100% no-repeat;
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
@@ -1537,8 +1566,8 @@
 .dribble-reset-heading h2 {
   margin: 0 0 16px;
   color: #ffffff;
-  font-size: 38px;
-  line-height: 40px;
+  font-size: 34px;
+  line-height: 38px;
   text-align: center;
   text-shadow: 0 3px 0 #0b43a5, 0 6px 14px rgba(0, 26, 89, 0.42);
 }
@@ -2001,7 +2030,7 @@
   min-height: 0;
   gap: 8px;
   max-height: none;
-  padding: 2px 5px 16px;
+  padding: 2px 10px 16px 5px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -2170,9 +2199,10 @@
 .dribble-shop-inventory {
   display: grid;
   gap: 9px;
-  max-height: calc(100% - 122px);
-  padding-right: 3px;
+  max-height: calc(100% - 62px);
+  padding-right: 10px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .dribble-wristband-customizer {
@@ -2489,14 +2519,21 @@
   text-shadow: 0 2px 5px rgba(0, 45, 128, 0.9);
 }
 
-.dribble-main-menu-settings .dribble-main-menu-panel-heading h2,
+.dribble-main-menu-settings .dribble-main-menu-panel-heading h2 {
+  text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
+}
+
 .dribble-main-menu-settings .dribble-main-menu-setting b,
 .dribble-main-menu-settings .dribble-main-menu-toggle small {
+  font-size: 16px;
+  line-height: 20px;
   text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
 }
 
 .dribble-main-menu-settings .dribble-main-menu-setting output {
   color: #fff6a8;
+  font-size: 16px;
+  line-height: 20px;
   text-shadow: 0 2px 5px rgba(0, 42, 124, 0.82);
 }
 
@@ -2908,18 +2945,12 @@
   }
 
   .dribble-main-menu-settings,
-  .dribble-main-menu-shop {
-    width: min(390px, 100%);
-    height: min(580px, calc(100vh - 20px));
-    min-height: 520px;
-    padding: 68px 46px 112px;
-  }
-
+  .dribble-main-menu-shop,
   .dribble-main-menu-reset {
     width: min(390px, 100%);
     height: min(580px, calc(100vh - 20px));
     min-height: 520px;
-    padding: 64px 46px 116px;
+    padding: 68px 46px 112px;
   }
 
   .dribble-reset-heading h2 {
