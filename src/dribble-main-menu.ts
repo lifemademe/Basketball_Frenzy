@@ -57,6 +57,7 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onReducedFlashesChange?: (enabled: boolean) => void;
   onHighContrastTargetsChange?: (enabled: boolean) => void;
   onBallBounce?: (strength: number) => void;
+  onNameType?: () => void;
   onExit?: () => void;
   progression?: DribbleProgressionState;
   onPurchaseBall?: (cosmetic: BallCosmetic) => DribbleProgressionState;
@@ -171,10 +172,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private ballLastFrameTime = 0;
   private ballHasPosition = false;
 
-  private readonly handlePlayerNameInput = (): void => {
+  private readonly handlePlayerNameInput = (event: Event): void => {
     if (!this.playerNameInput) return;
+    const inputEvent = event as InputEvent;
+    const acceptedCharacter = typeof inputEvent.data === 'string'
+      && this.sanitizePlayerName(inputEvent.data).length > 0;
     const sanitized = this.sanitizePlayerName(this.playerNameInput.value);
     if (this.playerNameInput.value !== sanitized) this.playerNameInput.value = sanitized;
+    if (acceptedCharacter) this.options.onNameType();
     if (this.playerNameStatus) this.playerNameStatus.textContent = '';
   };
 
@@ -312,9 +317,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.resetConfirmationTitle.textContent = this.getResetConfirmationCopy(target);
     }
     if (this.resetConfirmationCopy) {
-      this.resetConfirmationCopy.textContent = target === 'freshStart'
-        ? 'This clears the username, scores, stars, purchases, achievements, cosmetics, and sound settings.'
-        : 'Only this selection will be reset.';
+      this.resetConfirmationCopy.textContent = this.getResetDetailCopy(target);
     }
     if (this.resetConfirmation) this.resetConfirmation.dataset.active = 'true';
     if (this.resetStatusElement) this.resetStatusElement.textContent = '';
@@ -338,8 +341,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.options.onReducedMotionChange(false);
       this.options.onReducedFlashesChange(false);
       this.options.onHighContrastTargetsChange(false);
+      this.playerName = 'PLAYER';
+      if (this.playerNameInput) this.playerNameInput.value = '';
+      if (this.modePlayerNameElement) this.modePlayerNameElement.textContent = this.playerName;
       try {
         localStorage.removeItem(playerNameKey);
+        localStorage.removeItem(masterVolumeKey);
+        localStorage.removeItem(musicVolumeKey);
+        localStorage.removeItem(sfxVolumeKey);
         localStorage.removeItem(reducedMotionKey);
         localStorage.removeItem(reducedFlashesKey);
         localStorage.removeItem(highContrastTargetsKey);
@@ -377,6 +386,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onReducedFlashesChange: () => {},
       onHighContrastTargetsChange: () => {},
       onBallBounce: () => {},
+      onNameType: () => {},
       onExit: () => {},
       progression: createDefaultProgressionState(),
       onPurchaseBall: () => createDefaultProgressionState(),
@@ -522,12 +532,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, levelInfoCloseSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
-        label: 'Normal',
+        label: 'Normal Run',
         onClick: () => this.options.onPlay('normal'),
       }, normalModeSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
-        label: 'Hard',
+        label: 'Hard Endless',
         onClick: () => this.options.onPlay('hard'),
       }, hardModeSlot),
       this.mountChild(ENGINE.Button, {
@@ -582,7 +592,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       }, shopSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
-        label: 'Reset',
+        label: 'Reset Data',
         onClick: () => this.showPanel('reset'),
       }, resetSlot),
       this.mountChild(ENGINE.Button, {
@@ -618,7 +628,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
         label: 'Back',
-        onClick: () => this.showPanel('home'),
+        onClick: () => this.showPanel('settings'),
       }, resetBackSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.primaryLarge,
@@ -793,6 +803,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       return true;
     }
     if (this.nameEntryElement?.dataset.active === 'true') return false;
+    if (this.rootElement?.dataset.panel === 'reset') {
+      this.showPanel('settings');
+      return true;
+    }
     if (this.rootElement?.dataset.panel && this.rootElement.dataset.panel !== 'home') {
       this.showPanel('home');
       return true;
@@ -1341,6 +1355,22 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (target === 'achievements') return 'Reset all achievement progress?';
     if (target === 'freshStart') return 'Erase the entire local player profile?';
     return 'Restore the default sound mix?';
+  }
+
+  private getResetDetailCopy(target: ResetMenuTarget): string {
+    if (target === 'normalHighScore') {
+      return 'Clears only the Normal best score. Run history and rewards remain.';
+    }
+    if (target === 'hardHighScore') {
+      return 'Clears only the Hard best score. Run history and rewards remain.';
+    }
+    if (target === 'achievements') {
+      return 'Clears achievements and both tutorial completions. Scores, stars, XP, and owned items remain.';
+    }
+    if (target === 'freshStart') {
+      return 'Clears the username, scores, stars, XP, shop inventory, cosmetics, achievements, tutorials, objectives, and settings.';
+    }
+    return 'Restores Master 80%, Music 55%, and Sound FX 80%.';
   }
 
   private getResetSuccessCopy(target: ResetMenuTarget): string {

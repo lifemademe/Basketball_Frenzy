@@ -95,6 +95,8 @@ export interface DribbleBallState {
   isTransferring: boolean;
   isBoosting: boolean;
   isCatching: boolean;
+  isFinalShot: boolean;
+  isFinalShotHandActive: boolean;
   completedBounces: number;
 }
 
@@ -104,6 +106,7 @@ export class DribbleBall extends ENGINE.Actor {
   public static readonly boostDuration = 0.7;
   public static readonly catchDuration = 0.32;
   private static readonly boostTransferHandTolerance = 0.3;
+  private static readonly finalShotPowerBounceEnd = 0.095;
   public readonly radius = 0.32;
 
   private side: DribbleSide = 'left';
@@ -121,6 +124,20 @@ export class DribbleBall extends ENGINE.Actor {
   private boostTime = 0;
   private boostStart = new THREE.Vector3();
   private boostBouncePlayed = false;
+  private finalShotActive = false;
+  private finalShotComplete = false;
+  private finalShotBouncePlayed = false;
+  private finalShotRimPassed = false;
+  private finalShotScorePending = false;
+  private finalShotGroundBounceCount = 0;
+  private finalShotTime = 0;
+  private readonly finalShotDuration = 4.6;
+  private readonly finalShotStart = new THREE.Vector3();
+  private readonly finalShotFloor = new THREE.Vector3(0, 0.34, -1.85);
+  private readonly finalShotTarget = new THREE.Vector3();
+  private readonly finalShotControl = new THREE.Vector3();
+  private readonly finalShotGroundStart = new THREE.Vector3();
+  private readonly finalShotGroundEnd = new THREE.Vector3();
   private boostLaunchedFromHand = false;
   private gameplayActive = true;
   private trail: DribbleBallTrail | null = null;
@@ -156,6 +173,8 @@ export class DribbleBall extends ENGINE.Actor {
     isTransferring: false,
     isBoosting: false,
     isCatching: false,
+    isFinalShot: false,
+    isFinalShotHandActive: false,
     completedBounces: 0,
   };
 
@@ -228,6 +247,9 @@ export class DribbleBall extends ENGINE.Actor {
     this.ballState.isTransferring = this.transferTime > 0;
     this.ballState.isBoosting = this.boostTime > 0;
     this.ballState.isCatching = this.catchTime > 0;
+    this.ballState.isFinalShot = this.finalShotActive;
+    this.ballState.isFinalShotHandActive = this.finalShotActive
+      && this.finalShotTime / this.finalShotDuration <= DribbleBall.finalShotPowerBounceEnd;
     this.ballState.completedBounces = this.completedBounces;
     return this.ballState;
   }
@@ -325,6 +347,67 @@ export class DribbleBall extends ENGINE.Actor {
     this.applyCosmeticVisualState();
   }
 
+  public startFinalHandoffToRight(): boolean {
+    if (!this.gameplayActive || this.finalShotActive) return false;
+    this.side = 'left';
+    this.phase = Math.PI / 2;
+    this.transferTime = 0;
+    this.catchTime = 0;
+    this.boostTime = 0;
+    this.boostLaunchedFromHand = false;
+    this.queuedArrivalBoost = null;
+    this.queuedBoostTransferTo = null;
+    this.receptionBoostWindow = 0;
+    this.rootComponent.position.set(this.lanes.left.x, this.handY, this.laneZ);
+    this.rootComponent.scale.setScalar(1);
+    return this.startTransfer('left', 'right');
+  }
+
+  public startFinalShot(target: THREE.Vector3): boolean {
+    if (!this.gameplayActive || this.finalShotActive) return false;
+    this.side = 'right';
+    this.phase = Math.PI / 2;
+    this.rootComponent.position.set(this.lanes.right.x, this.handY, this.laneZ);
+    this.finalShotActive = true;
+    this.finalShotComplete = false;
+    this.finalShotBouncePlayed = false;
+    this.finalShotRimPassed = false;
+    this.finalShotScorePending = false;
+    this.finalShotGroundBounceCount = 0;
+    this.finalShotTime = 0;
+    this.finalShotStart.copy(this.rootComponent.position);
+    this.finalShotTarget.copy(target);
+    const cutsceneGroundY = this.radius + 0.02;
+    this.finalShotFloor.set(0, cutsceneGroundY, this.lanes.center.z);
+    this.finalShotControl.set(
+      0,
+      Math.max(3.65, target.y + 1.25),
+      THREE.MathUtils.lerp(this.finalShotFloor.z, target.z, 0.52),
+    );
+    this.finalShotGroundStart.set(target.x, cutsceneGroundY, target.z);
+    this.finalShotGroundEnd.set(target.x + 0.34, cutsceneGroundY, target.z + 1.75);
+    this.transferTime = 0;
+    this.catchTime = 0;
+    this.boostTime = 0;
+    this.queuedArrivalBoost = null;
+    this.queuedBoostTransferTo = null;
+    this.receptionBoostWindow = 0;
+    this.rootComponent.scale.setScalar(1);
+    return true;
+  }
+
+  public consumeFinalShotScore(): boolean {
+    if (!this.finalShotScorePending) return false;
+    this.finalShotScorePending = false;
+    return true;
+  }
+
+  public consumeFinalShotComplete(): boolean {
+    if (!this.finalShotComplete) return false;
+    this.finalShotComplete = false;
+    return true;
+  }
+
   public reset(side: DribbleSide = 'left'): void {
     this.setFrenzyActive(false);
     this.side = side;
@@ -343,6 +426,13 @@ export class DribbleBall extends ENGINE.Actor {
     this.completedBounces = 0;
     this.transferBouncePlayed = false;
     this.boostBouncePlayed = false;
+    this.finalShotActive = false;
+    this.finalShotComplete = false;
+    this.finalShotBouncePlayed = false;
+    this.finalShotRimPassed = false;
+    this.finalShotScorePending = false;
+    this.finalShotGroundBounceCount = 0;
+    this.finalShotTime = 0;
     this.rootComponent.scale.setScalar(1);
     this.updateBouncePosition(0);
     this.trail?.setPowerBounceActive(false);
@@ -387,6 +477,17 @@ export class DribbleBall extends ENGINE.Actor {
   public override tickPrePhysics(deltaTime: number): void {
     super.tickPrePhysics(deltaTime);
     if (!this.gameplayActive) {
+      return;
+    }
+
+    if (this.finalShotActive) {
+      this.updateFinalShot(deltaTime);
+      this.trail?.setPowerBounceActive(
+        this.finalShotActive && this.finalShotTime / this.finalShotDuration < 0.6,
+      );
+      this.trail?.record(this.rootComponent.position);
+      this.modelAnimationMixer?.update(deltaTime);
+      this.updateCosmeticVisuals(deltaTime);
       return;
     }
 
@@ -696,6 +797,129 @@ export class DribbleBall extends ENGINE.Actor {
     this.rootComponent.rotation.z += this.side === 'left' ? 0.14 : -0.14;
   }
 
+  private updateFinalShot(deltaTime: number): void {
+    this.finalShotTime = Math.min(this.finalShotDuration, this.finalShotTime + deltaTime);
+    const progress = this.finalShotTime / this.finalShotDuration;
+    const powerBounceEnd = DribbleBall.finalShotPowerBounceEnd;
+    const rimArrivalEnd = 0.42;
+    const netDropEnd = 0.5;
+    const groundDropEnd = 0.6;
+
+    if (progress < powerBounceEnd) {
+      const bounceProgress = THREE.MathUtils.smootherstep(progress / powerBounceEnd, 0, 1);
+      this.rootComponent.position.lerpVectors(
+        this.finalShotStart,
+        this.finalShotFloor,
+        bounceProgress,
+      );
+      this.rootComponent.scale.setScalar(1);
+    } else if (progress < rimArrivalEnd) {
+      if (!this.finalShotBouncePlayed) {
+        this.finalShotBouncePlayed = true;
+        this.completedBounces += 1;
+        this.playBounceSound();
+      }
+      const arcProgress = THREE.MathUtils.smootherstep(
+        (progress - powerBounceEnd) / (rimArrivalEnd - powerBounceEnd),
+        0,
+        1,
+      );
+      const inverse = 1 - arcProgress;
+      this.rootComponent.position.set(
+        inverse * inverse * this.finalShotFloor.x
+          + 2 * inverse * arcProgress * this.finalShotControl.x
+          + arcProgress * arcProgress * this.finalShotTarget.x,
+        inverse * inverse * this.finalShotFloor.y
+          + 2 * inverse * arcProgress * this.finalShotControl.y
+          + arcProgress * arcProgress * this.finalShotTarget.y,
+        inverse * inverse * this.finalShotFloor.z
+          + 2 * inverse * arcProgress * this.finalShotControl.z
+          + arcProgress * arcProgress * this.finalShotTarget.z,
+      );
+      this.rootComponent.scale.setScalar(1);
+    } else if (progress < netDropEnd) {
+      if (!this.finalShotRimPassed) {
+        this.finalShotRimPassed = true;
+        this.finalShotScorePending = true;
+      }
+      const netProgress = THREE.MathUtils.smootherstep(
+        (progress - rimArrivalEnd) / (netDropEnd - rimArrivalEnd),
+        0,
+        1,
+      );
+      this.rootComponent.position.set(
+        this.finalShotTarget.x,
+        this.finalShotTarget.y - netProgress * 0.82,
+        this.finalShotTarget.z,
+      );
+      this.rootComponent.scale.setScalar(1);
+    } else if (progress < groundDropEnd) {
+      const dropProgress = THREE.MathUtils.smootherstep(
+        (progress - netDropEnd) / (groundDropEnd - netDropEnd),
+        0,
+        1,
+      );
+      this.rootComponent.position.set(
+        this.finalShotTarget.x,
+        THREE.MathUtils.lerp(
+          this.finalShotTarget.y - 0.82,
+          this.finalShotGroundStart.y,
+          dropProgress * dropProgress,
+        ),
+        this.finalShotTarget.z,
+      );
+      this.rootComponent.scale.setScalar(1);
+    } else {
+      const bounceProgress = THREE.MathUtils.clamp(
+        (progress - groundDropEnd) / (1 - groundDropEnd),
+        0,
+        1,
+      );
+      const segmentEnds = [0.42, 0.72, 0.9, 1];
+      const bounceHeights = [0.78, 0.42, 0.2, 0];
+      const bounceStrengths = [0.92, 0.62, 0.4, 0.22];
+      let segmentIndex = segmentEnds.findIndex(end => bounceProgress <= end);
+      if (segmentIndex < 0) segmentIndex = segmentEnds.length - 1;
+      const segmentStart = segmentIndex === 0 ? 0 : segmentEnds[segmentIndex - 1];
+      const segmentLength = Math.max(0.001, segmentEnds[segmentIndex] - segmentStart);
+      const segmentProgress = THREE.MathUtils.clamp(
+        (bounceProgress - segmentStart) / segmentLength,
+        0,
+        1,
+      );
+      const desiredImpactCount = segmentIndex + 1;
+      while (this.finalShotGroundBounceCount < desiredImpactCount) {
+        const strength = bounceStrengths[this.finalShotGroundBounceCount] ?? 0.2;
+        this.finalShotGroundBounceCount += 1;
+        this.completedBounces += 1;
+        this.playBounceSound(strength);
+      }
+      const travel = THREE.MathUtils.smootherstep(bounceProgress, 0, 1);
+      this.rootComponent.position.lerpVectors(
+        this.finalShotGroundStart,
+        this.finalShotGroundEnd,
+        travel,
+      );
+      this.rootComponent.position.y = this.finalShotGroundStart.y
+        + Math.sin(segmentProgress * Math.PI) * bounceHeights[segmentIndex];
+      this.rootComponent.scale.setScalar(1);
+    }
+
+    const settle = progress < groundDropEnd
+      ? 1
+      : 1 - THREE.MathUtils.smootherstep((progress - groundDropEnd) / (1 - groundDropEnd), 0, 1) * 0.82;
+    this.rootComponent.rotation.x += deltaTime * 11 * settle;
+    this.rootComponent.rotation.z += deltaTime * 4.8 * settle;
+    if (this.finalShotTime >= this.finalShotDuration) {
+      if (!this.finalShotRimPassed) this.finalShotScorePending = true;
+      this.finalShotActive = false;
+      this.finalShotComplete = true;
+      this.rootComponent.position.copy(this.finalShotGroundEnd);
+      this.rootComponent.scale.setScalar(1);
+      this.trail?.setPowerBounceActive(false);
+    }
+  }
+
   private calculateBoostHeight(progress: number, fromHand: boolean, startY: number): number {
     const clampedProgress = THREE.MathUtils.clamp(progress, 0, 1);
     const boostedY = this.floorY + (this.handY - this.floorY) * 2;
@@ -712,9 +936,9 @@ export class DribbleBall extends ENGINE.Actor {
     return THREE.MathUtils.lerp(this.floorY, boostedY, arc);
   }
 
-  private playBounceSound(): void {
+  private playBounceSound(strength = 1): void {
     const style = this.frenzyActive ? 'gold' : this.equippedCosmetic;
-    playBasketballBounce(this.getWorld(), 1, style);
+    playBasketballBounce(this.getWorld(), strength, style);
     if (!this.frenzyActive && this.equippedCosmetic === 'disco') {
       this.discoImpactVfx?.emitAtPosition(this.localImpactPosition, true);
     } else if (!this.frenzyActive && this.equippedCosmetic === 'blackhole') {

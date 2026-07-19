@@ -133,6 +133,16 @@ export class DribbleTelemetry {
     };
   }
 
+  public clear(): void {
+    this.current = null;
+    this.reports.length = 0;
+    try {
+      localStorage.removeItem(telemetryStorageKey);
+    } catch {
+      // A fresh profile still applies when browser storage is unavailable.
+    }
+  }
+
   private loadReports(): DribbleTelemetryReport[] {
     try {
       const value = localStorage.getItem(telemetryStorageKey);

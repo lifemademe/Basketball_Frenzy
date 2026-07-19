@@ -148,7 +148,7 @@
 }
 
 .dribble-name-confirm {
-  width: 188px;
+  width: 166px;
   height: 70px;
   margin: 2px auto 0;
 }
@@ -476,7 +476,7 @@
 .dribble-level-info-rank small,
 .dribble-level-info-mastery > small {
   color: #75e4ff;
-  font: 700 10px/12px Arial, sans-serif;
+  font: 400 12px/14px 'Boogaloo', 'Trebuchet MS', sans-serif;
 }
 
 .dribble-level-info-rank strong {
@@ -924,6 +924,14 @@
   text-align: right;
 }
 
+.dribble-mode-normal .dribble-mode-lives span,
+.dribble-mode-hard .dribble-mode-lives span {
+  max-width: 132px;
+  font-size: 9px;
+  line-height: 10px;
+  white-space: normal;
+}
+
 .dribble-mode-versus {
   position: absolute;
   z-index: 2;
@@ -1074,19 +1082,9 @@
 .dribble-main-menu-utility {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(2, 104px);
+  grid-template-columns: 104px;
   justify-content: center;
-  gap: 12px;
   margin-top: 4px;
-}
-
-.dribble-main-menu-reset-action {
-  position: relative;
-  display: block;
-  width: 104px;
-  height: 66px;
-  margin: 0;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
 .dribble-main-menu-exit-action {
@@ -1098,32 +1096,6 @@
   cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
 }
 
-.dribble-main-menu-reset-action .ui-button,
-.dribble-main-menu-reset-action .ui-button:hover,
-.dribble-main-menu-reset-action .ui-button:focus-visible {
-  width: 104px;
-  height: 66px;
-  min-height: 66px;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  background: transparent url('@project/assets/textures/Reset.png') center / contain no-repeat !important;
-  box-shadow: none;
-  color: transparent;
-  font-size: 0;
-  filter: none;
-  opacity: 1;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
-}
-
-.dribble-main-menu-reset-action .ui-button-label {
-  overflow: hidden;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  font-size: 0;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 4 3, pointer) !important;
-}
 
 .dribble-main-menu-exit-action .ui-button,
 .dribble-main-menu-exit-action .ui-button:hover,
@@ -1226,16 +1198,6 @@
   filter: brightness(1.12) saturate(1.08);
 }
 
-.dribble-main-menu .dribble-main-menu-reset-action .ui-button:hover,
-.dribble-main-menu .dribble-main-menu-reset-action .ui-button:focus-visible {
-  background: transparent url('@project/assets/textures/Reset.png') center / contain no-repeat !important;
-  border: 0;
-  box-shadow: none;
-  color: transparent;
-  filter: brightness(1.08) saturate(1.05);
-  opacity: 1;
-}
-
 .dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
 .dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible {
   border: 0;
@@ -1324,18 +1286,83 @@
 }
 
 .dribble-main-menu-settings .dribble-main-menu-setting {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .dribble-main-menu-settings .dribble-main-menu-toggle {
-  min-height: 40px;
+  min-height: 34px;
 }
 
 .dribble-main-menu-settings .dribble-main-menu-toggle > span {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  margin-bottom: 0;
   line-height: 18px;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-panel-heading h2 {
+  margin-bottom: 12px;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-setting > span {
+  margin-bottom: 5px;
+}
+
+.dribble-main-menu-settings .dribble-main-menu-toggle > span {
+  margin-bottom: 0;
+}
+
+.dribble-settings-management {
+  margin-top: 13px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(191, 239, 255, 0.34);
+}
+
+.dribble-settings-management-label {
+  display: block;
+  margin: 0 0 5px 3px;
+  color: #c8efff;
+  font: 700 10px/12px Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+.dribble-main-menu-settings-reset-action,
+.dribble-main-menu-settings-reset-action .ui-button {
+  width: 100%;
+  min-height: 48px;
+}
+
+.dribble-main-menu-settings-reset-action .ui-button,
+.dribble-main-menu-settings-reset-action .ui-button:hover,
+.dribble-main-menu-settings-reset-action .ui-button:focus-visible {
+  position: relative;
+  justify-content: flex-start;
+  padding: 0 46px 0 18px;
+  border: 1px solid rgba(190, 232, 255, 0.48);
+  border-radius: 7px;
+  background: rgba(7, 70, 156, 0.58);
+  box-shadow: inset 3px 0 0 #ffd24d, 0 5px 12px rgba(0, 25, 78, 0.16);
+  color: #ffffff;
+  font-size: 20px;
+  text-align: left;
+  text-shadow: 0 2px 3px rgba(0, 29, 91, 0.76);
+}
+
+.dribble-main-menu-settings-reset-action .ui-button::after {
+  position: absolute;
+  right: 17px;
+  color: #ffd24d;
+  content: '\203A';
+  font: 700 30px/1 Arial, sans-serif;
+}
+
+.dribble-main-menu-settings-reset-action .ui-button:hover,
+.dribble-main-menu-settings-reset-action .ui-button:focus-visible {
+  border-color: #ffffff;
+  background: rgba(18, 111, 210, 0.76);
+  box-shadow: inset 3px 0 0 #ffd24d, 0 0 0 2px rgba(99, 216, 255, 0.22), 0 7px 16px rgba(0, 28, 89, 0.24);
+  transform: translateY(-1px);
 }
 
 .dribble-main-menu-settings,
@@ -1422,7 +1449,7 @@
 }
 
 .dribble-reset-list > button.dribble-reset-developer {
-  display: none !important;
+  display: flex;
   --reset-accent: #ff7d88;
   min-height: 44px;
   margin: 2px 12px 0;
@@ -2552,7 +2579,7 @@
 }
 
 .dribble-main-menu .dribble-name-entry .dribble-name-confirm {
-  width: 188px !important;
+  width: 166px !important;
   height: 70px;
   margin-right: auto;
   margin-left: auto;
@@ -2784,22 +2811,8 @@
   }
 
   .dribble-main-menu-utility {
-    grid-template-columns: repeat(2, 86px);
-    gap: 8px;
+    grid-template-columns: 86px;
     margin-top: 0;
-  }
-
-  .dribble-main-menu-reset-action {
-    right: auto;
-    bottom: auto;
-    width: 86px;
-    height: 52px;
-  }
-
-  .dribble-main-menu-reset-action .ui-button {
-    width: 86px;
-    height: 52px;
-    min-height: 52px;
   }
 
   .dribble-main-menu-exit-action {

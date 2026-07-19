@@ -252,6 +252,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private perfectSwitches = 0;
   private hazardsAvoided = 0;
   private runStarsEarned = 0;
+  private frenzyStarsCollected = 0;
+  private runMilestoneStarsAwarded = 0;
   private nextMilestoneScore = 2500;
   private runCoachStage = -1;
   private timingCandidateError: number | null = null;
@@ -301,6 +303,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private scoreStarAssetUrl = '';
   private readonly lanes = [-0.95, 0, 0.95];
   private readonly frenzyDuration = 5.5;
+  private readonly normalRunDuration = 120;
+  private readonly normalFinalPushDuration = 15;
+  private readonly normalFinalShotBonus = 500;
+  private readonly normalFinalShotLocalTarget = new THREE.Vector3(0.02, 2.08, -7.72);
+  private readonly normalFinalShotTarget = new THREE.Vector3(0.02, 2.08, -7.72);
   private readonly targetSpawnZ = -18;
   private readonly minimumTargetGap = 2.35;
   private readonly comfortableTargetGap = 3.15;
@@ -309,7 +316,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly difficultyRampDuration = 90;
   private readonly speedStageStart = 12;
   private readonly speedStageInterval = 20;
-  private readonly maximumSpeedStage = 4;
+  private readonly normalMaximumSpeedStage = 4;
+  private readonly hardMaximumSpeedStage = 12;
   private readonly speedStageBoost = 0.3;
   private lastSpawnIntervalScale = 1;
   private laneSwitchCount = 0;
@@ -327,6 +335,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private runBonusXp = 0;
   private runXpEarned = 0;
   private objectiveRefreshTimer = 0;
+  private normalFinaleActive = false;
+  private normalFinaleResolved = false;
+  private normalFinaleHandoffActive = false;
+  private normalFinaleShotStarted = false;
+  private normalFinaleBallSettled = false;
+  private normalRunCompleted = false;
+  private normalFinaleTimer = 0;
+  private normalFinaleShotElapsed = 0;
+  private normalFinaleResultDelay = 0;
+  private normalFinalPushAnnounced = false;
   private versusOwner: VersusOwner = 'player';
   private versusPlayerLosses = 0;
   private versusAiLosses = 0;
@@ -363,7 +381,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly versusRiskMaximumDistance = 3.4;
 
   public handleLeftClick(): DribbleInputAction {
-    if (this.gameState !== 'playing') return null;
+    if (this.gameState !== 'playing' || this.normalFinaleActive) return null;
     const ballState = this.ball?.getState();
     if (this.gameMode === 'last-bounce') {
       if (this.tutorialActive) {
@@ -408,7 +426,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   public handleRightClick(): DribbleInputAction {
-    if (this.gameState !== 'playing') return null;
+    if (this.gameState !== 'playing' || this.normalFinaleActive) return null;
     const ballState = this.ball?.getState();
     if (this.gameMode === 'last-bounce') {
       if (this.tutorialActive) {
@@ -449,16 +467,19 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   public handleSideAction(side: DribbleSide): DribbleInputAction {
     const action = side === 'left' ? this.handleLeftClick() : this.handleRightClick();
-    if (action === 'boost') {
-      const pawn = this.getWorld()?.getActorsByPredicate(actor => (
-        typeof (actor as unknown as { playPowerBounceCameraImpulse?: unknown })
-          .playPowerBounceCameraImpulse === 'function'
-      ))[0] as unknown as {
-        playPowerBounceCameraImpulse?: (inputSide: DribbleSide) => void;
-      } | undefined;
-      pawn?.playPowerBounceCameraImpulse?.(side);
-    }
+    if (action === 'boost') this.playPowerBounceCameraImpulse(side);
     return action;
+  }
+
+  private playPowerBounceCameraImpulse(side: DribbleSide): void {
+    const pawn = this.getWorld()?.getActorsByPredicate(actor => (
+      actor !== this
+      && typeof (actor as unknown as { playPowerBounceCameraImpulse?: unknown })
+        .playPowerBounceCameraImpulse === 'function'
+    ))[0] as unknown as {
+      playPowerBounceCameraImpulse?: (inputSide: DribbleSide) => void;
+    } | undefined;
+    pawn?.playPowerBounceCameraImpulse?.(side);
   }
 
   public showDirectionalInputFeedback(side: DribbleSide, accepted: boolean): void {
@@ -491,7 +512,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   public togglePause(): void {
-    if (this.gameState === 'menu' || this.gameState === 'gameOver') {
+    if (this.gameState === 'menu' || this.gameState === 'gameOver' || this.normalFinaleActive) {
       return;
     }
 
@@ -550,6 +571,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.runBonusXp = 0;
     this.runXpEarned = 0;
     this.objectiveRefreshTimer = 0;
+    this.normalFinaleActive = false;
+    this.normalFinaleResolved = false;
+    this.normalFinaleHandoffActive = false;
+    this.normalFinaleShotStarted = false;
+    this.normalFinaleBallSettled = false;
+    this.normalRunCompleted = false;
+    this.normalFinaleTimer = 0;
+    this.normalFinaleShotElapsed = 0;
+    this.normalFinaleResultDelay = 0;
+    this.normalFinalPushAnnounced = false;
 
     for (const target of this.activeTargets) {
       target.destroy();
@@ -568,6 +599,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.perfectSwitches = 0;
     this.hazardsAvoided = 0;
     this.runStarsEarned = 0;
+    this.frenzyStarsCollected = 0;
+    this.runMilestoneStarsAwarded = 0;
     this.nextMilestoneScore = 2500;
     this.timingCandidateError = null;
     this.timingReady = false;
@@ -587,9 +620,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.difficultyDirector.reset(this.gameMode);
     this.retentionDirector.start(this.gameMode, this.getObjectiveRotationSeed());
     this.runDirector.start(this.gameMode, this.getObjectiveRotationSeed());
-    this.runObjectivesHud?.setModifier(
-      this.gameMode === 'last-bounce' ? '' : this.runDirector.getModifier().shortLabel,
-    );
+    this.updateRunHudContext();
     this.refreshRunObjectivesHud();
     this.musicDirector?.setIntensity(0);
     if (this.gameMode === 'last-bounce') {
@@ -645,6 +676,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.perfectSwitches = 0;
     this.hazardsAvoided = 0;
     this.runStarsEarned = 0;
+    this.frenzyStarsCollected = 0;
     this.frenzyTimeRemaining = 0;
     this.laneSwitchCount = 0;
     this.patternDirector.cancel();
@@ -691,6 +723,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
+    if (this.normalFinaleActive) {
+      this.updateNormalFinale(deltaTime);
+      return;
+    }
+
     this.elapsedTime += deltaTime;
     this.compactActiveTargets();
     if (DribbleGameplayManager.developerToolsEnabled) {
@@ -712,6 +749,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.updateVersusMode(deltaTime);
       return;
     }
+    if (this.gameMode === 'normal' && this.elapsedTime >= this.normalRunDuration) {
+      this.elapsedTime = this.normalRunDuration;
+      this.beginNormalFinale();
+      return;
+    }
+    this.updateNormalFinalPush();
     this.centerRhythmCooldown = Math.max(0, this.centerRhythmCooldown - deltaTime);
     this.updateFrenzy(deltaTime);
     const baseDifficulty = this.getDifficultyRamp();
@@ -1169,6 +1212,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onReducedFlashesChange: enabled => this.applyReducedFlashes(enabled),
       onHighContrastTargetsChange: enabled => this.applyHighContrastTargets(enabled),
       onBallBounce: strength => playBasketballBounce(world, strength),
+      onNameType: () => {
+        void world.globalAudioManager.playGlobalSound('@project/assets/audio/ui-type-click.wav', {
+          volume: 0.18,
+          bus: 'SFX',
+        });
+      },
       onExit: () => this.exitGame(),
       progression: this.progression,
       onPurchaseBall: cosmetic => this.purchaseBall(cosmetic),
@@ -1464,7 +1513,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     for (const [side, state] of this.handAnimations) {
       const active = ballState.side === side
-        && !ballState.isTransferring;
+        && !ballState.isTransferring
+        && !(this.normalFinaleActive && this.normalFinaleBallSettled)
+        && (!ballState.isFinalShot || ballState.isFinalShotHandActive);
       const blendSpeed = active ? 12 : 16;
       const blend = 1 - Math.exp(-deltaTime * blendSpeed);
       state.weight = THREE.MathUtils.lerp(state.weight, active ? 1 : 0, blend);
@@ -2569,14 +2620,22 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       ? 1
       : this.runDirector.getModifier().speedScale
         * this.runDirector.getPhase(this.elapsedTime).speedScale;
-    return (4.15 + difficulty * 3.9 + stageBoost) * modeScale * runScale;
+    const finalPushScale = this.gameMode === 'normal'
+      && this.elapsedTime >= this.normalRunDuration - this.normalFinalPushDuration
+      ? 1.08
+      : 1;
+    return (4.15 + difficulty * 3.9 + stageBoost) * modeScale * runScale * finalPushScale;
   }
 
   private getDifficultyStage(): number {
     if (this.elapsedTime < this.speedStageStart) return 0;
+    const maximumStage = this.gameMode === 'hard'
+      ? this.hardMaximumSpeedStage
+      : this.normalMaximumSpeedStage;
+    const stageInterval = this.gameMode === 'hard' ? 16 : this.speedStageInterval;
     return Math.min(
-      this.maximumSpeedStage,
-      Math.floor((this.elapsedTime - this.speedStageStart) / this.speedStageInterval) + 1,
+      maximumStage,
+      Math.floor((this.elapsedTime - this.speedStageStart) / stageInterval) + 1,
     );
   }
 
@@ -2624,9 +2683,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     const healthChance = this.lives < this.maxLives ? 0.09 : 0;
+    const finalPushHazardBonus = this.gameMode === 'normal'
+      && this.elapsedTime >= this.normalRunDuration - this.normalFinalPushDuration
+      ? 0.045
+      : 0;
     const hazardChance = canSpawnHazard
       ? this.runDirector.getHazardChance(
-          THREE.MathUtils.lerp(0.64, 0.72, difficulty),
+          THREE.MathUtils.lerp(0.64, 0.72, difficulty) + finalPushHazardBonus,
           this.elapsedTime,
         )
       : 0;
@@ -2812,6 +2875,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     this.progression = awardStars(this.progression, 1);
     this.runStarsEarned += 1;
+    this.frenzyStarsCollected += 1;
     this.mainMenu?.setProgression(this.progression);
     this.updateScoreStarCounter();
     this.handleGoodHit(position, 50, true, false);
@@ -2821,8 +2885,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private awardScoreMilestoneStars(): number {
     let awarded = 0;
     while (this.score >= this.nextMilestoneScore) {
-      awarded += 1;
       this.nextMilestoneScore += 2500;
+      if (this.gameMode === 'normal' && this.runMilestoneStarsAwarded >= 1) continue;
+      awarded += 1;
+      this.runMilestoneStarsAwarded += 1;
     }
     if (awarded === 0) return 0;
     this.progression = awardStars(this.progression, awarded);
@@ -2850,9 +2916,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.telemetry.recordScoreHit(timingBonus > 0, bonus);
     this.difficultyDirector.recordSuccess(timingBonus > 0);
     const rawPoints = basePoints * this.combo + timingBonus;
-    const points = this.gameMode === 'last-bounce'
+    const modifierPoints = this.gameMode === 'last-bounce'
       ? rawPoints
       : this.runDirector.scaleScore(rawPoints);
+    const points = this.gameMode === 'hard'
+      ? Math.max(5, Math.round(modifierPoints * 1.25 / 5) * 5)
+      : modifierPoints;
     this.score += points;
     this.updateCourtChallenge('score', this.score);
     const milestoneAwarded = this.awardScoreMilestoneStars();
@@ -2961,7 +3030,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.centerRhythmOpportunityCount = 0;
     this.patternDirector.cancel();
     for (const target of this.activeTargets) {
-      if (target.kind !== 'hazard' || target.isRemovalPending()) continue;
+      if (target.isRemovalPending()) continue;
+      if (target.kind === 'hazard') {
+        if (!target.convertHazardToScore()) continue;
+        this.spawnImpactBurst(target.rootComponent.position, 0xffca3a, 0.82);
+        continue;
+      }
+      if (target.kind !== 'bonus') continue;
       this.spawnImpactBurst(target.rootComponent.position, 0xffca3a, 0.82);
       target.destroy();
     }
@@ -3409,11 +3484,172 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     world.inputManager.exitPointerLock();
   }
 
-  private endRun(): void {
+  private updateNormalFinalPush(): void {
+    if (
+      this.normalFinalPushAnnounced
+      || this.gameMode !== 'normal'
+      || this.elapsedTime < this.normalRunDuration - this.normalFinalPushDuration
+    ) {
+      return;
+    }
+    this.normalFinalPushAnnounced = true;
+    this.juiceHud?.showPraise('FINAL PUSH · 15 SECONDS', 'gold', 1500, 3);
+    this.musicDirector?.duckForCallout(0.75);
+    playDribbleFeedback(this.getWorld(), 'perfect');
+  }
+
+  private beginNormalFinale(): void {
+    if (this.normalFinaleActive || this.gameMode !== 'normal') return;
+    this.updateRunObjectives();
+    this.normalFinaleActive = true;
+    this.normalRunCompleted = true;
+    this.normalFinaleResolved = false;
+    this.normalFinaleHandoffActive = false;
+    this.normalFinaleShotStarted = false;
+    this.normalFinaleBallSettled = false;
+    this.normalFinaleTimer = 0;
+    this.normalFinaleShotElapsed = 0;
+    this.normalFinaleResultDelay = 0;
+    this.patternDirector.cancel();
+    this.centerRhythmSpawnsRemaining = 0;
+    this.frenzyTimeRemaining = 0;
+    this.ball?.setFrenzyActive(false);
+    this.ball?.setGameplayActive(true);
+    for (const target of this.activeTargets) target.destroy();
+    this.activeTargets.length = 0;
+    this.deactivateHitEffects();
+    this.updateRunHudContext();
+    this.timingMeter?.hide();
+    this.sideHints?.hide();
+    this.pauseButton?.hide();
+    this.touchControls?.setInputActive(false);
+    this.resolveNormalFinalShotTarget();
+    const ballState = this.ball?.getState();
+    if (ballState?.side === 'left' && this.ball?.startFinalHandoffToRight()) {
+      this.normalFinaleHandoffActive = true;
+      this.juiceHud?.showPraise('FINAL PLAY · RIGHT HAND', 'gold', 1100, 3);
+      this.musicDirector?.duckForCallout(0.65);
+      playDribbleFeedback(this.getWorld(), 'perfect');
+      return;
+    }
+    this.startNormalFinalShot();
+  }
+
+  private startNormalFinalShot(): void {
+    if (this.normalFinaleShotStarted) return;
+    this.normalFinaleHandoffActive = false;
+    this.normalFinaleShotStarted = true;
+    this.normalFinaleShotElapsed = 0;
+    this.juiceHud?.showPraise('FINAL SHOT!', 'gold', 1500, 3);
+    this.musicDirector?.duckForCallout(1.4);
+    playDribbleFeedback(this.getWorld(), 'frenzy');
+    if (this.ball?.startFinalShot(this.normalFinalShotTarget)) return;
+    console.warn('Normal finale shot could not start; resolving the final bucket safely.');
+    this.markNormalFinaleBallSettled();
+    this.resolveNormalFinalShot();
+  }
+
+  private resolveNormalFinalShotTarget(): void {
+    const ballTarget = this.getWorld()?.getActorByName('BallTarget');
+    if (ballTarget) {
+      this.normalFinalShotTarget.copy(ballTarget.rootComponent.position);
+      return;
+    }
+
+    const model = this.courtModel?.getModel();
+    if (!model) {
+      this.normalFinalShotTarget.copy(this.normalFinalShotLocalTarget);
+      return;
+    }
+
+    model.updateWorldMatrix(true, true);
+    const hoop = model.getObjectByName('Hoop_Left_2')
+      ?? model.getObjectByName('Hoop_Left')
+      ?? model.getObjectByName('Hoop');
+    if (hoop) {
+      hoop.getWorldPosition(this.normalFinalShotTarget);
+      const origin = model.localToWorld(new THREE.Vector3());
+      const rimOffset = model.localToWorld(new THREE.Vector3(0, -0.02, 0.18)).sub(origin);
+      this.normalFinalShotTarget.add(rimOffset);
+      return;
+    }
+
+    this.normalFinalShotTarget.copy(this.normalFinalShotLocalTarget);
+    model.localToWorld(this.normalFinalShotTarget);
+  }
+
+  private updateNormalFinale(deltaTime: number): void {
+    this.normalFinaleTimer += deltaTime;
+    const ballState = this.ball?.getState();
+    if (ballState) this.updateHandAnimations(deltaTime, ballState);
+
+    if (this.normalFinaleHandoffActive) {
+      if (ballState?.side === 'right' && !ballState.isTransferring && !ballState.isCatching) {
+        this.startNormalFinalShot();
+      } else if (this.normalFinaleTimer >= 1.2) {
+        this.ball?.reset('right');
+        this.startNormalFinalShot();
+      }
+      return;
+    }
+
+    if (!this.normalFinaleShotStarted) this.startNormalFinalShot();
+    this.normalFinaleShotElapsed += deltaTime;
+    if (!this.normalFinaleResolved && this.ball?.consumeFinalShotScore()) {
+      this.resolveNormalFinalShot();
+    }
+    if (!this.normalFinaleBallSettled && this.ball?.consumeFinalShotComplete()) {
+      this.markNormalFinaleBallSettled();
+    }
+    if (this.normalFinaleShotElapsed >= 6.2) {
+      if (!this.normalFinaleResolved) this.resolveNormalFinalShot();
+      this.markNormalFinaleBallSettled();
+    }
+
+    if (!this.normalFinaleBallSettled) return;
+    if (!this.normalFinaleResolved) this.resolveNormalFinalShot();
+    this.normalFinaleResultDelay += deltaTime;
+    if (this.normalFinaleResultDelay >= 1.35) {
+      this.endRun(true);
+    }
+  }
+
+  private markNormalFinaleBallSettled(): void {
+    if (this.normalFinaleBallSettled) return;
+    this.normalFinaleBallSettled = true;
+    this.runObjectivesHud?.setRunTimer(0, this.normalRunDuration, 'complete');
+  }
+
+  private resolveNormalFinalShot(): void {
+    if (this.normalFinaleResolved) return;
+    this.normalFinaleResolved = true;
+    this.score += this.normalFinalShotBonus;
+    this.updateCourtChallenge('score', this.score);
+    this.awardScoreMilestoneStars();
+    this.checkForNewHighScore();
+    this.scoreDisplay?.setValue(this.score, true);
+    this.spawnImpactBurst(this.normalFinalShotTarget, 0xffca3a, 1.65);
+    this.juiceHud?.showPraise(
+      `BUCKET! +${this.normalFinalShotBonus}`,
+      'gold',
+      1500,
+      3,
+    );
+    playGamepadImpactFeedback('frenzy');
+    playDribbleFeedback(this.getWorld(), 'star');
+    void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+      volume: 0.9,
+      bus: 'SFX',
+    });
+  }
+
+  private endRun(completedNormalRun = false): void {
     const world = this.getWorld();
     if (!world) {
       return;
     }
+    this.normalRunCompleted = this.normalRunCompleted || completedNormalRun;
+    this.normalFinaleActive = false;
     this.gameState = 'gameOver';
     this.telemetry.finishRun('completed', this.score, this.elapsedTime);
     this.clearAchievementToasts();
@@ -3429,6 +3665,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         getHighScore(this.progression, this.gameMode),
         this.gameMode,
         this.createRunSummary(),
+        this.normalRunCompleted,
       );
     }
     world.inputManager.exitPointerLock();
@@ -3714,6 +3951,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private resetProgression(target: ProgressionResetTarget): DribbleProgressionState {
     this.progression = resetSavedProgression(this.progression, target);
     if (target === 'freshStart') {
+      this.telemetry.clear();
       this.ball?.setEquippedCosmetic(this.progression.equippedBall);
       void this.applyEquippedCourt();
       this.applyWristbandColor('left', this.progression.leftWristbandColor);
@@ -3838,7 +4076,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const snapshot = this.createObjectiveSnapshot();
     const completed = this.retentionDirector.update(snapshot);
     const progress = this.retentionDirector.getProgress(snapshot);
-    this.runObjectivesHud?.setObjectives(progress, this.elapsedTime < 4.5);
+    this.updateRunHudContext();
+    this.runObjectivesHud?.setObjectives(progress, this.shouldShowRunHudHeader());
     if (this.gameMode === 'last-bounce') return;
     const allComplete = progress.length > 0 && progress.every(objective => objective.completed);
     if (allComplete && !this.objectiveBonusStarAwarded) {
@@ -3869,10 +4108,37 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   private refreshRunObjectivesHud(): void {
+    this.updateRunHudContext();
     this.runObjectivesHud?.setObjectives(
       this.retentionDirector.getProgress(this.createObjectiveSnapshot()),
-      this.elapsedTime < 4.5,
+      this.shouldShowRunHudHeader(),
     );
+  }
+
+  private updateRunHudContext(): void {
+    this.runObjectivesHud?.setModifier('');
+    if (this.gameMode === 'last-bounce') {
+      this.runObjectivesHud?.setRunTimer(0, this.normalRunDuration, 'hidden');
+      return;
+    }
+    if (this.normalFinaleActive) {
+      this.runObjectivesHud?.setRunTimer(0, this.normalRunDuration, 'final-shot');
+      return;
+    }
+    if (this.gameMode === 'normal') {
+      const remaining = Math.max(0, this.normalRunDuration - this.elapsedTime);
+      this.runObjectivesHud?.setRunTimer(
+        remaining,
+        this.normalRunDuration,
+        remaining <= this.normalFinalPushDuration ? 'final-push' : 'steady',
+      );
+      return;
+    }
+    this.runObjectivesHud?.setRunTimer(0, this.normalRunDuration, 'hidden');
+  }
+
+  private shouldShowRunHudHeader(): boolean {
+    return this.gameMode === 'normal' || this.elapsedTime < 4.5;
   }
 
   private updateRunObjectivesThrottled(deltaTime: number): void {
@@ -3889,7 +4155,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       perfectSwitches: this.perfectSwitches,
       hazardsAvoided: this.hazardsAvoided,
       bestCombo: this.bestCombo,
-      starsEarned: this.runStarsEarned,
+      starsEarned: this.frenzyStarsCollected,
       elapsedSeconds: this.elapsedTime,
       roundsWon: this.versusAiLosses,
       longestRally: this.versusLongestRally,
@@ -3915,7 +4181,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.runPerformanceXp = 35 + this.goodHits * 5 + this.perfectSwitches * 8 + this.hazardsAvoided * 2
         + Math.max(0, this.runStarsEarned - (this.objectiveBonusStarAwarded ? 1 : 0)) * 20
         + (this.gameMode === 'hard' ? 35 : 0);
-      this.runBonusXp = 0;
+      this.runBonusXp = this.gameMode === 'normal' && this.normalRunCompleted ? 75 : 0;
     }
     this.runPerformanceXp = Math.max(0, Math.floor(this.runPerformanceXp));
     this.runObjectiveXp = completedObjectives * RUN_OBJECTIVE_XP;
@@ -3999,6 +4265,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
           getHighScore(this.progression, this.gameMode),
           this.gameMode,
           this.createRunSummary(),
+          this.normalRunCompleted,
         );
       }
     } else {

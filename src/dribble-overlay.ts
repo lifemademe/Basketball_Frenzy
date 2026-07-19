@@ -200,13 +200,14 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     highScore: number,
     mode: 'normal' | 'hard',
     summary: DribbleRunSummary,
+    completedRun = false,
   ): void {
     const modeLabel = mode === 'hard' ? 'Hard' : 'Normal';
     this.setContent({
       mode: 'game-over',
-      title: 'GAME OVER',
-      subtitle: `${modeLabel} best: ${highScore}`,
-      scoreLabel: 'POINTS',
+      title: completedRun ? 'RUN COMPLETE' : 'GAME OVER',
+      subtitle: completedRun ? `Final bucket made · ${modeLabel} best: ${highScore}` : `${modeLabel} best: ${highScore}`,
+      scoreLabel: completedRun ? 'FINAL SCORE' : 'POINTS',
       score,
       showResume: false,
       summary,

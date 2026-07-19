@@ -1275,7 +1275,29 @@
         },
         "uuid": "0e66850a405a459c"
       },
-      "$length": 29
+      "29": {
+        "$bc": "ENGINE.Actor",
+        "$initOptions": {},
+        "name": "BallTarget",
+        "rootComponent": {
+          "$bc": "ENGINE.SceneComponent",
+          "name": "SceneComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              0,
+              4.7,
+              -13.6
+            ]
+          },
+          "userData": {
+            "objectFlags": 1
+          },
+          "uuid": "eb6b306a-4668-4032-ad3a-91d6849e8218"
+        },
+        "uuid": "85780d98ab358038"
+      },
+      "$length": 30
     },
     "editorData": {
       "sceneTree": {
@@ -1412,6 +1434,11 @@
           },
           {
             "id": "d2b4fc5e4e5726d2",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "85780d98ab358038",
             "isExpanded": false,
             "nodeType": "actor"
           }

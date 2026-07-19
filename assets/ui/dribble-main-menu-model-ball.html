@@ -97,31 +97,30 @@
       <div class="dribble-main-menu-action dribble-main-menu-settings-action" data-menu-settings-slot></div>
       <div class="dribble-main-menu-action dribble-main-menu-shop-action" data-menu-shop-slot></div>
       <div class="dribble-main-menu-utility" aria-label="System options">
-        <div class="dribble-main-menu-action dribble-main-menu-reset-action" data-menu-reset-slot></div>
         <div class="dribble-main-menu-action dribble-main-menu-exit-action" data-menu-exit-slot></div>
       </div>
     </nav>
 
-    <section class="dribble-main-menu-panel dribble-main-menu-mode-select" aria-label="Choose difficulty">
+    <section class="dribble-main-menu-panel dribble-main-menu-mode-select" aria-label="Choose game mode">
       <div class="dribble-main-menu-panel-heading dribble-mode-heading">
         <span>CHOOSE YOUR RUN</span>
-        <h2>Difficulty</h2>
+        <h2>Game Mode</h2>
       </div>
       <div class="dribble-mode-options">
         <div class="dribble-mode-option dribble-mode-normal">
           <div class="dribble-main-menu-action" data-menu-normal-mode-slot></div>
-          <div class="dribble-mode-lives" aria-label="Three lives">
+          <div class="dribble-mode-lives" aria-label="Three lives, two minute run with a final shot">
             <img src="@project/assets/textures/Heart.png" alt="">
             <img src="@project/assets/textures/Heart.png" alt="">
             <img src="@project/assets/textures/Heart.png" alt="">
-            <span>3 LIVES</span>
+            <span>3 LIVES · 2 MIN · FINAL SHOT</span>
           </div>
         </div>
         <div class="dribble-mode-option dribble-mode-hard">
           <div class="dribble-main-menu-action" data-menu-hard-mode-slot></div>
-          <div class="dribble-mode-lives" aria-label="One life">
+          <div class="dribble-mode-lives" aria-label="One life, endless escalating run">
             <img src="@project/assets/textures/Heart.png" alt="">
-            <span>1 LIFE</span>
+            <span>1 LIFE · ENDLESS · SCORE x1.25</span>
           </div>
         </div>
         <div class="dribble-mode-option dribble-mode-last-bounce">
@@ -392,8 +391,8 @@
           <span><b>Sound Settings</b><small>Restore the default mix</small></span>
           <strong aria-hidden="true">&rsaquo;</strong>
         </button>
-        <button class="dribble-reset-developer" type="button" data-reset-choice="freshStart" aria-pressed="false" aria-hidden="true" data-controller-nav="false" hidden>
-          <span><b>DEV: Fresh Start</b><small>Erase all local player data on next launch</small></span>
+        <button class="dribble-reset-developer" type="button" data-reset-choice="freshStart" aria-pressed="false">
+          <span><b>DEV: Fresh Start</b><small>Erase all local progress and settings on next launch</small></span>
           <strong aria-hidden="true">&rsaquo;</strong>
         </button>
       </div>
@@ -442,6 +441,10 @@
         <input id="dribble-menu-high-contrast" data-menu-high-contrast type="checkbox">
         <i aria-hidden="true"></i>
       </label>
+      <div class="dribble-settings-management">
+        <span class="dribble-settings-management-label">PLAYER DATA</span>
+        <div class="dribble-main-menu-action dribble-main-menu-settings-reset-action" data-menu-reset-slot></div>
+      </div>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-settings-back-slot></div>
     </section>
 

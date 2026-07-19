@@ -83,6 +83,7 @@ export class DribbleTarget extends ENGINE.Actor {
   private removalRequested = false;
   private missedScoreTarget = false;
   private avoidedHazard = false;
+  private targetMesh: ENGINE.MeshComponent | null = null;
   private glowShell: ENGINE.MeshComponent | null = null;
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
@@ -132,6 +133,7 @@ export class DribbleTarget extends ENGINE.Actor {
       castShadow: true,
       physicsOptions: { enabled: false },
     });
+    this.targetMesh = rootComponent;
 
     this.glowBaseOpacity = this.kind === 'bonus'
       ? 0.4
@@ -316,6 +318,30 @@ export class DribbleTarget extends ENGINE.Actor {
     this.targetMaterial?.color.setHex(color);
     this.targetMaterial?.emissive.setHex(color);
     this.glowMaterial?.color.setHex(color);
+  }
+
+  public convertHazardToScore(): boolean {
+    if (this.kind !== 'hazard' || this.hit || this.removalRequested) return false;
+
+    this.kind = 'score';
+    this.pressureLevel = 0;
+    this.baseEmissiveIntensity = 2.8;
+    this.glowBaseOpacity = 0.24;
+    this.rootComponent.rotation.set(0, 0, 0);
+    if (this.threatMarker) this.threatMarker.visible = false;
+
+    const scoreGeometry = new THREE.TorusGeometry(0.42, 0.12, 12, 28);
+    const oldTargetGeometry = this.targetMesh?.geometry;
+    const oldGlowGeometry = this.glowShell?.geometry;
+    if (this.targetMesh) this.targetMesh.geometry = scoreGeometry;
+    if (this.glowShell) this.glowShell.geometry = scoreGeometry.clone();
+    oldTargetGeometry?.dispose();
+    oldGlowGeometry?.dispose();
+    this.glowShell?.scale.setScalar(1.14);
+    this.applyAccessibilityPalette();
+    if (this.targetMaterial) this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity;
+    if (this.glowMaterial) this.glowMaterial.opacity = this.glowBaseOpacity;
+    return true;
   }
 
   public isRemovalPending(): boolean {

@@ -40,6 +40,78 @@
   transform: translateY(-4px);
 }
 
+.dribble-normal-run-timer {
+  --normal-time-remaining: 1;
+  width: 184px;
+  margin: -1px 0 7px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.dribble-normal-run-timer[hidden] {
+  display: none;
+}
+
+.dribble-normal-run-timer-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+
+.dribble-normal-run-timer-copy span {
+  color: rgba(204, 235, 255, 0.86);
+  font: 700 9px/11px Arial, sans-serif;
+}
+
+.dribble-normal-run-timer-copy strong {
+  min-width: 48px;
+  color: #ffffff;
+  font: 400 22px/22px 'Boogaloo', 'Trebuchet MS', sans-serif;
+  text-align: right;
+  text-shadow: none;
+}
+
+.dribble-normal-run-timer-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(3, 9, 18, 0.58);
+}
+
+.dribble-normal-run-timer-track i {
+  display: block;
+  width: calc(var(--normal-time-remaining) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #52c8ff, #a9edff);
+  box-shadow: 0 0 7px rgba(82, 200, 255, 0.34);
+  transition: width 160ms linear, background-color 180ms ease;
+}
+
+.dribble-normal-run-timer[data-state='final-push'] .dribble-normal-run-timer-copy span,
+.dribble-normal-run-timer[data-state='final-push'] .dribble-normal-run-timer-copy strong {
+  color: #ffdc63;
+}
+
+.dribble-normal-run-timer[data-state='final-push'] .dribble-normal-run-timer-track i {
+  background: linear-gradient(90deg, #ff8f2f, #ffdc63);
+  box-shadow: 0 0 9px rgba(255, 186, 57, 0.48);
+}
+
+.dribble-normal-run-timer[data-state='final-shot'] .dribble-normal-run-timer-copy strong,
+.dribble-normal-run-timer[data-state='complete'] .dribble-normal-run-timer-copy strong {
+  color: #ffdc63;
+  font-size: 17px;
+}
+
+.dribble-normal-run-timer[data-state='final-shot'] .dribble-normal-run-timer-track i,
+.dribble-normal-run-timer[data-state='complete'] .dribble-normal-run-timer-track i {
+  width: 100%;
+  background: #ffdc63;
+}
+
 .dribble-run-objectives-title {
   max-height: 14px;
   margin-bottom: 5px;
@@ -47,6 +119,8 @@
   color: rgba(255, 220, 99, 0.72);
   font: 700 9px/12px Arial, sans-serif;
   opacity: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: max-height 180ms ease, margin 180ms ease, opacity 140ms ease;
 }
 
@@ -865,6 +939,17 @@
     margin-bottom: 3px;
     font-size: 8px;
     line-height: 11px;
+  }
+
+  .dribble-normal-run-timer {
+    width: 166px;
+    margin-bottom: 5px;
+    padding-bottom: 6px;
+  }
+
+  .dribble-normal-run-timer-copy strong {
+    font-size: 20px;
+    line-height: 20px;
   }
 
   .dribble-run-objectives-list li {

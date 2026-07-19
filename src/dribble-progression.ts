@@ -477,10 +477,10 @@ export function resetProgression(
     return persist(createDefaultProgressionState());
   }
   if (target === 'normalHighScore') {
-    return persist({ ...state, normalHighScore: 0, normalRunsCompleted: 0 });
+    return persist({ ...state, normalHighScore: 0 });
   }
   if (target === 'hardHighScore') {
-    return persist({ ...state, hardHighScore: 0, hardRunsCompleted: 0 });
+    return persist({ ...state, hardHighScore: 0 });
   }
   return persist({
     ...state,

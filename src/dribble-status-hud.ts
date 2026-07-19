@@ -21,6 +21,9 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
   private rootElement: HTMLElement | null = null;
   private listElement: HTMLOListElement | null = null;
   private titleElement: HTMLElement | null = null;
+  private timerElement: HTMLElement | null = null;
+  private timerLabelElement: HTMLElement | null = null;
+  private timerValueElement: HTMLElement | null = null;
   private modifierLabel = '';
   private lastSignature = '';
   private readonly itemElements = new Map<string, HTMLLIElement>();
@@ -50,6 +53,49 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
     this.rootElement = this.layout?.querySelector('[data-run-objectives]') as HTMLElement | null;
     this.listElement = this.layout?.querySelector('[data-objectives-list]') as HTMLOListElement | null;
     this.titleElement = this.layout?.querySelector('[data-objectives-title]') as HTMLElement | null;
+    this.timerElement = this.layout?.querySelector('[data-run-timer]') as HTMLElement | null;
+    this.timerLabelElement = this.layout?.querySelector('[data-run-timer-label]') as HTMLElement | null;
+    this.timerValueElement = this.layout?.querySelector('[data-run-timer-value]') as HTMLElement | null;
+  }
+
+  public setRunTimer(
+    remainingSeconds: number,
+    totalSeconds: number,
+    state: 'hidden' | 'steady' | 'final-push' | 'final-shot' | 'complete',
+  ): void {
+    if (!this.timerElement) return;
+    const hidden = state === 'hidden';
+    this.timerElement.hidden = hidden;
+    if (hidden) return;
+
+    const remaining = Math.max(0, remainingSeconds);
+    const ratio = totalSeconds > 0 ? Math.min(1, remaining / totalSeconds) : 0;
+    this.timerElement.dataset.state = state;
+    this.timerElement.style.setProperty('--normal-time-remaining', String(ratio));
+    if (this.timerLabelElement) {
+      this.timerLabelElement.textContent = state === 'complete'
+        ? 'RUN COMPLETE'
+        : state === 'final-shot'
+          ? 'FINAL PLAY'
+          : state === 'final-push'
+            ? 'FINAL PUSH'
+            : 'TIME LEFT';
+    }
+    if (this.timerValueElement) {
+      this.timerValueElement.textContent = state === 'complete'
+        ? 'BUCKET MADE'
+        : state === 'final-shot'
+          ? 'FINAL SHOT'
+          : this.formatClock(remaining);
+    }
+    this.timerElement.setAttribute(
+      'aria-label',
+      state === 'complete'
+        ? 'Run complete, bucket made'
+        : state === 'final-shot'
+          ? 'Final play, final shot'
+          : `${this.timerLabelElement?.textContent ?? 'Time left'} ${this.formatClock(remaining)}`,
+    );
   }
 
   public setModifier(label: string): void {
@@ -126,7 +172,7 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
       this.rootElement.dataset.empty = hasActiveObjectives || allComplete || this.removalTimers.size > 0
         ? 'false'
         : 'true';
-      this.rootElement.dataset.showHeader = showHeader && hasActiveObjectives ? 'true' : 'false';
+      this.rootElement.dataset.showHeader = showHeader ? 'true' : 'false';
       this.rootElement.setAttribute(
         'aria-label',
         `Run objectives, ${completedCount} of ${objectives.length} complete`,
@@ -174,6 +220,12 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
     if (this.rootElement) this.rootElement.dataset.empty = 'false';
   }
 
+  private formatClock(seconds: number): string {
+    const wholeSeconds = Math.max(0, Math.ceil(seconds));
+    const minutes = Math.floor(wholeSeconds / 60);
+    return `${minutes}:${String(wholeSeconds % 60).padStart(2, '0')}`;
+  }
+
   protected override onDestroy(): void {
     for (const timer of this.removalTimers.values()) clearTimeout(timer);
     this.removalTimers.clear();
@@ -181,6 +233,9 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
     this.rootElement = null;
     this.listElement = null;
     this.titleElement = null;
+    this.timerElement = null;
+    this.timerLabelElement = null;
+    this.timerValueElement = null;
     this.modifierLabel = '';
     this.lastSignature = '';
   }
