@@ -11,11 +11,14 @@ import {
   epicBallPrice,
   getBallPrice,
   getCourtChallenge,
+  getCourtTitle,
   getCourtPrice,
   getPlayerLevelProgress,
+  getWristbandUnlockLevel,
   getWeeklyChallenge,
   isBallOwned,
   isCourtOwned,
+  isWristbandUnlocked,
   wristbandColorHex,
   wristbandColors,
   type AchievementId,
@@ -92,6 +95,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private playerXpElement: HTMLElement | null = null;
   private playerLevelProgressElement: HTMLElement | null = null;
   private levelInfoElement: HTMLElement | null = null;
+  private levelCourtTitleElement: HTMLElement | null = null;
+  private levelNextRewardElement: HTMLElement | null = null;
+  private levelBestComboElement: HTMLElement | null = null;
+  private levelBestPerfectElement: HTMLElement | null = null;
+  private levelBestClearsElement: HTMLElement | null = null;
+  private levelBestRallyElement: HTMLElement | null = null;
   private normalHighScoreElement: HTMLElement | null = null;
   private hardHighScoreElement: HTMLElement | null = null;
   private shopStarsElement: HTMLElement | null = null;
@@ -400,6 +409,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.playerXpElement = this.layout.querySelector('[data-menu-player-xp]') as HTMLElement | null;
     this.playerLevelProgressElement = this.layout.querySelector('[data-menu-level-progress]') as HTMLElement | null;
     this.levelInfoElement = this.layout.querySelector('[data-level-info]') as HTMLElement | null;
+    this.levelCourtTitleElement = this.layout.querySelector('[data-level-court-title]') as HTMLElement | null;
+    this.levelNextRewardElement = this.layout.querySelector('[data-level-next-reward]') as HTMLElement | null;
+    this.levelBestComboElement = this.layout.querySelector('[data-level-best-combo]') as HTMLElement | null;
+    this.levelBestPerfectElement = this.layout.querySelector('[data-level-best-perfect]') as HTMLElement | null;
+    this.levelBestClearsElement = this.layout.querySelector('[data-level-best-clears]') as HTMLElement | null;
+    this.levelBestRallyElement = this.layout.querySelector('[data-level-best-rally]') as HTMLElement | null;
     this.normalHighScoreElement = this.layout.querySelector('[data-menu-normal-high-score]') as HTMLElement | null;
     this.hardHighScoreElement = this.layout.querySelector('[data-menu-hard-high-score]') as HTMLElement | null;
     this.shopStarsElement = this.layout.querySelector('[data-shop-stars]') as HTMLElement | null;
@@ -894,6 +909,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     if (this.playerLevelElement) this.playerLevelElement.textContent = String(level.level);
     if (this.playerXpElement) this.playerXpElement.textContent = `${level.current} / ${level.required} XP`;
     this.playerLevelProgressElement?.style.setProperty('--player-level-progress', String(level.progress));
+    if (this.levelCourtTitleElement) this.levelCourtTitleElement.textContent = getCourtTitle(level.level);
+    if (this.levelNextRewardElement) this.levelNextRewardElement.textContent = level.nextUnlock;
+    if (this.levelBestComboElement) this.levelBestComboElement.textContent = `x${this.progression.bestClassicCombo}`;
+    if (this.levelBestPerfectElement) this.levelBestPerfectElement.textContent = String(this.progression.bestPerfectSwitches);
+    if (this.levelBestClearsElement) this.levelBestClearsElement.textContent = String(this.progression.bestHazardsAvoided);
+    if (this.levelBestRallyElement) this.levelBestRallyElement.textContent = String(this.progression.bestLastBounceRally);
     if (this.normalHighScoreElement) this.normalHighScoreElement.textContent = String(normalHighScore);
     if (this.hardHighScoreElement) this.hardHighScoreElement.textContent = String(hardHighScore);
     if (this.shopStarsElement) this.shopStarsElement.textContent = String(stars);
@@ -969,6 +990,18 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       const color = button.dataset.wristbandColor as WristbandColor | undefined;
       const isSelected = side !== undefined && color !== undefined && selected[side] === color;
       button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      if (!color) continue;
+      const unlockLevel = getWristbandUnlockLevel(color);
+      const unlocked = isSelected || isWristbandUnlocked(this.progression.playerXp, color);
+      button.disabled = !unlocked;
+      button.dataset.locked = unlocked ? 'false' : 'true';
+      button.dataset.unlockLevel = String(unlockLevel);
+      const colorName = button.title.split(' · ')[0] || color;
+      button.title = unlocked ? colorName : `${colorName} · Unlocks at Court Level ${unlockLevel}`;
+      button.setAttribute(
+        'aria-label',
+        unlocked ? `${colorName} ${side ?? ''} wristband` : `${colorName}, unlocks at Court Level ${unlockLevel}`,
+      );
     }
     this.leftWristbandPreview?.style.setProperty('--wristband-color', wristbandColorHex[selected.left]);
     this.rightWristbandPreview?.style.setProperty('--wristband-color', wristbandColorHex[selected.right]);
@@ -1450,6 +1483,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blueCourtStatusElement = null;
     this.lightWoodCourtStatusElement = null;
     this.wristbandButtons = [];
+    this.levelCourtTitleElement = null;
+    this.levelNextRewardElement = null;
+    this.levelBestComboElement = null;
+    this.levelBestPerfectElement = null;
+    this.levelBestClearsElement = null;
+    this.levelBestRallyElement = null;
     this.leftWristbandPreview = null;
     this.rightWristbandPreview = null;
     this.resetChoices = [];

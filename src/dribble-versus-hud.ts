@@ -33,6 +33,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private calloutSubtitleElement: HTMLElement | null = null;
   private opponentNameElement: HTMLElement | null = null;
   private opponentStyleElement: HTMLElement | null = null;
+  private aiIntentElement: HTMLElement | null = null;
   private calloutTimer: ReturnType<typeof setTimeout> | null = null;
   private roundResultTimer: ReturnType<typeof setTimeout> | null = null;
   private renderedPlayerLosses = -1;
@@ -82,6 +83,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.calloutSubtitleElement = this.layout?.querySelector('[data-versus-callout-subtitle]') as HTMLElement | null;
     this.opponentNameElement = this.layout?.querySelector('[data-versus-opponent-name]') as HTMLElement | null;
     this.opponentStyleElement = this.layout?.querySelector('[data-versus-opponent-style]') as HTMLElement | null;
+    this.aiIntentElement = this.layout?.querySelector('[data-versus-ai-intent]') as HTMLElement | null;
   }
 
   public setMatchState(
@@ -181,6 +183,15 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     if (this.opponentStyleElement) this.opponentStyleElement.textContent = style;
   }
 
+  public setAiIntent(intent: 'reading' | 'return' | 'power' | null): void {
+    if (!this.aiIntentElement) return;
+    const labels = { reading: 'READING', return: 'RETURN', power: 'POWER' } as const;
+    this.aiIntentElement.textContent = intent ? labels[intent] : '';
+    this.aiIntentElement.dataset.active = intent ? 'true' : 'false';
+    if (intent) this.aiIntentElement.dataset.intent = intent;
+    else delete this.aiIntentElement.dataset.intent;
+  }
+
   public showCallout(
     title: string,
     subtitle: string,
@@ -253,6 +264,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.calloutSubtitleElement = null;
     this.opponentNameElement = null;
     this.opponentStyleElement = null;
+    this.aiIntentElement = null;
     this.renderedPlayerLosses = -1;
     this.renderedAiLosses = -1;
     this.renderedPlayerRiskCards = -1;

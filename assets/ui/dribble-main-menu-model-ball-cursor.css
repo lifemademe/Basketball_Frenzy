@@ -458,6 +458,60 @@
   font: 400 15px/20px Arial, sans-serif;
 }
 
+.dribble-level-info-rank {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 12px;
+  margin: 8px 0 13px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(117, 228, 255, 0.24);
+  border-bottom: 1px solid rgba(117, 228, 255, 0.24);
+}
+
+.dribble-level-info-rank span {
+  display: grid;
+  gap: 2px;
+}
+
+.dribble-level-info-rank small,
+.dribble-level-info-mastery > small {
+  color: #75e4ff;
+  font: 700 10px/12px Arial, sans-serif;
+}
+
+.dribble-level-info-rank strong {
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 21px;
+}
+
+.dribble-level-info-mastery {
+  display: grid;
+  grid-template-columns: auto repeat(4, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 9px 0;
+  border-top: 1px solid rgba(117, 228, 255, 0.2);
+}
+
+.dribble-level-info-mastery span {
+  display: grid;
+  justify-items: center;
+}
+
+.dribble-level-info-mastery b {
+  color: #ffd34f;
+  font-size: 19px;
+  line-height: 20px;
+}
+
+.dribble-level-info-mastery em {
+  color: rgba(255, 255, 255, 0.68);
+  font: 700 8px/10px Arial, sans-serif;
+  font-style: normal;
+}
+
 .dribble-level-info-list {
   display: grid;
   margin-bottom: 16px;
@@ -2044,6 +2098,31 @@
   content: '\2713';
   font: 700 9px/12px Arial, sans-serif;
   place-items: center;
+}
+
+.dribble-wristband-swatches button[data-locked='true'] {
+  border-color: rgba(255, 255, 255, 0.2);
+  filter: saturate(0.25) brightness(0.58);
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.dribble-wristband-swatches button[data-locked='true']::after {
+  position: absolute;
+  inset: 3px;
+  display: grid;
+  border-radius: 50%;
+  background: rgba(3, 18, 55, 0.7);
+  color: #ffffff;
+  content: 'L' attr(data-unlock-level);
+  font: 700 8px/20px Arial, sans-serif;
+  place-items: center;
+}
+
+.dribble-wristband-swatches button[data-locked='true']:hover,
+.dribble-wristband-swatches button[data-locked='true']:focus-visible {
+  filter: saturate(0.25) brightness(0.66);
+  transform: none;
 }
 
 .dribble-wristband-swatches button[data-wristband-color='orange'] { --swatch-color: #ff6a2a; }

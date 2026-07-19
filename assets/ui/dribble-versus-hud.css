@@ -139,6 +139,29 @@
   white-space: nowrap;
 }
 
+.dribble-versus-opponent b {
+  height: 9px;
+  overflow: hidden;
+  color: #8ed8ff;
+  font: 700 8px/9px Arial, sans-serif;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 100ms ease, transform 100ms ease;
+}
+
+.dribble-versus-opponent b[data-active='true'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dribble-versus-opponent b[data-intent='power'] {
+  color: #ffca3a;
+}
+
+.dribble-versus-opponent b[data-intent='return'] {
+  color: #ff9b75;
+}
+
 .dribble-versus-rounds {
   display: flex;
   gap: 4px;

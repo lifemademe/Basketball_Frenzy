@@ -20,6 +20,8 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
 
   private rootElement: HTMLElement | null = null;
   private listElement: HTMLOListElement | null = null;
+  private titleElement: HTMLElement | null = null;
+  private modifierLabel = '';
   private lastSignature = '';
   private readonly itemElements = new Map<string, HTMLLIElement>();
   private readonly removalTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -47,6 +49,15 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
   protected override cacheElements(): void {
     this.rootElement = this.layout?.querySelector('[data-run-objectives]') as HTMLElement | null;
     this.listElement = this.layout?.querySelector('[data-objectives-list]') as HTMLOListElement | null;
+    this.titleElement = this.layout?.querySelector('[data-objectives-title]') as HTMLElement | null;
+  }
+
+  public setModifier(label: string): void {
+    if (label === this.modifierLabel) return;
+    this.modifierLabel = label;
+    if (this.titleElement) {
+      this.titleElement.textContent = label ? `RUN OBJECTIVES · ${label}` : 'RUN OBJECTIVES';
+    }
   }
 
   public setObjectives(objectives: readonly RunObjectiveProgress[], showHeader = true): void {
@@ -169,6 +180,8 @@ export class DribbleRunObjectivesHud extends ENGINE.BaseUIComponent<DribbleRunOb
     this.itemElements.clear();
     this.rootElement = null;
     this.listElement = null;
+    this.titleElement = null;
+    this.modifierLabel = '';
     this.lastSignature = '';
   }
 }
@@ -561,6 +574,8 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private coachTitleElement: HTMLElement | null = null;
   private coachBodyElement: HTMLElement | null = null;
   private praiseTimer: ReturnType<typeof setTimeout> | null = null;
+  private praisePriority = 0;
+  private praiseVisibleUntil = 0;
   private activationTimer: ReturnType<typeof setTimeout> | null = null;
   private coachTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyActive = false;
@@ -643,11 +658,20 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     }
   }
 
-  public showPraise(label: string, tone: 'green' | 'gold', duration = 760): void {
+  public showPraise(
+    label: string,
+    tone: 'green' | 'gold',
+    duration = 760,
+    priority = 1,
+  ): void {
     if (!this.praiseElement) {
       return;
     }
+    const now = performance.now();
+    if (now < this.praiseVisibleUntil && priority < this.praisePriority) return;
     if (this.praiseTimer) clearTimeout(this.praiseTimer);
+    this.praisePriority = priority;
+    this.praiseVisibleUntil = now + Math.max(400, duration);
     this.praiseElement.textContent = label;
     this.praiseElement.dataset.tone = tone;
     this.praiseElement.dataset.long = label.length > 28 ? 'true' : 'false';
@@ -658,6 +682,8 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.praiseTimer = setTimeout(() => {
       this.praiseElement?.classList.remove('is-visible');
       this.praiseTimer = null;
+      this.praisePriority = 0;
+      this.praiseVisibleUntil = 0;
     }, Math.max(400, duration));
   }
 
@@ -697,5 +723,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.frenzyUrgent = false;
     this.lastFrenzyPercent = -1;
     this.lastFrenzyTimeText = '';
+    this.praisePriority = 0;
+    this.praiseVisibleUntil = 0;
   }
 }

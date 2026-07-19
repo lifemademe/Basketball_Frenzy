@@ -71,6 +71,17 @@ export interface DribbleProgressionState {
   weeklyChallengeId: CourtChallengeId;
   weeklyChallengeProgress: number;
   weeklyChallengeCompleted: boolean;
+  bestClassicCombo: number;
+  bestPerfectSwitches: number;
+  bestHazardsAvoided: number;
+  bestLastBounceRally: number;
+}
+
+export interface DribbleMasterySnapshot {
+  bestCombo?: number;
+  perfectSwitches?: number;
+  hazardsAvoided?: number;
+  longestRally?: number;
 }
 
 export interface CourtChallengeDefinition {
@@ -175,6 +186,10 @@ export function createDefaultProgressionState(): DribbleProgressionState {
     weeklyChallengeId: weeklyChallenge.id,
     weeklyChallengeProgress: 0,
     weeklyChallengeCompleted: false,
+    bestClassicCombo: 0,
+    bestPerfectSwitches: 0,
+    bestHazardsAvoided: 0,
+    bestLastBounceRally: 0,
   };
 }
 
@@ -229,6 +244,10 @@ export function loadProgression(): DribbleProgressionState {
         : 'scoreSprint',
       weeklyChallengeProgress: sanitizeCount(parsed.weeklyChallengeProgress),
       weeklyChallengeCompleted: parsed.weeklyChallengeCompleted === true,
+      bestClassicCombo: sanitizeCount(parsed.bestClassicCombo),
+      bestPerfectSwitches: sanitizeCount(parsed.bestPerfectSwitches),
+      bestHazardsAvoided: sanitizeCount(parsed.bestHazardsAvoided),
+      bestLastBounceRally: sanitizeCount(parsed.bestLastBounceRally),
     };
     if (loaded.normalRunsCompleted === 0 && loaded.normalHighScore > 0) loaded.normalRunsCompleted = 1;
     if (loaded.hardRunsCompleted === 0 && loaded.hardHighScore > 0) loaded.hardRunsCompleted = 1;
@@ -342,12 +361,60 @@ export function recordLastBounceResult(
   });
 }
 
+export function recordMastery(
+  state: DribbleProgressionState,
+  snapshot: DribbleMasterySnapshot,
+): DribbleProgressionState {
+  const next = {
+    ...state,
+    bestClassicCombo: Math.max(state.bestClassicCombo, sanitizeCount(snapshot.bestCombo)),
+    bestPerfectSwitches: Math.max(state.bestPerfectSwitches, sanitizeCount(snapshot.perfectSwitches)),
+    bestHazardsAvoided: Math.max(state.bestHazardsAvoided, sanitizeCount(snapshot.hazardsAvoided)),
+    bestLastBounceRally: Math.max(state.bestLastBounceRally, sanitizeCount(snapshot.longestRally)),
+  };
+  return next.bestClassicCombo === state.bestClassicCombo
+    && next.bestPerfectSwitches === state.bestPerfectSwitches
+    && next.bestHazardsAvoided === state.bestHazardsAvoided
+    && next.bestLastBounceRally === state.bestLastBounceRally
+    ? state
+    : persist(next);
+}
+
+export function getCourtTitle(level: number): string {
+  if (level >= 20) return 'Court Legend';
+  if (level >= 15) return 'Court MVP';
+  if (level >= 12) return 'Floor General';
+  if (level >= 10) return 'All-Court Ace';
+  if (level >= 9) return 'Clutch Guard';
+  if (level >= 8) return 'Shot Caller';
+  if (level >= 7) return 'Floor Leader';
+  if (level >= 6) return 'Court Captain';
+  if (level >= 5) return 'Playmaker';
+  if (level >= 4) return 'Sixth Player';
+  if (level >= 3) return 'Rising Star';
+  if (level >= 2) return 'Prospect';
+  return 'Rookie';
+}
+
+export function getWristbandUnlockLevel(color: WristbandColor): number {
+  if (color === 'lime') return 2;
+  if (color === 'pink') return 3;
+  if (color === 'white') return 4;
+  if (color === 'purple') return 5;
+  return 1;
+}
+
+export function isWristbandUnlocked(playerXp: number, color: WristbandColor): boolean {
+  return getPlayerLevelProgress(playerXp).level >= getWristbandUnlockLevel(color);
+}
+
 export function getPlayerLevelProgress(playerXp: number): {
   level: number;
   current: number;
   required: number;
   progress: number;
   nextUnlock: string;
+  nextUnlockLevel: number;
 } {
   const xp = sanitizeCount(playerXp);
   let level = 1;
@@ -360,12 +427,14 @@ export function getPlayerLevelProgress(playerXp: number): {
   }
   const current = xp - levelStart;
   const required = Math.max(1, levelEnd - levelStart);
+  const nextUnlockLevel = getNextUnlockLevel(level);
   return {
     level,
     current,
     required,
     progress: Math.min(1, current / required),
-    nextUnlock: getLevelUnlockLabel(level + 1),
+    nextUnlock: getLevelUnlockLabel(nextUnlockLevel),
+    nextUnlockLevel,
   };
 }
 
@@ -450,6 +519,7 @@ export function setWristbandColor(
   side: WristbandSide,
   color: WristbandColor,
 ): DribbleProgressionState {
+  if (!isWristbandUnlocked(state.playerXp, color)) return state;
   const key = side === 'left' ? 'leftWristbandColor' : 'rightWristbandColor';
   return state[key] === color ? state : persist({ ...state, [key]: color });
 }
@@ -620,8 +690,19 @@ function getXpForLevel(level: number): number {
 }
 
 function getLevelUnlockLabel(level: number): string {
-  const unlocks = ['Trail Style', 'Wristband Pattern', 'Court Light', 'Victory Title'];
-  return unlocks[Math.max(0, level - 2) % unlocks.length];
+  if (level === 2) return 'Electric Lime Wristbands';
+  if (level === 3) return 'Hot Pink Wristbands';
+  if (level === 4) return 'Bright White Wristbands';
+  if (level === 5) return 'Deep Purple Wristbands';
+  if (level <= 10 || level === 12 || level === 15 || level === 20) {
+    return `${getCourtTitle(level)} Title`;
+  }
+  return 'Legend Rank';
+}
+
+function getNextUnlockLevel(level: number): number {
+  const rewardLevels = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20];
+  return rewardLevels.find(rewardLevel => rewardLevel > level) ?? level + 5;
 }
 
 function getLocalDateKey(): string {

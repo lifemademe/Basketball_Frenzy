@@ -70,13 +70,23 @@
         <div class="dribble-main-menu-action dribble-level-info-close" data-menu-level-info-close-slot></div>
         <small>PLAYER PROGRESSION</small>
         <h2 id="dribble-level-info-title">Court Level</h2>
-        <p>Earn XP at the end of every completed run.</p>
+        <div class="dribble-level-info-rank">
+          <span><small>COURT TITLE</small><strong data-level-court-title>Rookie</strong></span>
+          <span><small>NEXT REWARD</small><strong data-level-next-reward>Electric Lime Wristbands</strong></span>
+        </div>
         <div class="dribble-level-info-list">
           <div><strong>PERFORMANCE</strong><span>Score, timing and rallies</span></div>
           <div><strong>OBJECTIVES</strong><span>+25 XP each</span></div>
           <div><strong>MODE BONUS</strong><span>Difficulty and match results</span></div>
         </div>
-        <p class="dribble-level-info-note">XP carries between sessions and records your court progress.</p>
+        <div class="dribble-level-info-mastery" aria-label="Career bests">
+          <small>CAREER BESTS</small>
+          <span><b data-level-best-combo>x0</b><em>COMBO</em></span>
+          <span><b data-level-best-perfect>0</b><em>PERFECT</em></span>
+          <span><b data-level-best-clears>0</b><em>CLEARS</em></span>
+          <span><b data-level-best-rally>0</b><em>RALLY</em></span>
+        </div>
+        <p class="dribble-level-info-note">Complete runs and objectives to earn XP and unlock free wristband colors.</p>
       </div>
     </section>
 
@@ -180,7 +190,7 @@
         <section class="dribble-wristband-customizer" aria-labelledby="dribble-wristband-title">
           <div class="dribble-wristband-heading">
             <div>
-              <span>FREE CUSTOMIZATION</span>
+              <span>FREE · LEVEL REWARDS</span>
               <h3 id="dribble-wristband-title">Wristbands</h3>
             </div>
             <div class="dribble-wristband-preview" aria-label="Selected wristband colors">

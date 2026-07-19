@@ -52,6 +52,7 @@ import {
   purchaseCourt,
   recordCourtChallengeProgress,
   recordLastBounceResult,
+  recordMastery,
   recordTutorialCompletion,
   recordRunResult,
   resetProgression as resetSavedProgression,
@@ -67,6 +68,7 @@ import {
   type WristbandColor,
   type WristbandSide,
 } from './dribble-progression.js';
+import { DribbleRunDirector } from './dribble-run-director.js';
 import {
   DribbleRetentionDirector,
   RUN_OBJECTIVE_XP,
@@ -274,6 +276,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly achievementToastQueue: AchievementToastRequest[] = [];
   private readonly achievementIconUrls = new Map<AchievementId, string>();
   private readonly patternDirector = new DribblePatternDirector();
+  private readonly runDirector = new DribbleRunDirector();
   private readonly difficultyDirector = new DribbleDifficultyDirector();
   private readonly retentionDirector = new DribbleRetentionDirector();
   private readonly telemetry = new DribbleTelemetry();
@@ -583,6 +586,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.patternDirector.reset(this.gameMode);
     this.difficultyDirector.reset(this.gameMode);
     this.retentionDirector.start(this.gameMode, this.getObjectiveRotationSeed());
+    this.runDirector.start(this.gameMode, this.getObjectiveRotationSeed());
+    this.runObjectivesHud?.setModifier(
+      this.gameMode === 'last-bounce' ? '' : this.runDirector.getModifier().shortLabel,
+    );
     this.refreshRunObjectivesHud();
     this.musicDirector?.setIntensity(0);
     if (this.gameMode === 'last-bounce') {
@@ -734,6 +741,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
           baseInterval * (this.lastSpawnWasCenterRhythm ? 1.03 : 1.1),
         ) * frenzyMultiplier
           * this.lastSpawnIntervalScale
+          * this.runDirector.getPhase(this.elapsedTime).spawnIntervalScale
           * this.difficultyDirector.getSpawnIntervalScale();
       } else {
         this.spawnTimer = 0.08;
@@ -1636,6 +1644,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusQueuedAiAction = null;
     this.versusQueuedAiActionTimer = 0;
     this.versusQueuedAiActionWasRisky = false;
+    this.versusHud?.setAiIntent(null);
     this.versusPlayerRiskThreatActive = false;
     this.versusAiRiskDefenseStreak = Math.max(0, this.versusAiRiskDefenseStreak - 1);
     this.versusTrickyPassCooldown = THREE.MathUtils.randFloat(1.6, 2.4);
@@ -1752,6 +1761,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       if (this.versusQueuedAiActionTimer > 0) return;
       const queuedAction = this.versusQueuedAiAction;
       if (queuedAction === 'return') {
+        this.versusHud?.setAiIntent(null);
         this.versusQueuedAiAction = null;
         const defendedRiskyPass = this.versusQueuedAiActionWasRisky;
         this.versusQueuedAiActionWasRisky = false;
@@ -1763,6 +1773,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }
       const boostRead = this.assessVersusAiTrajectory('left', 'boost', 1.15);
       if (queuedAction === 'boost' && boostRead.clearance >= 0.08) {
+        this.versusHud?.setAiIntent(null);
         this.versusQueuedAiAction = null;
         const defendedRiskyPass = this.versusQueuedAiActionWasRisky;
         this.versusQueuedAiActionWasRisky = false;
@@ -1771,6 +1782,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         return;
       }
       this.versusQueuedAiAction = null;
+      this.versusHud?.setAiIntent(null);
       const defendedRiskyPass = this.versusQueuedAiActionWasRisky;
       this.versusQueuedAiActionWasRisky = false;
       if (this.ball?.transferToRight()) {
@@ -1924,6 +1936,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusQueuedAiActionTimer = 0;
     this.versusQueuedAiActionWasRisky = false;
     this.versusPlayerRiskThreatActive = false;
+    this.versusHud?.setAiIntent(dangerPass ? 'reading' : null);
     const holdRead = this.assessVersusAiTrajectory(
       'left',
       'hold',
@@ -1932,9 +1945,15 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       true,
     );
     const threat = holdRead.clearance <= 0.06 ? holdRead.threat : null;
-    if (!threat) return;
+    if (!threat) {
+      this.versusHud?.setAiIntent(null);
+      return;
+    }
     const isGroundThreat = threat.rootComponent.position.y < 0.9;
-    if (!isGroundThreat) return;
+    if (!isGroundThreat) {
+      this.versusHud?.setAiIntent(null);
+      return;
+    }
     const difficulty = THREE.MathUtils.clamp(this.elapsedTime / 75, 0, 1);
     const aiSkill = this.getVersusAiSkill(difficulty);
     const contactAfterReception = holdRead.timeToContact - DribbleBall.transferDuration;
@@ -1960,7 +1979,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         0,
         0.995,
       );
-    if (Math.random() >= reactionChance) return;
+    if (Math.random() >= reactionChance) {
+      this.versusHud?.setAiIntent(null);
+      return;
+    }
     const boostRead = this.assessVersusAiTrajectory(
       'left',
       'boost',
@@ -1979,6 +2001,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       ? 'boost'
       : 'return';
     this.versusQueuedAiActionWasRisky = dangerPass;
+    this.versusHud?.setAiIntent(this.versusQueuedAiAction === 'boost' ? 'power' : 'return');
     const riskyReactionDelay = dangerPass ? trapQuality * 0.05 : 0;
     this.versusQueuedAiActionTimer = this.versusQueuedAiAction === 'return'
       ? THREE.MathUtils.lerp(0.11, 0.072, aiSkill)
@@ -2542,7 +2565,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private getTargetPace(difficulty: number): number {
     const stageBoost = this.getDifficultyStage() * this.speedStageBoost;
     const modeScale = this.gameMode === 'hard' ? 1.05 : 1;
-    return (4.15 + difficulty * 3.9 + stageBoost) * modeScale;
+    const runScale = this.gameMode === 'last-bounce'
+      ? 1
+      : this.runDirector.getModifier().speedScale
+        * this.runDirector.getPhase(this.elapsedTime).speedScale;
+    return (4.15 + difficulty * 3.9 + stageBoost) * modeScale * runScale;
   }
 
   private getDifficultyStage(): number {
@@ -2557,7 +2584,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const stage = this.getDifficultyStage();
     if (stage <= this.difficultyStage) return;
     this.difficultyStage = stage;
-    this.juiceHud?.showPraise('SPEED UP!', 'gold');
+    this.juiceHud?.showPraise('SPEED UP!', 'gold', 760, 2);
     const world = this.getWorld();
     if (world) {
       void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
@@ -2575,7 +2602,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'on-fire': 'ON FIRE',
       overtime: 'OVERTIME',
     };
-    this.juiceHud?.showPraise(presentation[tier], 'gold');
+    this.juiceHud?.showPraise(presentation[tier], 'gold', 760, 2);
     playDribbleFeedback(this.getWorld(), tier === 'overtime' ? 'frenzy' : 'perfect');
   }
 
@@ -2584,7 +2611,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return 'score';
     }
 
-    if (Math.random() < 0.02) {
+    const phase = this.runDirector.getPhase(this.elapsedTime);
+    if (Math.random() < 0.02 * phase.bonusChanceScale) {
       return 'bonus';
     }
 
@@ -2597,7 +2625,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     const healthChance = this.lives < this.maxLives ? 0.09 : 0;
     const hazardChance = canSpawnHazard
-      ? THREE.MathUtils.lerp(0.64, 0.72, difficulty)
+      ? this.runDirector.getHazardChance(
+          THREE.MathUtils.lerp(0.64, 0.72, difficulty),
+          this.elapsedTime,
+        )
       : 0;
     const roll = Math.random();
     if (roll < healthChance) {
@@ -2671,7 +2702,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
     this.pendingPerfectSwitchUntil = this.elapsedTime + 1.2;
-    this.juiceHud?.showPraise('PERFECT RELEASE!', 'gold');
+    this.juiceHud?.showPraise('PERFECT RELEASE!', 'gold', 760, 2);
     void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
       volume: 0.24,
       bus: 'SFX',
@@ -2688,8 +2719,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     for (const target of targets) {
       const targetPosition = target.rootComponent.position;
       if (ballState.isBoosting) {
-        const boostCollisionRadius = target.radius * 0.9 + ballState.radius * 0.65;
-        if (targetPosition.distanceToSquared(ballState.position) > boostCollisionRadius ** 2) {
+        const depthRadius = target.radius * 0.62 + ballState.radius * 0.5;
+        const lateralRadius = target.radius * 0.82 + ballState.radius * 0.58;
+        const verticalRadius = target.radius * 0.92 + ballState.radius * 0.68;
+        const normalizedZ = (targetPosition.z - ballState.position.z) / depthRadius;
+        const normalizedX = (targetPosition.x - ballState.position.x) / lateralRadius;
+        const normalizedY = (targetPosition.y - ballState.position.y) / verticalRadius;
+        if (normalizedZ * normalizedZ + normalizedX * normalizedX + normalizedY * normalizedY > 1) {
           continue;
         }
       } else {
@@ -2766,7 +2802,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.handleGoodHit(position, rhythmTarget ? 15 : 10, false, rhythmTarget, perfect ? 25 : 0);
     if (perfect) {
       this.perfectSwitches += 1;
-      this.juiceHud?.showPraise('PERFECT +25', 'gold');
+      this.juiceHud?.showPraise('PERFECT +25', 'gold', 760, 2);
     }
   }
 
@@ -2813,7 +2849,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.goodHits += 1;
     this.telemetry.recordScoreHit(timingBonus > 0, bonus);
     this.difficultyDirector.recordSuccess(timingBonus > 0);
-    const points = basePoints * this.combo + timingBonus;
+    const rawPoints = basePoints * this.combo + timingBonus;
+    const points = this.gameMode === 'last-bounce'
+      ? rawPoints
+      : this.runDirector.scaleScore(rawPoints);
     this.score += points;
     this.updateCourtChallenge('score', this.score);
     const milestoneAwarded = this.awardScoreMilestoneStars();
@@ -2829,16 +2868,16 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     playGamepadImpactFeedback('score');
     playDribbleFeedback(world, bonus ? 'star' : timingBonus > 0 ? 'perfect' : 'score');
     if (milestoneAwarded) {
-      this.juiceHud?.showPraise(`MILESTONE STAR +${milestoneAwarded}!`, 'gold');
+      this.juiceHud?.showPraise(`MILESTONE STAR +${milestoneAwarded}!`, 'gold', 1100, 3);
     } else if (bonus) {
-      this.juiceHud?.showPraise('STAR +1!', 'gold');
+      this.juiceHud?.showPraise('STAR +1!', 'gold', 1000, 3);
     } else if (rhythmTarget) {
       this.juiceHud?.showPraise('ON BEAT!', 'gold');
     } else {
       this.showScorePraise();
     }
     if (brokeHighScore) {
-      this.juiceHud?.showPraise('NEW HIGH SCORE!', 'gold');
+      this.juiceHud?.showPraise('NEW HIGH SCORE!', 'gold', 1400, 3);
     }
     void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
       volume: bonus ? 0.86 : 0.62,
@@ -2932,7 +2971,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     playDribbleFeedback(world, 'frenzy');
     this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
-    this.juiceHud?.showPraise('STAR POWER - FRENZY!', 'gold');
+    this.juiceHud?.showPraise('STAR POWER - FRENZY!', 'gold', 1400, 3);
     this.musicDirector?.duckForCallout(1.15);
     playDribbleEventCue(world, 'frenzy-start');
   }
@@ -3019,6 +3058,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.juiceHud?.showPraise(
         weeklyCompleted ? 'WEEKLY CHALLENGE +3 STARS' : 'DAILY CHALLENGE +1 STAR',
         'gold',
+        1600,
+        3,
       );
       const world = this.getWorld();
       if (world) {
@@ -3765,7 +3806,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       bonusXp: this.runBonusXp,
       xpEarned: this.runXpEarned,
       playerLevel: level.level,
-      nextObjective: `NEXT RUN: ${nextObjective} · LEVEL ${level.level + 1}: ${level.nextUnlock}`,
+      nextObjective: `NEXT RUN: ${nextObjective} · LEVEL ${level.nextUnlockLevel}: ${level.nextUnlock}`,
     };
   }
 
@@ -3789,7 +3830,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       bonusXp: this.runBonusXp,
       xpEarned: this.runXpEarned,
       playerLevel: level.level,
-      nextObjective: `NEXT MATCH: ${nextObjective} · LEVEL ${level.level + 1}: ${level.nextUnlock}`,
+      nextObjective: `NEXT MATCH: ${nextObjective} · LEVEL ${level.nextUnlockLevel}: ${level.nextUnlock}`,
     };
   }
 
@@ -3806,13 +3847,23 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.runStarsEarned += 1;
       this.mainMenu?.setProgression(this.progression);
       this.updateScoreStarCounter();
-      this.juiceHud?.showPraise(`ALL OBJECTIVES COMPLETE · +${RUN_OBJECTIVE_XP} XP · STAR +1`, 'gold', 2200);
+      this.juiceHud?.showPraise(
+        `ALL OBJECTIVES COMPLETE · +${RUN_OBJECTIVE_XP} XP · STAR +1`,
+        'gold',
+        2200,
+        3,
+      );
       playGamepadImpactFeedback('frenzy');
       playDribbleFeedback(this.getWorld(), 'star');
       return;
     }
     if (completed.length > 0) {
-      this.juiceHud?.showPraise(`OBJECTIVE COMPLETE · +${RUN_OBJECTIVE_XP} XP`, 'gold');
+      this.juiceHud?.showPraise(
+        `OBJECTIVE COMPLETE · +${RUN_OBJECTIVE_XP} XP`,
+        'gold',
+        1000,
+        2,
+      );
       playDribbleFeedback(this.getWorld(), 'perfect');
     }
   }
@@ -3873,6 +3924,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (this.gameMode === 'last-bounce') {
       this.progression = recordLastBounceResult(this.progression, playerWon);
     }
+    this.progression = recordMastery(this.progression, this.gameMode === 'last-bounce'
+      ? { longestRally: this.versusLongestRally }
+      : {
+          bestCombo: this.bestCombo,
+          perfectSwitches: this.perfectSwitches,
+          hazardsAvoided: this.hazardsAvoided,
+        });
     if (allObjectivesComplete && !this.objectiveBonusStarAwarded) {
       this.objectiveBonusStarAwarded = true;
       this.progression = awardStars(this.progression, 1);
