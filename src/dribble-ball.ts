@@ -108,6 +108,9 @@ export class DribbleBall extends ENGINE.Actor {
   public static readonly catchDuration = 0.32;
   private static readonly boostTransferHandTolerance = 0.3;
   private static readonly finalShotPowerBounceEnd = 0.095;
+  private static readonly finalShotRimArrivalEnd = 0.36;
+  private static readonly finalShotNetDropEnd = 0.445;
+  private static readonly finalShotGroundDropEnd = 0.56;
   public readonly radius = 0.32;
 
   private side: DribbleSide = 'left';
@@ -133,7 +136,7 @@ export class DribbleBall extends ENGINE.Actor {
   private finalShotGroundBounceCount = 0;
   private finalShotTime = 0;
   private cinematicTrailActive = false;
-  private readonly finalShotDuration = 4.6;
+  private readonly finalShotDuration = 3.35;
   private readonly finalShotStart = new THREE.Vector3();
   private readonly finalShotFloor = new THREE.Vector3(0, 0.34, -1.85);
   private readonly finalShotTarget = new THREE.Vector3();
@@ -737,7 +740,7 @@ export class DribbleBall extends ENGINE.Actor {
   private updateFinalShotSpinAudio(): void {
     const progress = this.finalShotTime / this.finalShotDuration;
     const flightStart = DribbleBall.finalShotPowerBounceEnd;
-    const flightEnd = 0.42;
+    const flightEnd = DribbleBall.finalShotRimArrivalEnd;
     if (progress <= flightStart || progress >= flightEnd) {
       this.powerBounceSpinAudio.stop();
       return;
@@ -849,12 +852,15 @@ export class DribbleBall extends ENGINE.Actor {
     this.finalShotTime = Math.min(this.finalShotDuration, this.finalShotTime + deltaTime);
     const progress = this.finalShotTime / this.finalShotDuration;
     const powerBounceEnd = DribbleBall.finalShotPowerBounceEnd;
-    const rimArrivalEnd = 0.42;
-    const netDropEnd = 0.5;
-    const groundDropEnd = 0.6;
+    const rimArrivalEnd = DribbleBall.finalShotRimArrivalEnd;
+    const netDropEnd = DribbleBall.finalShotNetDropEnd;
+    const groundDropEnd = DribbleBall.finalShotGroundDropEnd;
 
     if (progress < powerBounceEnd) {
-      const bounceProgress = THREE.MathUtils.smootherstep(progress / powerBounceEnd, 0, 1);
+      const bounceProgress = Math.pow(
+        THREE.MathUtils.clamp(progress / powerBounceEnd, 0, 1),
+        1.45,
+      );
       this.rootComponent.position.lerpVectors(
         this.finalShotStart,
         this.finalShotFloor,
@@ -867,22 +873,20 @@ export class DribbleBall extends ENGINE.Actor {
         this.completedBounces += 1;
         this.playBounceSound();
       }
-      const arcProgress = THREE.MathUtils.smootherstep(
+      const arcProgress = THREE.MathUtils.clamp(
         (progress - powerBounceEnd) / (rimArrivalEnd - powerBounceEnd),
         0,
         1,
       );
-      const inverse = 1 - arcProgress;
+      const arcHeight = Math.max(
+        0.72,
+        this.finalShotControl.y - Math.max(this.finalShotFloor.y, this.finalShotTarget.y),
+      );
       this.rootComponent.position.set(
-        inverse * inverse * this.finalShotFloor.x
-          + 2 * inverse * arcProgress * this.finalShotControl.x
-          + arcProgress * arcProgress * this.finalShotTarget.x,
-        inverse * inverse * this.finalShotFloor.y
-          + 2 * inverse * arcProgress * this.finalShotControl.y
-          + arcProgress * arcProgress * this.finalShotTarget.y,
-        inverse * inverse * this.finalShotFloor.z
-          + 2 * inverse * arcProgress * this.finalShotControl.z
-          + arcProgress * arcProgress * this.finalShotTarget.z,
+        THREE.MathUtils.lerp(this.finalShotFloor.x, this.finalShotTarget.x, arcProgress),
+        THREE.MathUtils.lerp(this.finalShotFloor.y, this.finalShotTarget.y, arcProgress)
+          + Math.sin(arcProgress * Math.PI) * arcHeight,
+        THREE.MathUtils.lerp(this.finalShotFloor.z, this.finalShotTarget.z, arcProgress),
       );
       this.rootComponent.scale.setScalar(1);
     } else if (progress < netDropEnd) {
@@ -923,8 +927,8 @@ export class DribbleBall extends ENGINE.Actor {
         0,
         1,
       );
-      const segmentEnds = [0.42, 0.72, 0.9, 1];
-      const bounceHeights = [0.78, 0.42, 0.2, 0];
+      const segmentEnds = [0.4, 0.7, 0.88, 1];
+      const bounceHeights = [0.7, 0.34, 0.14, 0];
       const bounceStrengths = [0.92, 0.62, 0.4, 0.22];
       let segmentIndex = segmentEnds.findIndex(end => bounceProgress <= end);
       if (segmentIndex < 0) segmentIndex = segmentEnds.length - 1;

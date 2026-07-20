@@ -3609,7 +3609,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!this.normalFinaleBallSettled && this.ball?.consumeFinalShotComplete()) {
       this.markNormalFinaleBallSettled();
     }
-    if (this.normalFinaleShotElapsed >= 6.2) {
+    if (this.normalFinaleShotElapsed >= 4.8) {
       if (!this.normalFinaleResolved) this.resolveNormalFinalShot();
       this.markNormalFinaleBallSettled();
     }
@@ -3617,7 +3617,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!this.normalFinaleBallSettled) return;
     if (!this.normalFinaleResolved) this.resolveNormalFinalShot();
     this.normalFinaleResultDelay += deltaTime;
-    if (this.normalFinaleResultDelay >= 1.35) {
+    if (this.normalFinaleResultDelay >= 0.85) {
       this.endRun(true);
     }
   }
