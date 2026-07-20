@@ -4,6 +4,8 @@ import * as THREE from 'three';
 export type TargetKind = 'score' | 'hazard' | 'health' | 'bonus' | 'recovery';
 export type TargetThreatOwner = 'player' | 'ai';
 
+const scoreTokenModelPath = '@project/assets/models/score_token.glb';
+
 function createStarGeometry(): THREE.ExtrudeGeometry {
   const shape = new THREE.Shape();
   for (let index = 0; index < 10; index += 1) {
@@ -84,6 +86,8 @@ export class DribbleTarget extends ENGINE.Actor {
   private missedScoreTarget = false;
   private avoidedHazard = false;
   private targetMesh: ENGINE.MeshComponent | null = null;
+  private scoreTokenModel: ENGINE.ModelMeshComponent | null = null;
+  private readonly scoreTokenMaterialIntensity = new Map<THREE.MeshStandardMaterial, number>();
   private glowShell: ENGINE.MeshComponent | null = null;
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
@@ -137,6 +141,8 @@ export class DribbleTarget extends ENGINE.Actor {
 
     this.glowBaseOpacity = this.kind === 'bonus'
       ? 0.4
+      : this.kind === 'score'
+        ? 0.18
       : this.kind === 'health' || this.kind === 'recovery'
         ? 0.3
         : 0.24;
@@ -148,14 +154,25 @@ export class DribbleTarget extends ENGINE.Actor {
       blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
+    const glowGeometry = this.kind === 'score'
+      ? new THREE.TorusGeometry(0.515, 0.014, 6, 32)
+      : geometry.clone();
     this.glowShell = ENGINE.MeshComponent.create({
       name: 'Target Glow Shell',
-      geometry: geometry.clone(),
+      geometry: glowGeometry,
       material: this.glowMaterial,
-      scale: new THREE.Vector3(1.14, 1.14, 1.14),
+      scale: new THREE.Vector3(
+        this.kind === 'score' ? 1.04 : 1.14,
+        this.kind === 'score' ? 1.04 : 1.14,
+        this.kind === 'score' ? 1.04 : 1.14,
+      ),
       physicsOptions: { enabled: false },
     });
     rootComponent.add(this.glowShell);
+
+    if (this.kind === 'score') {
+      this.attachScoreTokenModel(rootComponent, false);
+    }
 
     if (this.kind === 'health') {
       rootComponent.add(ENGINE.MeshComponent.create({
@@ -221,7 +238,8 @@ export class DribbleTarget extends ENGINE.Actor {
       * (this.isRhythmTarget ? 6.5 : this.kind === 'bonus' ? 7 : 4.5)
       * pressureSpeed;
     const glowPulse = Math.sin(this.glowPhase);
-    this.glowShell?.scale.setScalar(1.14 + this.pressureLevel * 0.1 + glowPulse * 0.045);
+    const glowScale = this.kind === 'score' ? 1.04 : 1.14;
+    this.glowShell?.scale.setScalar(glowScale + this.pressureLevel * 0.1 + glowPulse * 0.045);
     if (this.glowMaterial) {
       this.glowMaterial.opacity = this.glowBaseOpacity
         + this.pressureLevel * 0.17
@@ -229,6 +247,11 @@ export class DribbleTarget extends ENGINE.Actor {
     }
     if (this.targetMaterial) {
       this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity + this.pressureLevel * 2.2;
+    }
+    for (const [material, baseIntensity] of this.scoreTokenMaterialIntensity) {
+      material.emissiveIntensity = baseIntensity
+        + this.pressureLevel * 1.4
+        + Math.max(0, glowPulse) * 0.32;
     }
     this.threatMarker?.scale.setScalar(0.92 + glowPulse * 0.08);
     if (this.threatMarkerMaterial) {
@@ -240,11 +263,15 @@ export class DribbleTarget extends ENGINE.Actor {
     } else if (this.kind === 'recovery') {
       this.rootComponent.rotation.y += deltaTime * 1.15;
       this.rootComponent.rotation.z = Math.sin(this.glowPhase * 0.5) * 0.08;
+    } else if (this.kind === 'score') {
+      const rotationSpeed = 1 + this.pressureLevel * 0.85;
+      this.rootComponent.rotation.x += deltaTime * 2.5 * rotationSpeed;
+      this.rootComponent.rotation.y += deltaTime * 1.2 * rotationSpeed;
     } else {
       const rotationSpeed = 1 + this.pressureLevel * 0.85;
       this.rootComponent.rotation.x += deltaTime * 2.5 * rotationSpeed;
       this.rootComponent.rotation.y += deltaTime
-        * (this.kind === 'score' ? 1.2 : this.kind === 'health' ? 1.7 : -2.0)
+        * (this.kind === 'health' ? 1.7 : -2.0)
         * rotationSpeed;
     }
 
@@ -313,11 +340,19 @@ export class DribbleTarget extends ENGINE.Actor {
     DribbleTarget.highContrastEnabled = enabled;
   }
 
+  public static preloadScoreToken(): void {
+    void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(scoreTokenModelPath))
+      .catch(error => {
+        console.warn(`Could not preload score token model: ${scoreTokenModelPath}`, error);
+      });
+  }
+
   public applyAccessibilityPalette(): void {
     const color = this.getDisplayColor();
     this.targetMaterial?.color.setHex(color);
     this.targetMaterial?.emissive.setHex(color);
     this.glowMaterial?.color.setHex(color);
+    this.updateScoreTokenMaterials();
   }
 
   public convertHazardToScore(): boolean {
@@ -331,17 +366,77 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.threatMarker) this.threatMarker.visible = false;
 
     const scoreGeometry = new THREE.TorusGeometry(0.42, 0.12, 12, 28);
+    const scoreGlowGeometry = new THREE.TorusGeometry(0.515, 0.014, 6, 32);
     const oldTargetGeometry = this.targetMesh?.geometry;
     const oldGlowGeometry = this.glowShell?.geometry;
     if (this.targetMesh) this.targetMesh.geometry = scoreGeometry;
-    if (this.glowShell) this.glowShell.geometry = scoreGeometry.clone();
+    if (this.glowShell) this.glowShell.geometry = scoreGlowGeometry;
     oldTargetGeometry?.dispose();
     oldGlowGeometry?.dispose();
-    this.glowShell?.scale.setScalar(1.14);
+    this.glowShell?.scale.setScalar(1.04);
+    this.attachScoreTokenModel(this.rootComponent, true);
     this.applyAccessibilityPalette();
     if (this.targetMaterial) this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity;
     if (this.glowMaterial) this.glowMaterial.opacity = this.glowBaseOpacity;
     return true;
+  }
+
+  private attachScoreTokenModel(parent: ENGINE.SceneComponent, loadImmediately: boolean): void {
+    if (this.scoreTokenModel) return;
+
+    const model = ENGINE.ModelMeshComponent.create({
+      name: 'Basketball Score Token',
+      modelUrl: scoreTokenModelPath,
+      useDynamicMaterials: true,
+      castShadow: true,
+      receiveShadow: true,
+      scale: new THREE.Vector3(0.96, 0.96, 0.96),
+      rotation: new THREE.Euler(Math.PI / 2, 0, 0),
+      physicsOptions: { enabled: false },
+    });
+    model.onMeshLoaded.add((_component, modelRoot) => {
+      if (this.removalRequested) return;
+      this.scoreTokenMaterialIntensity.clear();
+      modelRoot.traverse(child => {
+        if (!(child instanceof THREE.Mesh)) return;
+        child.castShadow = true;
+        child.receiveShadow = true;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        for (const material of materials) {
+          if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+          const edgeMaterial = material.name.toLowerCase().includes('amber');
+          this.scoreTokenMaterialIntensity.set(material, edgeMaterial ? 1.15 : 2.65);
+        }
+      });
+      this.updateScoreTokenMaterials();
+      if (this.targetMesh) this.targetMesh.mesh.visible = false;
+    });
+    this.scoreTokenModel = model;
+    parent.add(model);
+
+    if (loadImmediately) {
+      void model.loadModel(ENGINE.AssetPath.fromString(scoreTokenModelPath))
+        .catch(error => {
+          console.warn(`Could not load score token model: ${scoreTokenModelPath}`, error);
+        });
+    }
+  }
+
+  private updateScoreTokenMaterials(): void {
+    for (const [material, baseIntensity] of this.scoreTokenMaterialIntensity) {
+      const edgeMaterial = material.name.toLowerCase().includes('amber');
+      material.emissive.setHex(
+        DribbleTarget.highContrastEnabled
+          ? 0xfff066
+          : edgeMaterial
+            ? 0xb33d00
+            : 0xffb20f,
+      );
+      material.emissiveIntensity = DribbleTarget.highContrastEnabled
+        ? baseIntensity + 0.45
+        : baseIntensity;
+      material.needsUpdate = true;
+    }
   }
 
   public isRemovalPending(): boolean {

@@ -1047,6 +1047,10 @@
   object-fit: contain;
 }
 
+.dribble-mode-normal .dribble-mode-lives img + img {
+  margin-left: -7px;
+}
+
 .dribble-mode-lives span {
   min-width: 40px;
   margin-left: 3px;

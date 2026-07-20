@@ -823,6 +823,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       };
       this.musicDirector = new DribbleMusicDirector(world);
       this.musicDirector.preload();
+      DribbleTarget.preloadScoreToken();
       preloadDribbleEventAudio(world);
       this.musicDirector.setState('menu');
     }
