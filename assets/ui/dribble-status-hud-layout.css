@@ -13,6 +13,10 @@
   font-weight: 400;
 }
 
+.ui-number-display.top-right {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
 .dribble-run-objectives {
   position: fixed;
   top: 86px;
@@ -224,6 +228,7 @@
   color: #e8eaed;
   font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
   pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .dribble-lives.top-left {
@@ -602,15 +607,12 @@
   left: 50%;
   width: min(470px, calc(100vw - 300px));
   min-width: 250px;
-  padding: 8px 11px 11px;
-  border: 1px solid rgba(255, 222, 105, 0.56);
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(30, 24, 10, 0.9), rgba(10, 10, 8, 0.78));
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.36), 0 0 16px rgba(255, 190, 20, 0.2), inset 0 1px 0 rgba(255, 247, 191, 0.13);
+  padding: 0;
   box-sizing: border-box;
   opacity: 0;
   transform: translate(-50%, -12px) scale(0.96);
-  transition: opacity 180ms ease, transform 180ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  filter: drop-shadow(0 0 9px rgba(255, 190, 20, 0.46));
+  transition: opacity 180ms ease, transform 180ms ease, filter 140ms ease;
 }
 
 .dribble-frenzy-meter[data-active='true'] {
@@ -622,73 +624,16 @@
   animation: dribble-frenzy-meter-impact 720ms cubic-bezier(0.16, 0.82, 0.25, 1) both;
 }
 
-.dribble-frenzy-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  color: #fff3b0;
-  font-size: 13px;
-  line-height: 16px;
-  text-shadow: 0 0 9px rgba(255, 202, 58, 0.72);
-}
-
-.dribble-frenzy-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dribble-frenzy-title i {
-  width: 9px;
-  height: 9px;
-  border: 1px solid #fff2a6;
-  background: var(--frenzy-gold);
-  box-shadow: 0 0 8px rgba(255, 202, 58, 0.9);
-  transform: rotate(45deg);
-}
-
-.dribble-frenzy-header strong {
-  color: var(--frenzy-light);
-  font-size: 15px;
-  line-height: 17px;
-  letter-spacing: 0;
-}
-
-.dribble-frenzy-time {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  min-width: 58px;
-  padding: 2px 7px;
-  border: 1px solid rgba(255, 220, 88, 0.42);
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.3);
-  box-sizing: border-box;
-}
-
-.dribble-frenzy-time b {
-  color: #ffffff;
-  font-size: 18px;
-  line-height: 19px;
-}
-
-.dribble-frenzy-time small {
-  margin-left: 2px;
-  color: #ffd34f;
-  font-size: 11px;
-}
-
 .dribble-frenzy-track {
   position: relative;
-  height: 18px;
+  height: 14px;
   overflow: hidden;
-  border: 1px solid rgba(255, 232, 128, 0.7);
-  border-radius: 9px;
+  border: 1px solid rgba(255, 235, 145, 0.82);
+  border-radius: 7px;
   background:
     repeating-linear-gradient(90deg, transparent 0, transparent calc(12.5% - 1px), rgba(255, 239, 172, 0.13) 12.5%),
-    rgba(20, 18, 12, 0.88);
-  box-shadow: 0 0 11px rgba(255, 202, 58, 0.28), inset 0 2px 7px rgba(0, 0, 0, 0.82);
+    rgba(255, 202, 58, 0.1);
+  box-shadow: 0 0 11px rgba(255, 202, 58, 0.42), inset 0 0 5px rgba(255, 244, 187, 0.16);
 }
 
 .dribble-frenzy-fill {
@@ -740,23 +685,48 @@
 }
 
 .dribble-frenzy-meter[data-urgent='true'] {
-  border-color: rgba(255, 155, 64, 0.82);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.36), 0 0 18px rgba(255, 100, 32, 0.34), inset 0 1px 0 rgba(255, 235, 185, 0.16);
+  filter: drop-shadow(0 0 12px rgba(255, 100, 32, 0.72));
   animation: dribble-frenzy-urgent 300ms ease-in-out infinite alternate;
-}
-
-.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-time {
-  border-color: rgba(255, 145, 61, 0.8);
-  background: rgba(111, 24, 6, 0.54);
-}
-
-.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-time b,
-.dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-time small {
-  color: #ffb067;
 }
 
 .dribble-frenzy-meter[data-urgent='true'] .dribble-frenzy-fill {
   background: linear-gradient(90deg, #ff5d35, #ff9d23 30%, #ffe276 50%, #ff9d23 70%, #ff5d35);
+}
+
+.dribble-frenzy-intro {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffd43f;
+  font-size: 50px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow:
+    0 3px 0 #a94700,
+    0 0 8px rgba(255, 255, 224, 0.92),
+    0 0 22px rgba(255, 185, 20, 0.88);
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  will-change: transform, opacity;
+}
+
+.dribble-frenzy-intro span {
+  display: inline-block;
+  transform: scale(0);
+  transform-origin: 50% 65%;
+  will-change: transform, opacity;
+}
+
+.dribble-juice-hud.is-frenzy-activating .dribble-frenzy-intro {
+  animation: dribble-frenzy-intro 1100ms ease-out both;
+}
+
+.dribble-juice-hud.is-frenzy-activating .dribble-frenzy-intro span {
+  animation: dribble-frenzy-letter 500ms cubic-bezier(0.18, 0.82, 0.24, 1.24) both;
+  animation-delay: calc(var(--frenzy-letter) * 55ms);
 }
 
 .dribble-score-praise {
@@ -899,6 +869,24 @@
   100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
+@keyframes dribble-frenzy-intro {
+  0% { opacity: 0; transform: translate(-50%, 3px); }
+  10% { opacity: 1; }
+  62% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -18px); }
+}
+
+@keyframes dribble-frenzy-letter {
+  0% { opacity: 0; transform: scale(0); }
+  58% { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dribble-frenzy-intro-reduced {
+  0%, 100% { opacity: 0; transform: translate(-50%, -4px); }
+  18%, 70% { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @keyframes dribble-frenzy-fill-shimmer {
   from { transform: translateX(0) skewX(-18deg); }
   to { transform: translateX(550%) skewX(-18deg); }
@@ -926,7 +914,24 @@
   100% { opacity: 0; transform: translateX(-65vw) skewX(16deg) scaleX(1.2); }
 }
 
+@keyframes dribble-score-return {
+  0% { filter: brightness(1); transform: scale(0.96); }
+  42% { filter: brightness(1.22); transform: scale(1.06); }
+  100% { filter: brightness(1); transform: scale(1); }
+}
+
 @media (max-width: 720px) {
+  html[data-dribble-frenzy-focus='true'] .dribble-lives,
+  html[data-dribble-frenzy-focus='true'] .ui-number-display.top-right,
+  html[data-dribble-frenzy-focus='true'] .dribble-run-objectives {
+    opacity: 0 !important;
+    transform: translateY(-8px) scale(0.96);
+  }
+
+  html[data-dribble-frenzy-return='true'] .ui-number-display.top-right {
+    animation: dribble-score-return 440ms cubic-bezier(0.2, 0.78, 0.24, 1) both;
+  }
+
   .dribble-run-objectives {
     top: 68px;
     right: 18px;
@@ -1026,6 +1031,11 @@
     min-width: 210px;
   }
 
+  .dribble-frenzy-intro {
+    top: 36px;
+    font-size: 40px;
+  }
+
   .dribble-score-praise {
     font-size: 32px;
   }
@@ -1047,9 +1057,11 @@
   .dribble-lives[data-critical='true'] .dribble-life-heart[data-active='true'],
   .dribble-timing[data-active='false'] .dribble-timing-track::after,
   .dribble-timing[data-ready='true'] .dribble-timing-marker,
+  html[data-dribble-frenzy-return='true'] .ui-number-display.top-right,
   .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-screen::before,
   .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-screen::after,
   .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-meter,
+  .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-intro span,
   .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-streak,
   .dribble-frenzy-fill i,
   .dribble-frenzy-core i,
@@ -1059,6 +1071,7 @@
 }
 
 [data-reduced-motion='true'] .dribble-timing[data-active='false'] .dribble-timing-track::after,
+[data-reduced-motion='true'] .ui-number-display.top-right,
 [data-reduced-motion='true'] .dribble-run-objectives,
 [data-reduced-motion='true'] .dribble-run-objectives-title,
 [data-reduced-motion='true'] .dribble-run-objectives-list li,
@@ -1070,11 +1083,32 @@
 [data-reduced-motion='true'] .dribble-timing[data-ready='true'] .dribble-timing-marker,
 [data-reduced-motion='true'] .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-screen::before,
 [data-reduced-motion='true'] .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-meter,
+[data-reduced-motion='true'] .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-intro span,
 [data-reduced-motion='true'] .dribble-juice-hud[data-frenzy-active='true'] .dribble-frenzy-streak,
 [data-reduced-motion='true'] .dribble-frenzy-fill i,
 [data-reduced-motion='true'] .dribble-frenzy-core i,
 [data-reduced-motion='true'] .dribble-frenzy-meter[data-urgent='true'] {
   animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-intro {
+    animation: dribble-frenzy-intro-reduced 900ms ease-out both !important;
+  }
+
+  .dribble-frenzy-intro span {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+[data-reduced-motion='true'] .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-intro {
+  animation: dribble-frenzy-intro-reduced 900ms ease-out both !important;
+}
+
+[data-reduced-motion='true'] .dribble-frenzy-intro span {
+  opacity: 1;
+  transform: scale(1);
 }
 
 [data-reduced-flashes='true'] .dribble-juice-hud.is-frenzy-activating .dribble-frenzy-screen::after {

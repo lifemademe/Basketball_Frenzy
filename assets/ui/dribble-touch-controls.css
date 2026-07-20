@@ -46,6 +46,33 @@
   animation-name: dribble-touch-edge-reject;
 }
 
+.dribble-touch-feedback-up {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  border: 2px solid rgba(255, 239, 150, 0.86);
+  border-radius: 50%;
+  background: rgba(255, 190, 30, 0.18);
+  color: #fff1a0;
+  font: 700 38px/1 Arial, sans-serif;
+  opacity: 0;
+  transform: translate(-50%, 16px) scale(0.76);
+  filter: drop-shadow(0 0 9px rgba(255, 194, 34, 0.78));
+  place-items: center;
+  will-change: opacity, transform;
+}
+
+.dribble-touch-feedback-up.is-active {
+  animation: dribble-touch-up-pulse 360ms cubic-bezier(0.18, 0.78, 0.25, 1) both;
+}
+
+.dribble-touch-feedback-up.is-active[data-accepted='false'] {
+  animation-name: dribble-touch-up-reject;
+}
+
 @keyframes dribble-touch-edge-pulse {
   0% {
     opacity: 0;
@@ -76,10 +103,28 @@
   }
 }
 
+@keyframes dribble-touch-up-pulse {
+  0% { opacity: 0; transform: translate(-50%, 18px) scale(0.76); }
+  32% { opacity: 0.92; transform: translate(-50%, -3px) scale(1.04); }
+  100% { opacity: 0; transform: translate(-50%, -28px) scale(0.94); }
+}
+
+@keyframes dribble-touch-up-reject {
+  0% { opacity: 0; transform: translate(-50%, 8px) scale(0.84); }
+  38% { opacity: 0.22; transform: translate(-50%, 0) scale(0.92); }
+  100% { opacity: 0; transform: translate(-50%, -8px) scale(0.88); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dribble-touch-feedback.is-active {
     animation: none;
     opacity: 0.42;
     transform: scaleY(1);
+  }
+
+  .dribble-touch-feedback-up.is-active {
+    animation: none;
+    opacity: 0.42;
+    transform: translate(-50%, 0) scale(1);
   }
 }

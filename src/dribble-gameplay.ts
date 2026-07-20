@@ -1232,6 +1232,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onReducedMotionChange: enabled => this.applyReducedMotion(enabled),
       onReducedFlashesChange: enabled => this.applyReducedFlashes(enabled),
       onHighContrastTargetsChange: enabled => this.applyHighContrastTargets(enabled),
+      onTouchControlModeChange: mode => this.touchControls?.setMode(mode),
       onBallBounce: strength => playBasketballBounce(world, strength),
       onNameType: () => {
         void world.globalAudioManager.playGlobalSound('@project/assets/audio/ui-type-click.wav', {
@@ -1269,6 +1270,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       visible: false,
       container: gameContainer,
       onAction: side => this.handleSideAction(side),
+      getBallSide: () => {
+        const ballState = this.ball?.getState();
+        if (!ballState) return 'right';
+        if (!ballState.isTransferring) return ballState.side;
+        return ballState.side === 'left' ? 'right' : 'left';
+      },
     });
     this.controllerNavigation = new DribbleControllerNavigation(world.uiManager, {
       visible: false,
@@ -3119,7 +3126,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     playDribbleFeedback(world, 'frenzy');
     this.ball?.setFrenzyActive(true);
     this.juiceHud?.setFrenzy(1, this.frenzyTimeRemaining, true);
-    this.juiceHud?.showPraise(t('feedback.frenzy'), 'gold', 1400, 3);
     this.musicDirector?.duckForCallout(1.15);
     playDribbleEventCue(world, 'frenzy-start');
   }

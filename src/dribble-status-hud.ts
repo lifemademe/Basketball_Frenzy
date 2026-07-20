@@ -626,7 +626,6 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
 
   private rootElement: HTMLElement | null = null;
   private frenzyElement: HTMLElement | null = null;
-  private timeElement: HTMLElement | null = null;
   private praiseElement: HTMLElement | null = null;
   private coachElement: HTMLElement | null = null;
   private coachTitleElement: HTMLElement | null = null;
@@ -635,11 +634,11 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private praisePriority = 0;
   private praiseVisibleUntil = 0;
   private activationTimer: ReturnType<typeof setTimeout> | null = null;
+  private focusReturnTimer: ReturnType<typeof setTimeout> | null = null;
   private coachTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyActive = false;
   private frenzyUrgent = false;
   private lastFrenzyPercent = -1;
-  private lastFrenzyTimeText = '';
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -658,14 +657,13 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   }
 
   protected override getInitialData(): Record<string, string> {
-    return { label: t('hud.frenzy'), time: '8.0' };
+    return {};
   }
 
   protected override cacheElements(): void {
     if (!this.layout) return;
     this.rootElement = this.layout.querySelector('[data-dribble-juice]') as HTMLElement | null;
     this.frenzyElement = this.layout.querySelector('[data-frenzy-meter]') as HTMLElement | null;
-    this.timeElement = this.layout.querySelector('[data-frenzy-time]') as HTMLElement | null;
     this.praiseElement = this.layout.querySelector('[data-score-praise]') as HTMLElement | null;
     this.coachElement = this.layout.querySelector('[data-dribble-coach]') as HTMLElement | null;
     this.coachTitleElement = this.layout.querySelector('[data-dribble-coach-title]') as HTMLElement | null;
@@ -684,6 +682,13 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     }
     if (this.rootElement && active !== this.frenzyActive) {
       this.rootElement.dataset.frenzyActive = active ? 'true' : 'false';
+      const documentElement = this.rootElement.ownerDocument.documentElement;
+      documentElement.dataset.dribbleFrenzyFocus = active ? 'true' : 'false';
+      if (this.focusReturnTimer) {
+        clearTimeout(this.focusReturnTimer);
+        this.focusReturnTimer = null;
+      }
+      delete documentElement.dataset.dribbleFrenzyReturn;
       if (active) {
         if (this.activationTimer) clearTimeout(this.activationTimer);
         this.rootElement.classList.remove('is-frenzy-activating');
@@ -692,9 +697,14 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
         this.activationTimer = setTimeout(() => {
           this.rootElement?.classList.remove('is-frenzy-activating');
           this.activationTimer = null;
-        }, 900);
+        }, 1150);
       } else {
         this.rootElement.classList.remove('is-frenzy-activating');
+        documentElement.dataset.dribbleFrenzyReturn = 'true';
+        this.focusReturnTimer = setTimeout(() => {
+          delete documentElement.dataset.dribbleFrenzyReturn;
+          this.focusReturnTimer = null;
+        }, 480);
       }
     }
     this.frenzyActive = active;
@@ -709,11 +719,6 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
       }
     }
     this.frenzyUrgent = urgent;
-    const timeText = Math.max(0, remaining).toFixed(1);
-    if (this.timeElement && timeText !== this.lastFrenzyTimeText) {
-      this.lastFrenzyTimeText = timeText;
-      this.timeElement.textContent = timeText;
-    }
   }
 
   public showPraise(
@@ -766,13 +771,21 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
       clearTimeout(this.activationTimer);
       this.activationTimer = null;
     }
+    if (this.focusReturnTimer) {
+      clearTimeout(this.focusReturnTimer);
+      this.focusReturnTimer = null;
+    }
     if (this.coachTimer) {
       clearTimeout(this.coachTimer);
       this.coachTimer = null;
     }
+    if (this.rootElement) {
+      const documentElement = this.rootElement.ownerDocument.documentElement;
+      delete documentElement.dataset.dribbleFrenzyFocus;
+      delete documentElement.dataset.dribbleFrenzyReturn;
+    }
     this.rootElement = null;
     this.frenzyElement = null;
-    this.timeElement = null;
     this.praiseElement = null;
     this.coachElement = null;
     this.coachTitleElement = null;
@@ -780,7 +793,6 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.frenzyActive = false;
     this.frenzyUrgent = false;
     this.lastFrenzyPercent = -1;
-    this.lastFrenzyTimeText = '';
     this.praisePriority = 0;
     this.praiseVisibleUntil = 0;
   }

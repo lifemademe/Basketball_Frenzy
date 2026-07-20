@@ -42,6 +42,10 @@ import {
   type WristbandColor,
   type WristbandSide,
 } from './dribble-progression.js';
+import {
+  touchControlModeKey,
+  type DribbleTouchControlMode,
+} from './dribble-touch-controls.js';
 
 export type DribbleGameMode = 'normal' | 'hard' | 'last-bounce';
 export type DribbleTutorialSelection = 'classic' | 'last-bounce';
@@ -69,6 +73,7 @@ export interface DribbleMainMenuOptions extends ENGINE.BaseUIComponentOptions {
   onReducedMotionChange?: (enabled: boolean) => void;
   onReducedFlashesChange?: (enabled: boolean) => void;
   onHighContrastTargetsChange?: (enabled: boolean) => void;
+  onTouchControlModeChange?: (mode: DribbleTouchControlMode) => void;
   onBallBounce?: (strength: number) => void;
   onNameType?: () => void;
   onExit?: () => void;
@@ -104,6 +109,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private reducedMotionInput: HTMLInputElement | null = null;
   private reducedFlashesInput: HTMLInputElement | null = null;
   private highContrastTargetsInput: HTMLInputElement | null = null;
+  private touchControlModeSelect: HTMLSelectElement | null = null;
   private homeStarsElement: HTMLElement | null = null;
   private playerLevelElement: HTMLElement | null = null;
   private playerXpElement: HTMLElement | null = null;
@@ -313,6 +319,16 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.options.onHighContrastTargetsChange(enabled);
   };
 
+  private readonly handleTouchControlModeInput = (): void => {
+    const mode = this.touchControlModeSelect?.value === 'swipe' ? 'swipe' : 'split-tap';
+    try {
+      localStorage.setItem(touchControlModeKey, mode);
+    } catch {
+      // The current session still uses the selected touch control mode.
+    }
+    this.options.onTouchControlModeChange(mode);
+  };
+
   private readonly handleLanguageSelect = (): void => {
     const language = this.languageSelect?.value as DribbleLanguage | undefined;
     if (!language || !supportedLanguages.includes(language)) return;
@@ -361,9 +377,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       if (this.reducedMotionInput) this.reducedMotionInput.checked = false;
       if (this.reducedFlashesInput) this.reducedFlashesInput.checked = false;
       if (this.highContrastTargetsInput) this.highContrastTargetsInput.checked = false;
+      if (this.touchControlModeSelect) this.touchControlModeSelect.value = 'split-tap';
       this.options.onReducedMotionChange(false);
       this.options.onReducedFlashesChange(false);
       this.options.onHighContrastTargetsChange(false);
+      this.options.onTouchControlModeChange('split-tap');
       this.playerName = 'PLAYER';
       if (this.playerNameInput) this.playerNameInput.value = '';
       if (this.modePlayerNameElement) this.modePlayerNameElement.textContent = this.playerName;
@@ -375,6 +393,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
         localStorage.removeItem(reducedMotionKey);
         localStorage.removeItem(reducedFlashesKey);
         localStorage.removeItem(highContrastTargetsKey);
+        localStorage.removeItem(touchControlModeKey);
         clearSavedLanguage();
       } catch {
         // The saved profile may remain when browser storage is unavailable.
@@ -409,6 +428,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       onReducedMotionChange: () => {},
       onReducedFlashesChange: () => {},
       onHighContrastTargetsChange: () => {},
+      onTouchControlModeChange: () => {},
       onBallBounce: () => {},
       onNameType: () => {},
       onExit: () => {},
@@ -438,6 +458,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedMotionInput = this.layout.querySelector('[data-menu-reduced-motion]') as HTMLInputElement | null;
     this.reducedFlashesInput = this.layout.querySelector('[data-menu-reduced-flashes]') as HTMLInputElement | null;
     this.highContrastTargetsInput = this.layout.querySelector('[data-menu-high-contrast]') as HTMLInputElement | null;
+    this.touchControlModeSelect = this.layout.querySelector('[data-menu-touch-controls]') as HTMLSelectElement | null;
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
     this.playerLevelElement = this.layout.querySelector('[data-menu-player-level]') as HTMLElement | null;
     this.playerXpElement = this.layout.querySelector('[data-menu-player-xp]') as HTMLElement | null;
@@ -748,16 +769,20 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const reducedMotion = this.loadBoolean(reducedMotionKey);
     const reducedFlashes = this.loadBoolean(reducedFlashesKey);
     const highContrastTargets = this.loadBoolean(highContrastTargetsKey);
+    const touchControlMode = this.loadTouchControlMode();
     if (this.reducedMotionInput) this.reducedMotionInput.checked = reducedMotion;
     if (this.reducedFlashesInput) this.reducedFlashesInput.checked = reducedFlashes;
     if (this.highContrastTargetsInput) this.highContrastTargetsInput.checked = highContrastTargets;
+    if (this.touchControlModeSelect) this.touchControlModeSelect.value = touchControlMode;
     this.options.onReducedMotionChange(reducedMotion);
     this.options.onReducedFlashesChange(reducedFlashes);
     this.options.onHighContrastTargetsChange(highContrastTargets);
+    this.options.onTouchControlModeChange(touchControlMode);
 
     this.reducedMotionInput?.addEventListener('change', this.handleReducedMotionInput);
     this.reducedFlashesInput?.addEventListener('change', this.handleReducedFlashesInput);
     this.highContrastTargetsInput?.addEventListener('change', this.handleHighContrastTargetsInput);
+    this.touchControlModeSelect?.addEventListener('change', this.handleTouchControlModeInput);
     this.languageSelect?.addEventListener('change', this.handleLanguageSelect);
     this.playerNameInput?.addEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.addEventListener('keydown', this.handlePlayerNameKeyDown);
@@ -1577,6 +1602,14 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     }
   }
 
+  private loadTouchControlMode(): DribbleTouchControlMode {
+    try {
+      return localStorage.getItem(touchControlModeKey) === 'swipe' ? 'swipe' : 'split-tap';
+    } catch {
+      return 'split-tap';
+    }
+  }
+
   private storeBoolean(key: string, enabled: boolean): void {
     try {
       localStorage.setItem(key, String(enabled));
@@ -1592,6 +1625,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedMotionInput?.removeEventListener('change', this.handleReducedMotionInput);
     this.reducedFlashesInput?.removeEventListener('change', this.handleReducedFlashesInput);
     this.highContrastTargetsInput?.removeEventListener('change', this.handleHighContrastTargetsInput);
+    this.touchControlModeSelect?.removeEventListener('change', this.handleTouchControlModeInput);
     this.languageSelect?.removeEventListener('change', this.handleLanguageSelect);
     this.playerNameInput?.removeEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.removeEventListener('keydown', this.handlePlayerNameKeyDown);
@@ -1622,6 +1656,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedMotionInput = null;
     this.reducedFlashesInput = null;
     this.highContrastTargetsInput = null;
+    this.touchControlModeSelect = null;
     this.languageEntryElement = null;
     this.languageSelect = null;
     this.homeStarsElement = null;

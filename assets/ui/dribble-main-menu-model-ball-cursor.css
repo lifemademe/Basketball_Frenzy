@@ -1447,7 +1447,8 @@
   overscroll-behavior: contain;
 }
 
-.dribble-main-menu-language {
+.dribble-main-menu-language,
+.dribble-main-menu-choice {
   display: flex;
   min-height: 38px;
   align-items: center;
@@ -1455,11 +1456,13 @@
   gap: 16px;
 }
 
-.dribble-main-menu-language > span {
+.dribble-main-menu-language > span,
+.dribble-main-menu-choice > span {
   margin: 0 !important;
 }
 
-.dribble-main-menu-language select {
+.dribble-main-menu-language select,
+.dribble-main-menu-choice select {
   width: min(210px, 58%);
   height: 36px;
   padding: 0 30px 0 11px;
@@ -1471,7 +1474,8 @@
   font: 400 17px/20px 'Boogaloo', 'Trebuchet MS', sans-serif;
 }
 
-.dribble-main-menu-language select:focus {
+.dribble-main-menu-language select:focus,
+.dribble-main-menu-choice select:focus {
   border-color: #ffda58;
   box-shadow: 0 0 0 2px rgba(255, 218, 88, 0.18);
 }
