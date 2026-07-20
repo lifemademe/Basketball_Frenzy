@@ -37,7 +37,11 @@ import {
   type DribbleRunSummary,
   type DribbleVersusSummary,
 } from './dribble-overlay.js';
-import { DribblePatternDirector, type PatternLane } from './dribble-pattern-director.js';
+import {
+  DribblePatternDirector,
+  type PatternHeight,
+  type PatternLane,
+} from './dribble-pattern-director.js';
 import {
   awardCareerXp,
   awardStars,
@@ -265,6 +269,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private frenzyTimeRemaining = 0;
   private spawnsSinceHazard = 0;
   private consecutiveHazards = 0;
+  private spawnsSinceAirHazard = 6;
   private centerRhythmSpawnsRemaining = 0;
   private centerRhythmNextKind: 'score' | 'hazard' = 'score';
   private centerRhythmCooldown = 12;
@@ -306,6 +311,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private scoreStarAssetUrl = '';
   private readonly lanes = [-0.95, 0, 0.95];
   private readonly frenzyDuration = 5.5;
+  private readonly normalFrenzyStarGracePeriod = 28;
+  private readonly hardFrenzyStarGracePeriod = 22;
+  private readonly normalAirHazardGracePeriod = 16;
+  private readonly hardAirHazardGracePeriod = 12;
   private readonly normalRunDuration = 120;
   private readonly normalFinalPushDuration = 15;
   private readonly normalFinalShotBonus = 500;
@@ -611,6 +620,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.frenzyTimeRemaining = 0;
     this.spawnsSinceHazard = 0;
     this.consecutiveHazards = 0;
+    this.spawnsSinceAirHazard = 6;
     this.centerRhythmSpawnsRemaining = 0;
     this.centerRhythmNextKind = 'score';
     this.centerRhythmCooldown = 12;
@@ -807,6 +817,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     super.doBeginPlay();
     const world = this.getWorld();
     if (world) {
+      world.inputManager.options.virtualJoystickOptions = {
+        ...world.inputManager.options.virtualJoystickOptions,
+        hidden: true,
+      };
       this.musicDirector = new DribbleMusicDirector(world);
       this.musicDirector.preload();
       preloadDribbleEventAudio(world);
@@ -1589,6 +1603,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         elapsedTime: this.elapsedTime,
         activeTargetCount: existingTargets.length,
         mode: this.gameMode,
+        needsRecovery: this.lives < this.maxLives,
       })
       : null;
     const kind = rhythmTarget
@@ -1608,13 +1623,23 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       );
     }
     const availableLanes = kind === 'bonus' ? [this.lanes[0], this.lanes[2]] : this.lanes;
-    const laneX = rhythmTarget
+    let laneX = rhythmTarget
       ? 0
       : patternStep
         ? this.getPatternLaneX(patternStep.lane)
         : availableLanes[Math.floor(Math.random() * availableLanes.length)];
     const paceScale = rhythmTarget ? 1 : patternStep?.speedScale ?? 1;
     const speed = this.getTargetPace(difficulty) * paceScale;
+    const targetHeight = this.selectTargetHeight(
+      kind,
+      rhythmTarget,
+      patternStep?.height,
+      patternStep?.airTrapFollowUp ?? false,
+      Boolean(patternStep),
+    );
+    if (kind === 'hazard' && targetHeight > 1.5 && Math.abs(laneX) < 0.01) {
+      laneX = Math.random() < 0.5 ? this.lanes[0] : this.lanes[2];
+    }
     const target = DribbleTarget.create({
       name: kind === 'score'
         ? 'Score Target'
@@ -1629,17 +1654,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       rhythmTarget,
       position: new THREE.Vector3(
         laneX,
-        kind === 'bonus'
-          ? 2.45
-          : rhythmTarget
-            ? 0.48
-            : patternStep?.height === 'high'
-              ? 2.45
-              : patternStep?.height === 'low'
-                ? 0.3
-                : patternStep
-                  ? 0.52
-                  : THREE.MathUtils.randFloat(0.24, 0.68),
+        targetHeight,
         this.targetSpawnZ,
       ),
     });
@@ -1649,6 +1664,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.targetPaceScales.set(target, paceScale);
     this.lastSpawnWasCenterRhythm = rhythmTarget;
     this.lastSpawnIntervalScale = patternStep?.intervalScale ?? 1;
+    this.recordAirHazardSpacing(kind, targetHeight);
     if (patternStep?.startsPattern) {
       this.telemetry.recordPattern(patternStep.patternId);
       this.juiceHud?.showPraise(patternStep.patternLabel, 'gold');
@@ -2677,8 +2693,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
 
     const phase = this.runDirector.getPhase(this.elapsedTime);
-    const frenzyStarWindowOpen = this.gameMode !== 'normal'
-      || this.elapsedTime < this.normalRunDuration - this.normalFinalPushDuration;
+    const starGracePeriod = this.gameMode === 'hard'
+      ? this.hardFrenzyStarGracePeriod
+      : this.normalFrenzyStarGracePeriod;
+    const frenzyStarWindowOpen = this.elapsedTime >= starGracePeriod
+      && (
+        this.gameMode !== 'normal'
+        || this.elapsedTime < this.normalRunDuration - this.normalFinalPushDuration
+      );
     if (frenzyStarWindowOpen && Math.random() < 0.02 * phase.bonusChanceScale) {
       return 'bonus';
     }
@@ -2709,6 +2731,48 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return 'hazard';
     }
     return 'score';
+  }
+
+  private selectTargetHeight(
+    kind: TargetKind,
+    rhythmTarget: boolean,
+    patternHeight: PatternHeight | undefined,
+    airTrapFollowUp: boolean,
+    authoredPattern: boolean,
+  ): number {
+    if (kind === 'bonus') return 2.45;
+    if (rhythmTarget) return 0.48;
+
+    if (kind === 'hazard') {
+      const requestedAirTrap = patternHeight === 'high' && airTrapFollowUp;
+      if (requestedAirTrap && this.canSpawnAirHazard()) {
+        return 2.45;
+      }
+      if (patternHeight === 'high' || patternHeight === 'low') return 0.3;
+    }
+
+    if (patternHeight === 'high') return 2.45;
+    if (patternHeight === 'low') return 0.3;
+    return authoredPattern ? 0.52 : THREE.MathUtils.randFloat(0.24, 0.68);
+  }
+
+  private canSpawnAirHazard(): boolean {
+    if (this.tutorialActive || (this.gameMode !== 'normal' && this.gameMode !== 'hard')) {
+      return false;
+    }
+    const gracePeriod = this.gameMode === 'hard'
+      ? this.hardAirHazardGracePeriod
+      : this.normalAirHazardGracePeriod;
+    const minimumGap = this.gameMode === 'hard' ? 3 : 4;
+    return this.elapsedTime >= gracePeriod && this.spawnsSinceAirHazard >= minimumGap;
+  }
+
+  private recordAirHazardSpacing(kind: TargetKind, targetHeight: number): void {
+    if (kind === 'hazard' && targetHeight > 1.5) {
+      this.spawnsSinceAirHazard = 0;
+      return;
+    }
+    this.spawnsSinceAirHazard += 1;
   }
 
   private recordSpawnKind(kind: TargetKind): void {

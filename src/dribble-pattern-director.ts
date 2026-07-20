@@ -7,9 +7,10 @@ export type PatternLane = 'left' | 'center' | 'right';
 export type PatternHeight = 'low' | 'normal' | 'high';
 
 export interface DribblePatternStep {
-  kind: Extract<TargetKind, 'score' | 'hazard'>;
+  kind: Extract<TargetKind, 'score' | 'hazard' | 'health'>;
   lane: PatternLane;
   height?: PatternHeight;
+  airTrapFollowUp?: boolean;
   intervalScale?: number;
   speedScale?: number;
 }
@@ -26,6 +27,7 @@ interface DribblePatternDefinition {
   minDifficulty: number;
   weight: number;
   modes?: readonly DribbleGameMode[];
+  requiresMissingLife?: boolean;
   steps: readonly DribblePatternStep[];
 }
 
@@ -155,11 +157,89 @@ const patterns: readonly DribblePatternDefinition[] = [
     minDifficulty: 0.38,
     weight: 0.78,
     steps: [
-      { kind: 'hazard', lane: 'left', height: 'high' },
+      { kind: 'hazard', lane: 'left', height: 'low' },
       { kind: 'score', lane: 'right', intervalScale: 0.92 },
       { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.86 },
       { kind: 'score', lane: 'center', intervalScale: 0.9 },
       { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.86 },
+    ],
+  },
+  {
+    id: 'air-switch-left',
+    label: 'AIR SWITCH',
+    minDifficulty: 0.24,
+    weight: 0.82,
+    steps: [
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 1.1 },
+      {
+        kind: 'hazard',
+        lane: 'left',
+        height: 'high',
+        airTrapFollowUp: true,
+        intervalScale: 0.9,
+      },
+      { kind: 'score', lane: 'right', intervalScale: 0.86, speedScale: 1.02 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.9 },
+      { kind: 'score', lane: 'center', intervalScale: 0.92 },
+    ],
+  },
+  {
+    id: 'air-switch-right',
+    label: 'AIR SWITCH',
+    minDifficulty: 0.24,
+    weight: 0.82,
+    steps: [
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 1.1 },
+      {
+        kind: 'hazard',
+        lane: 'right',
+        height: 'high',
+        airTrapFollowUp: true,
+        intervalScale: 0.9,
+      },
+      { kind: 'score', lane: 'left', intervalScale: 0.86, speedScale: 1.02 },
+      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.9 },
+      { kind: 'score', lane: 'center', intervalScale: 0.92 },
+    ],
+  },
+  {
+    id: 'recovery-bait-left',
+    label: 'RECOVERY BAIT',
+    minDifficulty: 0.3,
+    weight: 0.34,
+    modes: ['normal'],
+    requiresMissingLife: true,
+    steps: [
+      { kind: 'health', lane: 'left', height: 'high', intervalScale: 1.06 },
+      {
+        kind: 'hazard',
+        lane: 'left',
+        height: 'high',
+        airTrapFollowUp: true,
+        intervalScale: 0.92,
+      },
+      { kind: 'score', lane: 'right', intervalScale: 0.9 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.94 },
+    ],
+  },
+  {
+    id: 'recovery-bait-right',
+    label: 'RECOVERY BAIT',
+    minDifficulty: 0.3,
+    weight: 0.34,
+    modes: ['normal'],
+    requiresMissingLife: true,
+    steps: [
+      { kind: 'health', lane: 'right', height: 'high', intervalScale: 1.06 },
+      {
+        kind: 'hazard',
+        lane: 'right',
+        height: 'high',
+        airTrapFollowUp: true,
+        intervalScale: 0.92,
+      },
+      { kind: 'score', lane: 'left', intervalScale: 0.9 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.94 },
     ],
   },
   {
@@ -172,7 +252,7 @@ const patterns: readonly DribblePatternDefinition[] = [
       { kind: 'score', lane: 'left', intervalScale: 0.82 },
       { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 0.8 },
       { kind: 'score', lane: 'right', intervalScale: 0.82, speedScale: 1.04 },
-      { kind: 'hazard', lane: 'right', height: 'high', intervalScale: 0.8 },
+      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.8 },
       { kind: 'score', lane: 'center', intervalScale: 0.86 },
     ],
   },
@@ -199,7 +279,7 @@ const patterns: readonly DribblePatternDefinition[] = [
     modes: ['hard'],
     steps: [
       { kind: 'hazard', lane: 'left', height: 'low', speedScale: 1.06 },
-      { kind: 'hazard', lane: 'center', height: 'high', intervalScale: 0.76 },
+      { kind: 'hazard', lane: 'center', height: 'low', intervalScale: 0.76 },
       { kind: 'score', lane: 'right', intervalScale: 0.76, speedScale: 1.06 },
       { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 0.74 },
       { kind: 'score', lane: 'left', intervalScale: 0.76, speedScale: 1.07 },
@@ -287,6 +367,7 @@ export class DribblePatternDirector {
     elapsedTime: number;
     activeTargetCount: number;
     mode: DribbleGameMode;
+    needsRecovery: boolean;
   }): DirectedPatternStep | null {
     if (!this.activePattern) {
       if (
@@ -296,7 +377,11 @@ export class DribblePatternDirector {
       ) {
         return null;
       }
-      this.activePattern = this.selectPattern(options.difficulty, options.mode);
+      this.activePattern = this.selectPattern(
+        options.difficulty,
+        options.mode,
+        options.needsRecovery,
+      );
       this.activeStepIndex = 0;
     }
 
@@ -323,16 +408,23 @@ export class DribblePatternDirector {
     };
   }
 
-  private selectPattern(difficulty: number, mode: DribbleGameMode): DribblePatternDefinition {
+  private selectPattern(
+    difficulty: number,
+    mode: DribbleGameMode,
+    needsRecovery: boolean,
+  ): DribblePatternDefinition {
     const eligible = patterns.filter(pattern => (
       pattern.minDifficulty <= difficulty
       && (!pattern.modes || pattern.modes.includes(mode))
+      && (!pattern.requiresMissingLife || needsRecovery)
       && pattern.id !== this.lastPatternId
     ));
     const fallbackCandidates = eligible.length > 0
       ? eligible
       : patterns.filter(pattern => (
-        pattern.minDifficulty <= difficulty && (!pattern.modes || pattern.modes.includes(mode))
+        pattern.minDifficulty <= difficulty
+        && (!pattern.modes || pattern.modes.includes(mode))
+        && (!pattern.requiresMissingLife || needsRecovery)
       ));
     const hardExclusive = fallbackCandidates.filter(pattern => pattern.modes?.includes('hard'));
     const candidates = mode === 'hard'
