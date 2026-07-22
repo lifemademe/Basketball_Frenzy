@@ -1740,7 +1740,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       rhythmTarget,
       patternStep?.height,
       validAirTrapFollowUp,
-      Boolean(patternStep),
     );
     if (kind === 'hazard' && targetHeight > 1.5 && Math.abs(laneX) < 0.01) {
       laneX = Math.random() < 0.5 ? this.lanes[0] : this.lanes[2];
@@ -2378,7 +2377,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       laneX,
       speed,
       spacingGroup,
-      position: new THREE.Vector3(laneX, 0.3, this.targetSpawnZ),
+      position: new THREE.Vector3(
+        laneX,
+        this.getGroundTargetHeight('hazard'),
+        this.targetSpawnZ,
+      ),
       actorTags: ['versus-ground-hazard', 'versus-recovery-gate'],
     });
     this.activeTargets.push(recovery, hazard);
@@ -2431,7 +2434,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       kind: 'hazard',
       laneX,
       speed,
-      position: new THREE.Vector3(laneX, high ? 2.45 : 0.3, this.targetSpawnZ),
+      position: new THREE.Vector3(
+        laneX,
+        high ? 2.45 : this.getGroundTargetHeight('hazard'),
+        this.targetSpawnZ,
+      ),
       actorTags: [high ? 'versus-air-hazard' : 'versus-ground-hazard'],
     });
     target.setThreatOwner(laneX === this.lanes[2] ? 'player' : 'ai');
@@ -2862,22 +2869,30 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     rhythmTarget: boolean,
     patternHeight: PatternHeight | undefined,
     airTrapFollowUp: boolean,
-    authoredPattern: boolean,
   ): number {
     if (kind === 'bonus') return 2.45;
-    if (rhythmTarget) return 0.48;
+    if (rhythmTarget) return this.getGroundTargetHeight(kind);
 
     if (kind === 'hazard') {
       const requestedAirTrap = patternHeight === 'high' && airTrapFollowUp;
       if (requestedAirTrap && this.canSpawnAirHazard()) {
         return 2.45;
       }
-      if (patternHeight === 'high' || patternHeight === 'low') return 0.3;
+      if (patternHeight === 'high' || patternHeight === 'low') {
+        return this.getGroundTargetHeight(kind);
+      }
     }
 
     if (patternHeight === 'high') return 2.45;
-    if (patternHeight === 'low') return 0.3;
-    return authoredPattern ? 0.52 : THREE.MathUtils.randFloat(0.24, 0.68);
+    return this.getGroundTargetHeight(kind);
+  }
+
+  private getGroundTargetHeight(kind: TargetKind): number {
+    if (kind === 'hazard') return 0.61;
+    if (kind === 'score') return 0.59;
+    if (kind === 'health') return 0.49;
+    if (kind === 'recovery') return 0.53;
+    return 0.59;
   }
 
   private hasValidClassicAirTrapSetup(
@@ -3035,6 +3050,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     }
     for (const target of targets) {
       const targetPosition = target.rootComponent.position;
+      if (ballState.isTransferring) {
+        const departingLaneX = ballState.side === 'left' ? this.lanes[0] : this.lanes[2];
+        if (Math.abs(target.laneX - departingLaneX) <= 0.05) continue;
+      }
       if (ballState.isBoosting) {
         const boostLaneX = ballState.side === 'left' ? this.lanes[0] : this.lanes[2];
         if (Math.abs(target.laneX - boostLaneX) > 0.05) continue;
@@ -3590,7 +3609,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     const lane = this.tutorialDirector.resolveLane(request.lane, ballState.side);
     const laneX = lane === 'center' ? this.lanes[1] : lane === 'left' ? this.lanes[0] : this.lanes[2];
-    const y = request.height === 'high' ? 2.45 : request.height === 'low' ? 0.3 : 0.52;
+    const y = request.height === 'high'
+      ? 2.45
+      : this.getGroundTargetHeight(request.kind);
     const target = this.acquireTarget({
       name: `Tutorial ${request.kind} Target`,
       kind: request.kind,

@@ -174,29 +174,31 @@ export class DribbleTarget extends ENGINE.Actor {
       : this.kind === 'health' || this.kind === 'recovery'
         ? 0.3
         : 0.24;
-    this.glowMaterial = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: this.glowBaseOpacity,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      toneMapped: false,
-    });
-    const glowGeometry = this.kind === 'score'
-      ? targetGeometry.scoreGlow
-      : geometry;
-    this.glowShell = ENGINE.MeshComponent.create({
-      name: 'Target Glow Shell',
-      geometry: glowGeometry,
-      material: this.glowMaterial,
-      scale: new THREE.Vector3(
-        this.kind === 'score' ? 1.04 : 1.14,
-        this.kind === 'score' ? 1.04 : 1.14,
-        this.kind === 'score' ? 1.04 : 1.14,
-      ),
-      physicsOptions: { enabled: false },
-    });
-    rootComponent.add(this.glowShell);
+    if (this.kind !== 'hazard' && this.kind !== 'bonus') {
+      this.glowMaterial = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: this.glowBaseOpacity,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      });
+      const glowGeometry = this.kind === 'score'
+        ? targetGeometry.scoreGlow
+        : geometry;
+      this.glowShell = ENGINE.MeshComponent.create({
+        name: 'Target Glow Shell',
+        geometry: glowGeometry,
+        material: this.glowMaterial,
+        scale: new THREE.Vector3(
+          this.kind === 'score' ? 1.04 : 1.14,
+          this.kind === 'score' ? 1.04 : 1.14,
+          this.kind === 'score' ? 1.04 : 1.14,
+        ),
+        physicsOptions: { enabled: false },
+      });
+      rootComponent.add(this.glowShell);
+    }
 
     if (this.kind === 'score') {
       this.attachScoreTokenModel(rootComponent, false);
