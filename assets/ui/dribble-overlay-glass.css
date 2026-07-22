@@ -525,7 +525,7 @@
 .dribble-power-shop header {
   position: relative;
   padding: 0 0 13px;
-  text-align: left;
+  text-align: center;
 }
 
 .dribble-power-shop header > span {
@@ -546,11 +546,12 @@
   margin: 3px 0 0;
   color: #ffdf69;
   font-size: 13px;
+  text-align: center;
 }
 
 .dribble-power-shop-balance {
   position: absolute;
-  top: 14px;
+  top: 42px;
   right: 0;
   display: flex;
   align-items: center;

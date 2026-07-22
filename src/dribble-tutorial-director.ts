@@ -118,8 +118,8 @@ const classicLessons: TutorialLesson[] = [
 const lastBounceLessons: TutorialLesson[] = [
   {
     id: 'versus-lives',
-    title: 'Three Lives Each',
-    instruction: 'The three circles beside AI and YOU are round lives. A hazard ♦️ fills one circle; lose all three and the match is over.',
+    title: 'First To Three',
+    instruction: 'The yellow circles beside AI and YOU track round wins. Win three rounds to take the match.',
     control: 'LEFT CLICK TO CONTINUE',
     expectedEvent: 'continue',
   },

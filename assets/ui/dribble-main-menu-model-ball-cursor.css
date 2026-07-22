@@ -883,7 +883,7 @@
 }
 
 .dribble-main-menu-tutorial-select .dribble-mode-heading {
-  text-align: left;
+  text-align: center;
 }
 
 .dribble-tutorial-options {
@@ -1575,6 +1575,14 @@
   filter: drop-shadow(0 18px 22px rgba(0, 34, 102, 0.34));
 }
 
+.dribble-main-menu-mode-select .dribble-main-menu-panel-heading,
+.dribble-main-menu-tutorial-select .dribble-main-menu-panel-heading,
+.dribble-main-menu-settings .dribble-main-menu-panel-heading,
+.dribble-main-menu-shop .dribble-main-menu-panel-heading,
+.dribble-main-menu-reset .dribble-main-menu-panel-heading {
+  text-align: center;
+}
+
 .dribble-main-menu[data-panel='mode-select'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='tutorial-select'] .dribble-main-menu-brand,
 .dribble-main-menu[data-panel='settings'] .dribble-main-menu-brand,
@@ -2184,11 +2192,13 @@
 }
 
 .dribble-shop-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+  position: relative;
+  display: block;
+  min-height: 56px;
+  padding: 0 58px;
+  box-sizing: border-box;
   margin: 0 2px 4px;
+  text-align: center;
 }
 
 .dribble-shop-heading h2 {
@@ -2206,6 +2216,9 @@
 }
 
 .dribble-shop-heading strong {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2936,13 +2949,12 @@
   }
 
   .dribble-main-menu[data-panel='home'] .dribble-main-menu-brand {
-    padding-top: 90px;
-    box-sizing: border-box;
+    display: none;
     transform: none;
   }
 
   .dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
-    margin-top: -6px;
+    margin-top: clamp(175px, 20vh, 210px);
   }
 
   .dribble-main-menu-panel {

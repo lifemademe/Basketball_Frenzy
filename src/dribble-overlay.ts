@@ -324,15 +324,15 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
     this.show();
   }
 
-  public showVersusPause(playerLosses: number, aiLosses: number): void {
+  public showVersusPause(playerWins: number, aiWins: number): void {
     if (this.rootElement) this.rootElement.dataset.powerUps = 'false';
     this.refreshButtonLabels();
     this.setContent({
       mode: 'pause',
       title: t('overlay.paused'),
       subtitle: 'Last Bounce match in progress.',
-      scoreLabel: 'ROUND LOSSES  ·  YOU / AI',
-      score: `${playerLosses} - ${aiLosses}`,
+      scoreLabel: 'ROUND WINS  ·  YOU / AI',
+      score: `${playerWins} - ${aiWins}`,
       showResume: true,
       summary: null,
       summaryKind: null,
@@ -342,8 +342,8 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
 
   public showVersusGameOver(
     playerWon: boolean,
-    playerLosses: number,
-    aiLosses: number,
+    playerWins: number,
+    aiWins: number,
     summary: DribbleVersusSummary,
   ): void {
     if (this.rootElement) this.rootElement.dataset.powerUps = 'false';
@@ -352,8 +352,8 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
       mode: 'game-over',
       title: playerWon ? t('overlay.victory') : t('overlay.defeat'),
       subtitle: playerWon ? 'You outplayed the left hand.' : 'The AI held its nerve.',
-      scoreLabel: 'ROUND LOSSES  ·  YOU / AI',
-      score: `${playerLosses} - ${aiLosses}`,
+      scoreLabel: 'ROUND WINS  ·  YOU / AI',
+      score: `${playerWins} - ${aiWins}`,
       showResume: false,
       summary: {
         bestCombo: summary.roundsPlayed,

@@ -2,7 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 
 export type VersusOwner = 'player' | 'ai';
 export type VersusCalloutTone = 'gold' | 'danger' | 'blue' | 'recovery';
-export type VersusTutorialFocus = 'lives' | 'risk' | null;
+export type VersusTutorialFocus = 'wins' | 'risk' | null;
 
 export interface DribbleVersusHudOptions extends ENGINE.BaseUIComponentOptions {}
 
@@ -37,8 +37,8 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private aiIntentElement: HTMLElement | null = null;
   private calloutTimer: ReturnType<typeof setTimeout> | null = null;
   private roundResultTimer: ReturnType<typeof setTimeout> | null = null;
-  private renderedPlayerLosses = -1;
-  private renderedAiLosses = -1;
+  private renderedPlayerWins = -1;
+  private renderedAiWins = -1;
   private renderedPlayerRiskCards = -1;
   private renderedAiRiskCards = -1;
   private renderedOwner: VersusOwner | null = null;
@@ -92,8 +92,8 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   public setMatchState(
     owner: VersusOwner,
     round: number,
-    playerLosses: number,
-    aiLosses: number,
+    playerWins: number,
+    aiWins: number,
     pressure: number,
     receiving: boolean,
     catching: boolean,
@@ -146,13 +146,13 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     if (this.pressureElement && pressurePercent !== this.renderedPressurePercent) {
       this.pressureElement.style.width = `${pressurePercent}%`;
     }
-    if (playerLosses !== this.renderedPlayerLosses) {
-      this.renderedPlayerLosses = playerLosses;
-      this.renderLosses(this.playerRoundsElement, playerLosses);
+    if (playerWins !== this.renderedPlayerWins) {
+      this.renderedPlayerWins = playerWins;
+      this.renderWins(this.playerRoundsElement, playerWins, 'Your');
     }
-    if (aiLosses !== this.renderedAiLosses) {
-      this.renderedAiLosses = aiLosses;
-      this.renderLosses(this.aiRoundsElement, aiLosses);
+    if (aiWins !== this.renderedAiWins) {
+      this.renderedAiWins = aiWins;
+      this.renderWins(this.aiRoundsElement, aiWins, 'AI');
     }
     if (playerRiskCards !== this.renderedPlayerRiskCards) {
       this.renderedPlayerRiskCards = playerRiskCards;
@@ -239,12 +239,15 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     }, displayDuration + exitDuration);
   }
 
-  private renderLosses(element: HTMLElement | null, losses: number): void {
+  private renderWins(element: HTMLElement | null, wins: number, ownerLabel: string): void {
     if (!element) return;
     element.replaceChildren();
+    element.setAttribute('role', 'img');
+    element.setAttribute('aria-label', `${ownerLabel} round wins: ${wins} of 3`);
     for (let index = 0; index < 3; index += 1) {
       const marker = document.createElement('i');
-      marker.dataset.lost = String(index < losses);
+      marker.dataset.won = String(index < wins);
+      marker.setAttribute('aria-hidden', 'true');
       element.append(marker);
     }
   }
@@ -282,8 +285,8 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.opponentNameElement = null;
     this.opponentStyleElement = null;
     this.aiIntentElement = null;
-    this.renderedPlayerLosses = -1;
-    this.renderedAiLosses = -1;
+    this.renderedPlayerWins = -1;
+    this.renderedAiWins = -1;
     this.renderedPlayerRiskCards = -1;
     this.renderedAiRiskCards = -1;
     this.renderedOwner = null;

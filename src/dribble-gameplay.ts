@@ -2604,8 +2604,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setHudVisible(false);
     this.overlay?.showVersusGameOver(
       playerWon,
-      this.versusPlayerLosses,
       this.versusAiLosses,
+      this.versusPlayerLosses,
       this.createVersusSummary(),
     );
     world.inputManager.exitPointerLock();
@@ -2615,8 +2615,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.versusHud?.setMatchState(
       this.versusOwner,
       this.versusRound,
-      this.versusPlayerLosses,
       this.versusAiLosses,
+      this.versusPlayerLosses,
       this.versusPossessionTime / (this.versusPressureDuration * this.versusPressureDurationScale),
       ballState?.isTransferring ?? false,
       ballState?.isCatching ?? false,
@@ -3701,7 +3701,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.ball?.setCatchEnabled(false);
     this.versusHud?.setTutorialFocus(
       lessonId === 'versus-lives'
-        ? 'lives'
+        ? 'wins'
         : lessonId === 'versus-risk'
           ? 'risk'
           : null,
@@ -3899,7 +3899,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.setHudVisible(false);
     this.tutorialHud?.hide();
     if (this.gameMode === 'last-bounce') {
-      this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
+      this.overlay?.showVersusPause(this.versusAiLosses, this.versusPlayerLosses);
     } else {
       this.overlay?.showPause(this.score, !this.tutorialActive);
     }
@@ -3912,7 +3912,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.mainMenu?.showPauseSettings(() => {
       if (this.gameState !== 'paused') return;
       if (this.gameMode === 'last-bounce') {
-        this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
+        this.overlay?.showVersusPause(this.versusAiLosses, this.versusPlayerLosses);
       } else {
         this.overlay?.showPause(this.score, !this.tutorialActive);
       }
@@ -4894,7 +4894,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.mainMenu?.hide();
       this.setHudVisible(false);
       if (this.gameMode === 'last-bounce') {
-        this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
+        this.overlay?.showVersusPause(this.versusAiLosses, this.versusPlayerLosses);
       } else {
         this.overlay?.showPause(this.score, !this.tutorialActive);
       }
@@ -4904,8 +4904,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       if (this.gameMode === 'last-bounce') {
         this.overlay?.showVersusGameOver(
           this.versusAiLosses >= this.versusLossesToEndMatch,
-          this.versusPlayerLosses,
           this.versusAiLosses,
+          this.versusPlayerLosses,
           this.createVersusSummary(),
         );
       } else {
