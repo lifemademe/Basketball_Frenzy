@@ -5,6 +5,12 @@ export type TargetKind = 'score' | 'hazard' | 'health' | 'bonus' | 'recovery';
 export type TargetThreatOwner = 'player' | 'ai';
 
 const scoreTokenModelPath = '@project/assets/models/score_token.glb';
+const hazardModelPath = '@project/assets/models/Badtarget_runtime_v2.glb';
+const frenzyStarModelPath = '@project/assets/models/Star_runtime.glb';
+const hazardModelScale = 1;
+const hazardModelEmissionIntensity = 4.2;
+const frenzyStarModelScale = 1.08;
+const frenzyStarModelEmissionIntensity = 4.2;
 
 function createStarGeometry(): THREE.ExtrudeGeometry {
   const shape = new THREE.Shape();
@@ -87,7 +93,11 @@ export class DribbleTarget extends ENGINE.Actor {
   private avoidedHazard = false;
   private targetMesh: ENGINE.MeshComponent | null = null;
   private scoreTokenModel: ENGINE.ModelMeshComponent | null = null;
+  private hazardModel: ENGINE.ModelMeshComponent | null = null;
+  private bonusContrastOutline: ENGINE.MeshComponent | null = null;
   private readonly scoreTokenMaterialIntensity = new Map<THREE.MeshStandardMaterial, number>();
+  private readonly hazardModelMaterials = new Set<THREE.MeshStandardMaterial>();
+  private readonly frenzyStarModelMaterials = new Set<THREE.MeshStandardMaterial>();
   private glowShell: ENGINE.MeshComponent | null = null;
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
@@ -98,6 +108,8 @@ export class DribbleTarget extends ENGINE.Actor {
   private threatMarker: ENGINE.MeshComponent | null = null;
   private threatMarkerMaterial: THREE.MeshBasicMaterial | null = null;
   private spacingSpeedLimit = Number.POSITIVE_INFINITY;
+  private presentationFocus = 0;
+  private presentationFrenzy = 0;
   private coinMagnetActive = false;
   private coinMagnetAge = 0;
   private readonly coinMagnetTarget = new THREE.Vector3();
@@ -177,6 +189,10 @@ export class DribbleTarget extends ENGINE.Actor {
 
     if (this.kind === 'score') {
       this.attachScoreTokenModel(rootComponent, false);
+    } else if (this.kind === 'hazard') {
+      this.attachHazardModel(rootComponent);
+    } else if (this.kind === 'bonus') {
+      this.attachFrenzyStarModel(rootComponent);
     }
 
     if (this.kind === 'health') {
@@ -206,7 +222,7 @@ export class DribbleTarget extends ENGINE.Actor {
         physicsOptions: { enabled: false },
       }));
     } else if (this.kind === 'bonus') {
-      rootComponent.add(ENGINE.MeshComponent.create({
+      this.bonusContrastOutline = ENGINE.MeshComponent.create({
         name: 'Bonus Star Contrast Outline',
         geometry: geometry.clone(),
         material: new THREE.MeshBasicMaterial({
@@ -216,7 +232,8 @@ export class DribbleTarget extends ENGINE.Actor {
         }),
         scale: new THREE.Vector3(1.075, 1.075, 1.075),
         physicsOptions: { enabled: false },
-      }));
+      });
+      rootComponent.add(this.bonusContrastOutline);
     }
 
     super.initialize({
@@ -243,6 +260,7 @@ export class DribbleTarget extends ENGINE.Actor {
       this.rootComponent.position.z += this.getApproachSpeed() * deltaTime;
     }
     const pressureSpeed = 1 + this.pressureLevel * 1.15;
+    const presentationEnergy = this.presentationFocus * 0.72 + this.presentationFrenzy * 0.8;
     const magnetVisualStrength = this.coinMagnetActive
       ? THREE.MathUtils.smoothstep(this.coinMagnetAge, 0, 0.18)
       : 0;
@@ -255,25 +273,41 @@ export class DribbleTarget extends ENGINE.Actor {
     this.glowShell?.scale.setScalar(
       glowScale
       + this.pressureLevel * 0.1
+      + presentationEnergy * 0.055
       + magnetVisualStrength * 0.1
       + glowPulse * (0.045 + magnetVisualStrength * 0.025),
     );
     if (this.glowMaterial) {
       this.glowMaterial.opacity = this.glowBaseOpacity
         + this.pressureLevel * 0.17
+        + presentationEnergy * 0.13
         + magnetVisualStrength * 0.24
         + glowPulse * (0.07 + this.pressureLevel * 0.03 + magnetVisualStrength * 0.04);
     }
     if (this.targetMaterial) {
       this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity
         + this.pressureLevel * 2.2
+        + presentationEnergy * 1.6
         + magnetVisualStrength * 1.4;
     }
     for (const [material, baseIntensity] of this.scoreTokenMaterialIntensity) {
       material.emissiveIntensity = baseIntensity
         + this.pressureLevel * 1.4
+        + presentationEnergy * 1.05
         + magnetVisualStrength * 1.15
         + Math.max(0, glowPulse) * 0.32;
+    }
+    for (const material of this.hazardModelMaterials) {
+      material.emissiveIntensity = hazardModelEmissionIntensity
+        + this.pressureLevel * 2.2
+        + presentationEnergy * 1.6
+        + Math.max(0, glowPulse) * 0.35;
+    }
+    for (const material of this.frenzyStarModelMaterials) {
+      material.emissiveIntensity = frenzyStarModelEmissionIntensity
+        + this.pressureLevel * 2.2
+        + presentationEnergy * 1.6
+        + Math.max(0, glowPulse) * 0.45;
     }
     this.threatMarker?.scale.setScalar(0.92 + glowPulse * 0.08);
     if (this.threatMarkerMaterial) {
@@ -334,6 +368,11 @@ export class DribbleTarget extends ENGINE.Actor {
     this.pressureLevel = THREE.MathUtils.clamp(level, 0, 1);
   }
 
+  public setPresentationFocus(focus: number, frenzy: number): void {
+    this.presentationFocus = THREE.MathUtils.clamp(focus, 0, 1);
+    this.presentationFrenzy = THREE.MathUtils.clamp(frenzy, 0, 1);
+  }
+
   public setCoinMagnetTarget(target: THREE.Vector3 | null): void {
     if (this.kind !== 'score' || this.hit || this.removalRequested) return;
     if (!target) {
@@ -383,10 +422,12 @@ export class DribbleTarget extends ENGINE.Actor {
   }
 
   public static preloadScoreToken(): void {
-    void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(scoreTokenModelPath))
-      .catch(error => {
-        console.warn(`Could not preload score token model: ${scoreTokenModelPath}`, error);
-      });
+    for (const modelPath of [scoreTokenModelPath, hazardModelPath, frenzyStarModelPath]) {
+      void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(modelPath))
+        .catch(error => {
+          console.warn(`Could not preload target model: ${modelPath}`, error);
+        });
+    }
   }
 
   public applyAccessibilityPalette(): void {
@@ -394,6 +435,14 @@ export class DribbleTarget extends ENGINE.Actor {
     this.targetMaterial?.color.setHex(color);
     this.targetMaterial?.emissive.setHex(color);
     this.glowMaterial?.color.setHex(color);
+    for (const material of this.hazardModelMaterials) {
+      material.emissive.setHex(color);
+      material.needsUpdate = true;
+    }
+    for (const material of this.frenzyStarModelMaterials) {
+      material.emissive.setHex(color);
+      material.needsUpdate = true;
+    }
     this.updateScoreTokenMaterials();
   }
 
@@ -406,6 +455,7 @@ export class DribbleTarget extends ENGINE.Actor {
     this.glowBaseOpacity = 0.24;
     this.rootComponent.rotation.set(0, 0, 0);
     if (this.threatMarker) this.threatMarker.visible = false;
+    if (this.hazardModel) this.hazardModel.visible = false;
 
     const scoreGeometry = new THREE.TorusGeometry(0.42, 0.12, 12, 28);
     const scoreGlowGeometry = new THREE.TorusGeometry(0.515, 0.014, 6, 32);
@@ -462,6 +512,74 @@ export class DribbleTarget extends ENGINE.Actor {
           console.warn(`Could not load score token model: ${scoreTokenModelPath}`, error);
         });
     }
+  }
+
+  private attachHazardModel(parent: ENGINE.SceneComponent): void {
+    const model = ENGINE.ModelMeshComponent.create({
+      name: 'Bad Target Model',
+      modelUrl: hazardModelPath,
+      useDynamicMaterials: true,
+      castShadow: true,
+      receiveShadow: true,
+      scale: new THREE.Vector3(hazardModelScale, hazardModelScale, hazardModelScale),
+      physicsOptions: { enabled: false },
+    });
+    model.onMeshLoaded.add((_component, modelRoot) => {
+      if (this.removalRequested || this.kind !== 'hazard') return;
+      this.hazardModelMaterials.clear();
+      modelRoot.traverse(child => {
+        if (!(child instanceof THREE.Mesh)) return;
+        child.castShadow = true;
+        child.receiveShadow = true;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        for (const material of materials) {
+          if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+          material.emissive.setHex(this.getDisplayColor());
+          material.emissiveIntensity = hazardModelEmissionIntensity;
+          material.roughness = Math.min(material.roughness, 0.38);
+          this.hazardModelMaterials.add(material);
+        }
+      });
+      if (this.targetMesh) this.targetMesh.mesh.visible = false;
+    });
+    this.hazardModel = model;
+    parent.add(model);
+  }
+
+  private attachFrenzyStarModel(parent: ENGINE.SceneComponent): void {
+    const model = ENGINE.ModelMeshComponent.create({
+      name: 'Frenzy Star Model',
+      modelUrl: frenzyStarModelPath,
+      useDynamicMaterials: true,
+      castShadow: true,
+      receiveShadow: true,
+      scale: new THREE.Vector3(
+        frenzyStarModelScale,
+        frenzyStarModelScale,
+        frenzyStarModelScale,
+      ),
+      physicsOptions: { enabled: false },
+    });
+    model.onMeshLoaded.add((_component, modelRoot) => {
+      if (this.removalRequested || this.kind !== 'bonus') return;
+      this.frenzyStarModelMaterials.clear();
+      modelRoot.traverse(child => {
+        if (!(child instanceof THREE.Mesh)) return;
+        child.castShadow = true;
+        child.receiveShadow = true;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        for (const material of materials) {
+          if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+          material.emissive.setHex(this.getDisplayColor());
+          material.emissiveIntensity = frenzyStarModelEmissionIntensity;
+          material.roughness = Math.min(material.roughness, 0.3);
+          this.frenzyStarModelMaterials.add(material);
+        }
+      });
+      if (this.targetMesh) this.targetMesh.mesh.visible = false;
+      if (this.bonusContrastOutline) this.bonusContrastOutline.visible = false;
+    });
+    parent.add(model);
   }
 
   private updateScoreTokenMaterials(): void {

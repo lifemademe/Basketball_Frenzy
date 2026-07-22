@@ -512,6 +512,44 @@
   pointer-events: none;
 }
 
+.dribble-environment-focus {
+  --environment-focus-x: 50%;
+  --environment-focus-rgb: 255, 211, 106;
+  --environment-focus-strength: 0;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 54% 70% at 50% 55%, transparent 0 47%, rgba(4, 13, 28, 0.025) 68%, rgba(2, 8, 20, 0.115) 100%),
+    linear-gradient(90deg, rgba(5, 15, 31, 0.075), transparent 18%, transparent 82%, rgba(5, 15, 31, 0.075));
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+.dribble-environment-focus::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 22% 46% at var(--environment-focus-x) 53%,
+    rgba(var(--environment-focus-rgb), 0.115),
+    rgba(var(--environment-focus-rgb), 0.035) 38%,
+    transparent 72%
+  );
+  content: '';
+  opacity: var(--environment-focus-strength);
+  transition: opacity 120ms linear, background-position 180ms ease;
+}
+
+.dribble-juice-hud[data-environment-focus-active='true'] .dribble-environment-focus {
+  opacity: 1;
+}
+
+.dribble-juice-hud[data-frenzy-active='true'] .dribble-environment-focus {
+  background:
+    radial-gradient(ellipse 58% 76% at 50% 55%, rgba(255, 218, 92, 0.025), transparent 48%, rgba(42, 22, 3, 0.1) 100%),
+    linear-gradient(90deg, rgba(35, 20, 3, 0.08), transparent 20%, transparent 80%, rgba(35, 20, 3, 0.08));
+}
+
 .dribble-frenzy-screen {
   position: absolute;
   inset: 0;
@@ -1156,6 +1194,20 @@
 }
 
 @media (max-width: 720px) {
+  .dribble-environment-focus {
+    background:
+      radial-gradient(ellipse 64% 76% at 50% 55%, transparent 0 52%, rgba(4, 13, 28, 0.018) 74%, rgba(2, 8, 20, 0.07) 100%),
+      linear-gradient(90deg, rgba(5, 15, 31, 0.04), transparent 14%, transparent 86%, rgba(5, 15, 31, 0.04));
+  }
+
+  .dribble-environment-focus::after {
+    background: radial-gradient(
+      ellipse 32% 44% at var(--environment-focus-x) 53%,
+      rgba(var(--environment-focus-rgb), 0.08),
+      transparent 70%
+    );
+  }
+
   html[data-dribble-frenzy-focus='true'] .dribble-lives,
   html[data-dribble-frenzy-focus='true'] .ui-number-display.top-right,
   html[data-dribble-frenzy-focus='true'] .dribble-run-objectives {

@@ -760,6 +760,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   };
 
   private rootElement: HTMLElement | null = null;
+  private environmentFocusElement: HTMLElement | null = null;
   private frenzyElement: HTMLElement | null = null;
   private praiseElement: HTMLElement | null = null;
   private resumeCountdownElement: HTMLElement | null = null;
@@ -812,6 +813,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   protected override cacheElements(): void {
     if (!this.layout) return;
     this.rootElement = this.layout.querySelector('[data-dribble-juice]') as HTMLElement | null;
+    this.environmentFocusElement = this.layout.querySelector('[data-environment-focus]') as HTMLElement | null;
     this.frenzyElement = this.layout.querySelector('[data-frenzy-meter]') as HTMLElement | null;
     this.praiseElement = this.layout.querySelector('[data-score-praise]') as HTMLElement | null;
     this.resumeCountdownElement = this.layout.querySelector('[data-resume-countdown]') as HTMLElement | null;
@@ -875,6 +877,28 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
       this.lastMagnetTenths = magnetTenths;
       this.magnetTimeElement.textContent = `${(magnetTenths / 10).toFixed(1)}s`;
     }
+  }
+
+  public setEnvironmentFocus(
+    lane: -1 | 0 | 1,
+    urgency: number,
+    kind: 'score' | 'hazard' | 'health' | 'bonus' | 'recovery',
+    active: boolean,
+  ): void {
+    if (!this.rootElement || !this.environmentFocusElement) return;
+    this.rootElement.dataset.environmentFocusActive = active ? 'true' : 'false';
+    const x = 50 + lane * 12;
+    const rgb = kind === 'hazard'
+      ? '255, 77, 72'
+      : kind === 'health' || kind === 'recovery'
+        ? '77, 230, 184'
+        : '255, 211, 74';
+    this.environmentFocusElement.style.setProperty('--environment-focus-x', `${x}%`);
+    this.environmentFocusElement.style.setProperty('--environment-focus-rgb', rgb);
+    this.environmentFocusElement.style.setProperty(
+      '--environment-focus-strength',
+      String(Math.max(0, Math.min(0.8, urgency * 0.8))),
+    );
   }
 
   public setFrenzy(progress: number, remaining: number, active: boolean): void {
@@ -1009,6 +1033,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
       delete documentElement.dataset.dribbleFrenzyReturn;
     }
     this.rootElement = null;
+    this.environmentFocusElement = null;
     this.frenzyElement = null;
     this.praiseElement = null;
     this.resumeCountdownElement = null;

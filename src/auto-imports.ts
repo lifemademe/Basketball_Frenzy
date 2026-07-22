@@ -8,6 +8,7 @@ import './dribble-combo-popup.ts';
 import './dribble-controller-navigation.ts';
 import './dribble-developer-panel.ts';
 import './dribble-difficulty-director.ts';
+import './dribble-environment-focus.ts';
 import './dribble-feedback-audio.ts';
 import './dribble-gameplay.ts';
 import './dribble-impact-burst.ts';
