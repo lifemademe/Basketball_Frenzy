@@ -11,7 +11,7 @@
   border: 0;
   background: transparent;
   box-shadow: none;
-  cursor: none;
+  cursor: var(--dribble-gameplay-cursor, default);
   pointer-events: auto;
   transition: filter 130ms ease, transform 130ms ease;
 }

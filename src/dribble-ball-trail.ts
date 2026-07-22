@@ -14,6 +14,7 @@ export class DribbleBallTrail extends ENGINE.Actor {
   private pointCount = 0;
   private cosmetic: BallCosmetic = 'classic';
   private frenzyActive = false;
+  private shieldActive = false;
   private powerBounceActive = false;
   private colorPhase = 0;
   private readonly scratchColor = new THREE.Color();
@@ -98,6 +99,11 @@ export class DribbleBallTrail extends ENGINE.Actor {
 
   public setFrenzyActive(active: boolean): void {
     this.frenzyActive = active;
+    this.updateRibbon();
+  }
+
+  public setShieldActive(active: boolean): void {
+    this.shieldActive = active;
     this.updateRibbon();
   }
 
@@ -235,13 +241,16 @@ export class DribbleBallTrail extends ENGINE.Actor {
       corePositionAttribute.needsUpdate = true;
       coreColorAttribute.needsUpdate = true;
       this.trailCore.geometry.setDrawRange(0, this.pointCount);
-      this.trailCore.material.opacity = this.powerBounceActive || this.frenzyActive ? 1 : 0.88;
+      this.trailCore.material.opacity = this.powerBounceActive || this.frenzyActive || this.shieldActive
+        ? 1
+        : 0.88;
     }
   }
 
   private getWidthScale(): number {
     const powerScale = this.powerBounceActive ? 1.45 : 1.12;
     if (this.frenzyActive) return 1.62 * powerScale;
+    if (this.shieldActive) return 1.48 * powerScale;
     if (this.cosmetic === 'blackhole') return 1.4 * powerScale;
     if (this.cosmetic === 'disco') return 1.28 * powerScale;
     return powerScale;
@@ -253,6 +262,14 @@ export class DribbleBallTrail extends ENGINE.Actor {
         1,
         THREE.MathUtils.lerp(0.56, 0.96, progress),
         THREE.MathUtils.lerp(0.03, 0.55, progress),
+      );
+      return;
+    }
+    if (this.shieldActive) {
+      this.scratchColor.setRGB(
+        THREE.MathUtils.lerp(0.08, 0.48, progress),
+        THREE.MathUtils.lerp(0.62, 1, progress),
+        1,
       );
       return;
     }

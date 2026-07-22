@@ -266,15 +266,20 @@
 
 .dribble-overlay-actions {
   display: grid;
-  grid-template-columns: 58fr 36fr;
+  grid-template-columns: minmax(126px, 1fr) 72px 64px;
   align-items: center;
   align-self: center;
-  gap: 8px 6%;
-  width: min(276px, 100%);
+  gap: 8px 10px;
+  width: min(310px, 100%);
 }
 
 .dribble-overlay[data-mode='game-over'] .dribble-overlay-actions {
   grid-template-columns: 58fr 36fr;
+  width: min(276px, 100%);
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-settings {
+  display: none;
 }
 
 .dribble-overlay[data-mode='pause'] .dribble-overlay-summary {
@@ -441,6 +446,238 @@
   transform: scale(0.96);
 }
 
+.dribble-overlay-utility {
+  position: relative;
+  display: grid;
+  width: 64px;
+  height: 58px;
+  place-items: center;
+}
+
+.dribble-overlay-utility > img,
+.dribble-overlay-utility > .ui-button {
+  grid-area: 1 / 1;
+}
+
+.dribble-overlay-utility > img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  pointer-events: none;
+  transition: filter 130ms ease, transform 130ms ease;
+}
+
+.dribble-overlay-utility > .ui-button,
+.dribble-overlay-utility > .ui-button:hover,
+.dribble-overlay-utility > .ui-button:focus-visible {
+  z-index: 1;
+  width: 64px;
+  height: 58px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+}
+
+.dribble-overlay-utility .ui-button-label {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+}
+
+.dribble-overlay-utility:has(.ui-button:hover) > img,
+.dribble-overlay-utility:has(.ui-button:focus-visible) > img {
+  filter: brightness(1.16) saturate(1.12) drop-shadow(0 6px 8px rgba(0, 46, 136, 0.38));
+  transform: translateY(-2px) scale(1.07);
+}
+
+.dribble-overlay-utility:has(.ui-button:active) > img {
+  filter: brightness(0.94);
+  transform: scale(0.96);
+}
+
+.dribble-power-shop {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  min-height: 475px;
+}
+
+.dribble-overlay[data-view='shop'] .dribble-overlay-title,
+.dribble-overlay[data-view='shop'] .dribble-overlay-subtitle,
+.dribble-overlay[data-view='shop'] .dribble-overlay-score,
+.dribble-overlay[data-view='shop'] .dribble-overlay-summary,
+.dribble-overlay[data-view='shop'] .dribble-overlay-actions,
+.dribble-overlay[data-view='shop'] .dribble-overlay-utilities {
+  display: none;
+}
+
+.dribble-overlay[data-view='shop'] .dribble-power-shop {
+  display: flex;
+}
+
+.dribble-power-shop header {
+  position: relative;
+  padding: 0 0 13px;
+  text-align: left;
+}
+
+.dribble-power-shop header > span {
+  color: #b8efff;
+  font-size: 13px;
+}
+
+.dribble-power-shop h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 39px;
+  text-shadow: 0 3px 0 #0b43a5;
+}
+
+.dribble-power-shop header > p {
+  margin: 3px 0 0;
+  color: #ffdf69;
+  font-size: 13px;
+}
+
+.dribble-power-shop-balance {
+  position: absolute;
+  top: 14px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(3, 42, 116, 0.58);
+}
+
+.dribble-power-shop-balance img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}
+
+.dribble-power-shop-balance strong {
+  font-size: 22px;
+}
+
+.dribble-power-shop-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dribble-power-shop-list article {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  min-height: 105px;
+  padding: 9px 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(190, 235, 255, 0.34);
+  border-radius: 7px;
+  background: rgba(4, 53, 146, 0.35);
+  text-align: left;
+}
+
+.dribble-power-shop-list article > img {
+  grid-row: 1 / 3;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.dribble-power-shop-list article h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.dribble-power-shop-list article p {
+  margin: 1px 0 0;
+  color: #cdeeff;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 10px;
+  line-height: 13px;
+}
+
+.dribble-power-shop-list article > div:last-child {
+  grid-column: 2;
+  height: 32px;
+  margin-top: 4px;
+}
+
+.dribble-power-shop-list .ui-button,
+.dribble-power-shop-list .ui-button:hover,
+.dribble-power-shop-list .ui-button:focus-visible {
+  width: 100%;
+  height: 32px;
+  min-height: 0;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 230, 118, 0.8);
+  border-radius: 6px;
+  outline: 0;
+  background: rgba(255, 174, 20, 0.18) !important;
+  color: #fff4b4;
+  box-shadow: none;
+  font-family: 'Boogaloo', 'Trebuchet MS', sans-serif;
+  font-size: 15px;
+}
+
+.dribble-power-shop-list .ui-button:hover,
+.dribble-power-shop-list .ui-button:focus-visible {
+  background: rgba(255, 190, 33, 0.34) !important;
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.dribble-power-shop-list .ui-button:disabled {
+  border-color: rgba(190, 222, 238, 0.26);
+  background: rgba(2, 34, 96, 0.28) !important;
+  color: rgba(214, 237, 247, 0.5);
+  opacity: 1;
+}
+
+.dribble-power-shop-back {
+  align-self: center;
+  width: 105px;
+  height: 64px;
+  margin-top: 8px;
+}
+
+.dribble-power-shop-back .ui-button,
+.dribble-power-shop-back .ui-button:hover,
+.dribble-power-shop-back .ui-button:focus-visible {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  outline: 0;
+  background: transparent url('@project/assets/textures/Back.png') center / contain no-repeat !important;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+}
+
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-utilities {
+  display: none;
+}
+
+.dribble-overlay[data-power-ups='false'] .dribble-overlay-power-up {
+  display: none;
+}
+
 @media (max-width: 520px) {
   .dribble-overlay {
     padding: 16px;
@@ -471,12 +708,21 @@
     grid-template-columns: 58fr 36fr;
     gap: 6px 6%;
   }
+
+  .dribble-power-shop-list article {
+    min-height: 100px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dribble-overlay-close,
   .dribble-overlay-action .ui-button,
   .dribble-overlay-main-menu > img {
+    transition: none;
+  }
+  .dribble-overlay-utility > img,
+  .dribble-shield-screen,
+  .dribble-power-shop-list .ui-button {
     transition: none;
   }
 }

@@ -159,6 +159,10 @@ export class FirstPersonPlayerController extends ENGINE.DefaultPlayerController 
       playGamepadUiFeedback(gamepadIndex, true);
       return true;
     }
+    if (buttonIndex === ENGINE.GamepadButton.FaceTop && gameplay?.openPowerUpShop()) {
+      playGamepadUiFeedback(gamepadIndex, true);
+      return true;
+    }
     if (gameplay?.isControllerMenuActive()) {
       if (buttonIndex === ENGINE.GamepadButton.FaceBottom) {
         if (gameplay.confirmControllerMenuSelection()) {

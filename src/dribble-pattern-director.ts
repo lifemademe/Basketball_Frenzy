@@ -10,6 +10,7 @@ export interface DribblePatternStep {
   kind: Extract<TargetKind, 'score' | 'hazard' | 'health'>;
   lane: PatternLane;
   height?: PatternHeight;
+  airTrapSetup?: 'ground-hazard' | 'recovery-target';
   airTrapFollowUp?: boolean;
   intervalScale?: number;
   speedScale?: number;
@@ -170,7 +171,13 @@ const patterns: readonly DribblePatternDefinition[] = [
     minDifficulty: 0.24,
     weight: 0.82,
     steps: [
-      { kind: 'hazard', lane: 'left', height: 'low', intervalScale: 1.1 },
+      {
+        kind: 'hazard',
+        lane: 'left',
+        height: 'low',
+        airTrapSetup: 'ground-hazard',
+        intervalScale: 1.1,
+      },
       {
         kind: 'hazard',
         lane: 'left',
@@ -189,7 +196,13 @@ const patterns: readonly DribblePatternDefinition[] = [
     minDifficulty: 0.24,
     weight: 0.82,
     steps: [
-      { kind: 'hazard', lane: 'right', height: 'low', intervalScale: 1.1 },
+      {
+        kind: 'hazard',
+        lane: 'right',
+        height: 'low',
+        airTrapSetup: 'ground-hazard',
+        intervalScale: 1.1,
+      },
       {
         kind: 'hazard',
         lane: 'right',
@@ -210,7 +223,13 @@ const patterns: readonly DribblePatternDefinition[] = [
     modes: ['normal'],
     requiresMissingLife: true,
     steps: [
-      { kind: 'health', lane: 'left', height: 'high', intervalScale: 1.06 },
+      {
+        kind: 'health',
+        lane: 'left',
+        height: 'high',
+        airTrapSetup: 'recovery-target',
+        intervalScale: 1.06,
+      },
       {
         kind: 'hazard',
         lane: 'left',
@@ -230,7 +249,13 @@ const patterns: readonly DribblePatternDefinition[] = [
     modes: ['normal'],
     requiresMissingLife: true,
     steps: [
-      { kind: 'health', lane: 'right', height: 'high', intervalScale: 1.06 },
+      {
+        kind: 'health',
+        lane: 'right',
+        height: 'high',
+        airTrapSetup: 'recovery-target',
+        intervalScale: 1.06,
+      },
       {
         kind: 'hazard',
         lane: 'right',

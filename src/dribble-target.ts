@@ -98,6 +98,11 @@ export class DribbleTarget extends ENGINE.Actor {
   private threatMarker: ENGINE.MeshComponent | null = null;
   private threatMarkerMaterial: THREE.MeshBasicMaterial | null = null;
   private spacingSpeedLimit = Number.POSITIVE_INFINITY;
+  private coinMagnetActive = false;
+  private coinMagnetAge = 0;
+  private readonly coinMagnetTarget = new THREE.Vector3();
+  private readonly coinMagnetVelocity = new THREE.Vector3();
+  private readonly coinMagnetDirection = new THREE.Vector3();
 
   public override initialize(options?: DribbleTargetOptions): void {
     this.kind = options?.kind ?? this.kind;
@@ -232,25 +237,42 @@ export class DribbleTarget extends ENGINE.Actor {
       return;
     }
 
-    this.rootComponent.position.z += this.getApproachSpeed() * deltaTime;
+    if (this.coinMagnetActive && this.kind === 'score') {
+      this.updateCoinMagnetMotion(deltaTime);
+    } else {
+      this.rootComponent.position.z += this.getApproachSpeed() * deltaTime;
+    }
     const pressureSpeed = 1 + this.pressureLevel * 1.15;
+    const magnetVisualStrength = this.coinMagnetActive
+      ? THREE.MathUtils.smoothstep(this.coinMagnetAge, 0, 0.18)
+      : 0;
     this.glowPhase += deltaTime
       * (this.isRhythmTarget ? 6.5 : this.kind === 'bonus' ? 7 : 4.5)
-      * pressureSpeed;
+      * pressureSpeed
+      * (1 + magnetVisualStrength * 0.65);
     const glowPulse = Math.sin(this.glowPhase);
     const glowScale = this.kind === 'score' ? 1.04 : 1.14;
-    this.glowShell?.scale.setScalar(glowScale + this.pressureLevel * 0.1 + glowPulse * 0.045);
+    this.glowShell?.scale.setScalar(
+      glowScale
+      + this.pressureLevel * 0.1
+      + magnetVisualStrength * 0.1
+      + glowPulse * (0.045 + magnetVisualStrength * 0.025),
+    );
     if (this.glowMaterial) {
       this.glowMaterial.opacity = this.glowBaseOpacity
         + this.pressureLevel * 0.17
-        + glowPulse * (0.07 + this.pressureLevel * 0.03);
+        + magnetVisualStrength * 0.24
+        + glowPulse * (0.07 + this.pressureLevel * 0.03 + magnetVisualStrength * 0.04);
     }
     if (this.targetMaterial) {
-      this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity + this.pressureLevel * 2.2;
+      this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity
+        + this.pressureLevel * 2.2
+        + magnetVisualStrength * 1.4;
     }
     for (const [material, baseIntensity] of this.scoreTokenMaterialIntensity) {
       material.emissiveIntensity = baseIntensity
         + this.pressureLevel * 1.4
+        + magnetVisualStrength * 1.15
         + Math.max(0, glowPulse) * 0.32;
     }
     this.threatMarker?.scale.setScalar(0.92 + glowPulse * 0.08);
@@ -264,7 +286,7 @@ export class DribbleTarget extends ENGINE.Actor {
       this.rootComponent.rotation.y += deltaTime * 1.15;
       this.rootComponent.rotation.z = Math.sin(this.glowPhase * 0.5) * 0.08;
     } else if (this.kind === 'score') {
-      const rotationSpeed = 1 + this.pressureLevel * 0.85;
+      const rotationSpeed = 1 + this.pressureLevel * 0.85 + magnetVisualStrength * 1.25;
       this.rootComponent.rotation.x += deltaTime * 2.5 * rotationSpeed;
       this.rootComponent.rotation.y += deltaTime * 1.2 * rotationSpeed;
     } else {
@@ -310,6 +332,26 @@ export class DribbleTarget extends ENGINE.Actor {
 
   public setPressureLevel(level: number): void {
     this.pressureLevel = THREE.MathUtils.clamp(level, 0, 1);
+  }
+
+  public setCoinMagnetTarget(target: THREE.Vector3 | null): void {
+    if (this.kind !== 'score' || this.hit || this.removalRequested) return;
+    if (!target) {
+      this.coinMagnetActive = false;
+      this.coinMagnetAge = 0;
+      this.coinMagnetVelocity.set(0, 0, 0);
+      return;
+    }
+    if (!this.coinMagnetActive) {
+      this.coinMagnetActive = true;
+      this.coinMagnetAge = 0;
+      this.coinMagnetVelocity.set(0, 0, this.getApproachSpeed() * 0.35);
+    }
+    this.coinMagnetTarget.copy(target);
+  }
+
+  public isCoinMagnetized(): boolean {
+    return this.coinMagnetActive;
   }
 
   public setThreatOwner(owner: TargetThreatOwner): void {
@@ -463,6 +505,24 @@ export class DribbleTarget extends ENGINE.Actor {
       DribbleTarget.centerGraceRadius,
     );
     return this.speed * (1 - influence * DribbleTarget.centerGraceStrength);
+  }
+
+  private updateCoinMagnetMotion(deltaTime: number): void {
+    this.coinMagnetAge += deltaTime;
+    this.coinMagnetDirection.subVectors(this.coinMagnetTarget, this.rootComponent.position);
+    const distance = this.coinMagnetDirection.length();
+    if (distance <= 0.001) {
+      this.rootComponent.position.copy(this.coinMagnetTarget);
+      this.coinMagnetVelocity.set(0, 0, 0);
+      return;
+    }
+
+    const proximity = 1 - THREE.MathUtils.clamp(distance / 4.5, 0, 1);
+    const desiredSpeed = THREE.MathUtils.lerp(7.2, 15.5, proximity * proximity);
+    this.coinMagnetDirection.multiplyScalar(desiredSpeed / distance);
+    const steering = 1 - Math.exp(-9.5 * deltaTime);
+    this.coinMagnetVelocity.lerp(this.coinMagnetDirection, steering);
+    this.rootComponent.position.addScaledVector(this.coinMagnetVelocity, deltaTime);
   }
 
   private getDisplayColor(): number {

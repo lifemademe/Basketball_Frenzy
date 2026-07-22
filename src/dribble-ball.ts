@@ -155,6 +155,7 @@ export class DribbleBall extends ENGINE.Actor {
   private frenzyInnerRing: ENGINE.MeshComponent | null = null;
   private frenzyOuterRing: ENGINE.MeshComponent | null = null;
   private frenzyActive = false;
+  private shieldActive = false;
   private frenzyPreloadTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyPhase = 0;
   private modelAnimationMixer: THREE.AnimationMixer | null = null;
@@ -346,6 +347,14 @@ export class DribbleBall extends ENGINE.Actor {
     this.applyCosmeticVisualState();
   }
 
+  public setShieldActive(active: boolean): void {
+    if (this.shieldActive === active) return;
+    this.shieldActive = active;
+    this.frenzyPhase = 0;
+    this.trail?.setShieldActive(active);
+    this.applyCosmeticVisualState();
+  }
+
   public setEquippedCosmetic(cosmetic: BallCosmetic): void {
     if (this.equippedCosmetic === cosmetic) {
       return;
@@ -426,6 +435,7 @@ export class DribbleBall extends ENGINE.Actor {
 
   public reset(side: DribbleSide = 'left'): void {
     this.setFrenzyActive(false);
+    this.setShieldActive(false);
     this.side = side;
     this.phase = 0;
     this.transferTime = 0;
@@ -469,6 +479,7 @@ export class DribbleBall extends ENGINE.Actor {
     world.addActor(this.blackHoleDebris);
     this.trail.setCosmetic(this.equippedCosmetic);
     this.trail.setFrenzyActive(this.frenzyActive);
+    this.trail.setShieldActive(this.shieldActive);
     this.trail.record(this.rootComponent.position);
     void this.ballModel?.waitForLoad().then(() => this.startModelAnimations());
     this.frenzyPreloadTimer = setTimeout(() => {
@@ -584,7 +595,7 @@ export class DribbleBall extends ENGINE.Actor {
 
   private applyCosmeticVisualState(): void {
     const cosmeticAura = this.equippedCosmetic === 'disco' || this.equippedCosmetic === 'blackhole';
-    const visible = this.gameplayActive && (this.frenzyActive || cosmeticAura);
+    const visible = this.gameplayActive && (this.frenzyActive || this.shieldActive || cosmeticAura);
     if (this.frenzyInnerRing) this.frenzyInnerRing.visible = visible;
     if (this.frenzyOuterRing) this.frenzyOuterRing.visible = visible;
     this.updateAuraMaterials();
@@ -611,7 +622,12 @@ export class DribbleBall extends ENGINE.Actor {
   }
 
   private updateCosmeticVisuals(deltaTime: number): void {
-    if (!this.frenzyActive && this.equippedCosmetic !== 'disco' && this.equippedCosmetic !== 'blackhole') {
+    if (
+      !this.frenzyActive
+      && !this.shieldActive
+      && this.equippedCosmetic !== 'disco'
+      && this.equippedCosmetic !== 'blackhole'
+    ) {
       return;
     }
 
@@ -625,7 +641,7 @@ export class DribbleBall extends ENGINE.Actor {
       this.frenzyOuterRing.scale.setScalar(1.05 - Math.sin(this.frenzyPhase * 0.78) * 0.1);
       this.frenzyOuterRing.rotation.z -= deltaTime * 1.2;
     }
-    if (!this.frenzyActive && this.equippedCosmetic === 'disco') {
+    if (!this.frenzyActive && !this.shieldActive && this.equippedCosmetic === 'disco') {
       const hue = (this.frenzyPhase * 0.045) % 1;
       const innerMaterial = this.frenzyInnerRing?.material as THREE.MeshBasicMaterial | undefined;
       const outerMaterial = this.frenzyOuterRing?.material as THREE.MeshBasicMaterial | undefined;
@@ -643,6 +659,11 @@ export class DribbleBall extends ENGINE.Actor {
       outerMaterial.color.set(0xfff1a1);
       innerMaterial.opacity = 0.82;
       outerMaterial.opacity = 0.7;
+    } else if (this.shieldActive) {
+      innerMaterial.color.set(0x38dfff);
+      outerMaterial.color.set(0xb9f8ff);
+      innerMaterial.opacity = 0.88;
+      outerMaterial.opacity = 0.72;
     } else if (this.equippedCosmetic === 'blackhole') {
       innerMaterial.color.set(0x8c20ff);
       outerMaterial.color.set(0xff641f);

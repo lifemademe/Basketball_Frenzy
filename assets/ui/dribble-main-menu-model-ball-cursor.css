@@ -1047,7 +1047,8 @@
   object-fit: contain;
 }
 
-.dribble-mode-normal .dribble-mode-lives img + img {
+.dribble-mode-normal .dribble-mode-lives img + img,
+.dribble-mode-hard .dribble-mode-lives img + img {
   margin-left: -7px;
 }
 
@@ -1510,6 +1511,10 @@
   margin-top: 13px;
   padding-top: 10px;
   border-top: 1px solid rgba(191, 239, 255, 0.34);
+}
+
+.dribble-main-menu[data-pause-settings='true'] .dribble-settings-management {
+  display: none;
 }
 
 .dribble-settings-management-label {

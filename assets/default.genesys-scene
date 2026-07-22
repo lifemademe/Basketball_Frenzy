@@ -575,7 +575,7 @@
           "children": {
             "$length": 1
           },
-          "material": "",
+          "material": "@project/assets/materials/M_Floor.material.json",
           "name": "MeshComponent",
           "position": {
             "$bc": "v3",
@@ -589,9 +589,9 @@
           "scale": {
             "$bc": "v3",
             "_": [
-              49,
+              89.18,
               1,
-              49
+              61.22
             ]
           },
           "uuid": "6ada5561-7039-4796-8838-d6636f0f3e95"
@@ -720,94 +720,6 @@
         "editorData": {
           "hidden": false
         },
-        "name": "Mesh_Wall 03",
-        "rootComponent": {
-          "$bc": "ENGINE.MeshComponent",
-          "castShadow": true,
-          "children": {
-            "$length": 1
-          },
-          "material": "@project/assets/materials/M_Wall.material.json",
-          "name": "MeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -24.5,
-              4,
-              -0.6
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              1.570796,
-              0,
-              1.570796
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              49,
-              1,
-              8
-            ]
-          },
-          "uuid": "a7c543935158c96d"
-        },
-        "uuid": "f70add681f31a1a2"
-      },
-      "15": {
-        "$bc": "ENGINE.Actor",
-        "$initOptions": {},
-        "editorData": {
-          "hidden": false
-        },
-        "name": "Mesh_Wall 04",
-        "rootComponent": {
-          "$bc": "ENGINE.MeshComponent",
-          "castShadow": true,
-          "children": {
-            "$length": 1
-          },
-          "material": "@project/assets/materials/M_Wall.material.json",
-          "name": "MeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              23.5,
-              4,
-              -0.6
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              1.570796,
-              0,
-              1.570796
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              49,
-              1,
-              8
-            ]
-          },
-          "uuid": "5cef38fcb006e2a6"
-        },
-        "uuid": "9ed6eea2ceac813d"
-      },
-      "16": {
-        "$bc": "ENGINE.Actor",
-        "$initOptions": {},
-        "editorData": {
-          "hidden": false
-        },
         "name": "Mesh_Wall 05",
         "rootComponent": {
           "$bc": "ENGINE.MeshComponent",
@@ -846,7 +758,7 @@
         },
         "uuid": "b39016f8ce7fd9b6"
       },
-      "17": {
+      "15": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "editorData": {
@@ -890,95 +802,7 @@
         },
         "uuid": "8f3673c5eb4c6795"
       },
-      "18": {
-        "$bc": "ENGINE.Actor",
-        "$initOptions": {},
-        "editorData": {
-          "hidden": false
-        },
-        "name": "Mesh_Wall 07",
-        "rootComponent": {
-          "$bc": "ENGINE.MeshComponent",
-          "castShadow": true,
-          "children": {
-            "$length": 1
-          },
-          "material": "@project/assets/materials/M_Wall.material.json",
-          "name": "MeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -20.5,
-              1.9,
-              -20
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              1.570796,
-              0,
-              1.570796
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              8,
-              1,
-              4
-            ]
-          },
-          "uuid": "71ee0289890e1d20"
-        },
-        "uuid": "e0b8e9e184304b20"
-      },
-      "19": {
-        "$bc": "ENGINE.Actor",
-        "$initOptions": {},
-        "editorData": {
-          "hidden": false
-        },
-        "name": "Mesh_Wall 08",
-        "rootComponent": {
-          "$bc": "ENGINE.MeshComponent",
-          "castShadow": true,
-          "children": {
-            "$length": 1
-          },
-          "material": "@project/assets/materials/M_Wall.material.json",
-          "name": "MeshComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              19.5,
-              1.9,
-              -20
-            ]
-          },
-          "receiveShadow": true,
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              1.570796,
-              0,
-              1.570796
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              8,
-              1,
-              4
-            ]
-          },
-          "uuid": "de50029448a85983"
-        },
-        "uuid": "1129c81344e2d3f4"
-      },
-      "20": {
+      "16": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/left_hand.glb"
@@ -1019,7 +843,7 @@
         },
         "uuid": "ee5419c2ba8b5b4b"
       },
-      "21": {
+      "17": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/right_hand.glb"
@@ -1060,7 +884,7 @@
         },
         "uuid": "cf203254720bc7f5"
       },
-      "22": {
+      "18": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {
           "rootComponent": {
@@ -1085,7 +909,7 @@
         },
         "uuid": "64ea414666e33227"
       },
-      "23": {
+      "19": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {
           "rootComponent": {
@@ -1110,7 +934,7 @@
         },
         "uuid": "b9e3fb601c936b8d"
       },
-      "24": {
+      "20": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/Basketballscene2.glb"
@@ -1143,40 +967,7 @@
         },
         "uuid": "89fb724ffff7be8a"
       },
-      "25": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "$initOptions": {
-          "modelUrl": "@project/assets/models/editedseat.glb"
-        },
-        "name": "Editedseat",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/editedseat.glb",
-          "name": "RootComponent",
-          "physicsOptions": {
-            "enabled": false
-          },
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -10.075,
-              0,
-              -24.7
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              10,
-              10,
-              10
-            ]
-          },
-          "uuid": "ded7095a-6071-482f-a69e-91c6acd53d66"
-        },
-        "uuid": "0973c87358bc9c25"
-      },
-      "26": {
+      "21": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/editedseat.glb"
@@ -1192,9 +983,9 @@
           "position": {
             "$bc": "v3",
             "_": [
-              -2.575,
+              -7.742,
               0,
-              -24.7
+              -25
             ]
           },
           "scale": {
@@ -1209,7 +1000,7 @@
         },
         "uuid": "d2b4fc5e4e5726d2"
       },
-      "27": {
+      "22": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/editedseat.glb"
@@ -1225,9 +1016,9 @@
           "position": {
             "$bc": "v3",
             "_": [
-              12.475,
+              7.308,
               0,
-              -24.7
+              -25
             ]
           },
           "scale": {
@@ -1242,7 +1033,7 @@
         },
         "uuid": "8e99236ad4db5137"
       },
-      "28": {
+      "23": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/editedseat.glb"
@@ -1258,9 +1049,9 @@
           "position": {
             "$bc": "v3",
             "_": [
-              4.975,
+              -0.192,
               0,
-              -24.7
+              -25
             ]
           },
           "scale": {
@@ -1275,7 +1066,7 @@
         },
         "uuid": "0e66850a405a459c"
       },
-      "29": {
+      "24": {
         "$bc": "ENGINE.Actor",
         "$initOptions": {},
         "name": "BallTarget",
@@ -1297,7 +1088,234 @@
         },
         "uuid": "85780d98ab358038"
       },
-      "$length": 30
+      "25": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/editedseat.glb"
+        },
+        "name": "Editedseat 05",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/editedseat.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -24.7,
+              -1.3,
+              -19.225
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -3.141592,
+              -1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10,
+              14.8,
+              10
+            ]
+          },
+          "uuid": "c972b091391298f1"
+        },
+        "uuid": "83a0d10b07876e0f"
+      },
+      "26": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/editedseat.glb"
+        },
+        "name": "Editedseat 12",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/editedseat.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              24.8,
+              -1.3,
+              -16.725
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              -3.141592,
+              1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10,
+              14.8,
+              10
+            ]
+          },
+          "uuid": "01055c7a2e0f68a9"
+        },
+        "uuid": "28227b509193ab5e"
+      },
+      "27": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/editedseat.glb"
+        },
+        "name": "Editedseat 13",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/editedseat.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              14.833,
+              0,
+              -25
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10,
+              10,
+              10
+            ]
+          },
+          "uuid": "796e801714114efe"
+        },
+        "uuid": "9ed912b2521598b7"
+      },
+      "28": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/editedseat2.glb"
+        },
+        "name": "Editedseat 2",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/editedseat2.glb",
+          "name": "RootComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -15.207,
+              0,
+              -25
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10,
+              10,
+              10
+            ]
+          },
+          "uuid": "e44aaf04-2445-4bd9-ad22-db4fbb3f2de4"
+        },
+        "uuid": "8105093b8eb4d031"
+      },
+      "29": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/editedseat.glb"
+        },
+        "name": "Editedseat 06",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/editedseat.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -14.9,
+              -3.7,
+              -15.2
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10,
+              10,
+              10
+            ]
+          },
+          "uuid": "226c3b1d188bbf7e"
+        },
+        "uuid": "52a7ae7e8a837882"
+      },
+      "30": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/editedseat.glb"
+        },
+        "name": "Editedseat 07",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/editedseat.glb",
+          "name": "RootComponent",
+          "physicsOptions": {
+            "enabled": false
+          },
+          "position": {
+            "$bc": "v3",
+            "_": [
+              15.6,
+              -3.7,
+              -12.1
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              10,
+              10,
+              10
+            ]
+          },
+          "uuid": "9cd21056f08dd41f"
+        },
+        "uuid": "3c2d5d6719d93f22"
+      },
+      "$length": 31
     },
     "editorData": {
       "sceneTree": {
@@ -1358,32 +1376,12 @@
             "nodeType": "actor"
           },
           {
-            "id": "f70add681f31a1a2",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "9ed6eea2ceac813d",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "b39016f8ce7fd9b6",
             "isExpanded": false,
             "nodeType": "actor"
           },
           {
-            "id": "1129c81344e2d3f4",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
             "id": "8f3673c5eb4c6795",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "e0b8e9e184304b20",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -1418,12 +1416,22 @@
             "nodeType": "actor"
           },
           {
-            "id": "0973c87358bc9c25",
+            "id": "8e99236ad4db5137",
             "isExpanded": false,
             "nodeType": "actor"
           },
           {
-            "id": "8e99236ad4db5137",
+            "id": "9ed912b2521598b7",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "83a0d10b07876e0f",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "28227b509193ab5e",
             "isExpanded": false,
             "nodeType": "actor"
           },
@@ -1438,7 +1446,22 @@
             "nodeType": "actor"
           },
           {
+            "id": "52a7ae7e8a837882",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "3c2d5d6719d93f22",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
             "id": "85780d98ab358038",
+            "isExpanded": false,
+            "nodeType": "actor"
+          },
+          {
+            "id": "8105093b8eb4d031",
             "isExpanded": false,
             "nodeType": "actor"
           }

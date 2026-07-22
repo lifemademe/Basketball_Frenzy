@@ -1,4 +1,4 @@
-<div class="dribble-overlay" data-dribble-overlay data-mode="pause">
+<div class="dribble-overlay" data-dribble-overlay data-mode="pause" data-view="pause">
   <div class="dribble-overlay-backdrop"></div>
   <section class="dribble-overlay-panel">
     <button class="dribble-overlay-close" data-overlay-close type="button" aria-label="Resume game">
@@ -31,6 +31,37 @@
       <div class="dribble-overlay-action dribble-overlay-main-menu" data-overlay-main-menu-slot>
         <img src="@project/assets/textures/menu_button.png" alt="">
       </div>
+      <div class="dribble-overlay-action dribble-overlay-utility dribble-overlay-settings" data-overlay-settings-slot>
+        <img src="@project/assets/textures/Settings.png" alt="">
+      </div>
     </div>
+    <section class="dribble-power-shop" aria-label="Power-Up Shop">
+      <header>
+        <h2 data-power-shop-title>Power-Up Shop</h2>
+        <div class="dribble-power-shop-balance">
+          <img src="@project/assets/textures/Star.png" alt="">
+          <strong data-power-shop-stars>0</strong>
+        </div>
+        <p data-power-shop-limit>2 of 2 purchases remaining</p>
+      </header>
+      <div class="dribble-power-shop-list">
+        <article>
+          <img src="@project/assets/textures/coinmagnet.png" alt="">
+          <div><h3 data-power-magnet-title>Coin Magnet</h3><p data-power-magnet-copy>Wider coin collection for 12 seconds.</p></div>
+          <div data-power-shop-magnet-slot></div>
+        </article>
+        <article>
+          <img src="@project/assets/textures/Shield.png" alt="">
+          <div><h3 data-power-shield-title>Shield</h3><p data-power-shield-copy>Invulnerable to hazards for 8 seconds.</p></div>
+          <div data-power-shop-shield-slot></div>
+        </article>
+        <article>
+          <img src="@project/assets/textures/Heart.png" alt="">
+          <div><h3 data-power-second-wind-title>Second Wind</h3><p data-power-second-wind-copy>Restore one missing heart immediately.</p></div>
+          <div data-power-shop-second-wind-slot></div>
+        </article>
+      </div>
+      <div class="dribble-power-shop-back" data-power-shop-back-slot></div>
+    </section>
   </section>
 </div>

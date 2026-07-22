@@ -34,11 +34,14 @@ import { DribbleMusicDirector } from './dribble-music-director.js';
 import { t, type TranslationKey } from './dribble-localization.js';
 import {
   DribbleOverlay,
+  type DribblePowerUpKind,
+  type DribblePowerUpShopState,
   type DribbleRunSummary,
   type DribbleVersusSummary,
 } from './dribble-overlay.js';
 import {
   DribblePatternDirector,
+  type DirectedPatternStep,
   type PatternHeight,
   type PatternLane,
 } from './dribble-pattern-director.js';
@@ -62,6 +65,7 @@ import {
   recordRunResult,
   resetProgression as resetSavedProgression,
   setWristbandColor as saveWristbandColor,
+  spendStars,
   unlockAchievement,
   wristbandColorHex,
   type AchievementId,
@@ -83,6 +87,7 @@ import {
   DribbleJuiceHud,
   DribbleLivesDisplay,
   DribblePauseButton,
+  DribblePowerShopHudButton,
   DribbleRunObjectivesHud,
   DribbleSideHints,
   DribbleTimingMeter,
@@ -232,6 +237,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly courtTextureCache = new Map<CourtCosmetic, THREE.Texture>();
   private scoreDisplay: ENGINE.NumberDisplay | null = null;
   private pauseButton: DribblePauseButton | null = null;
+  private powerShopHudButton: DribblePowerShopHudButton | null = null;
   private livesDisplay: DribbleLivesDisplay | null = null;
   private sideHints: DribbleSideHints | null = null;
   private timingMeter: DribbleTimingMeter | null = null;
@@ -267,6 +273,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private timingReady = false;
   private pendingPerfectSwitchUntil = 0;
   private frenzyTimeRemaining = 0;
+  private shieldTimeRemaining = 0;
+  private coinMagnetTimeRemaining = 0;
+  private powerUpPurchasesThisRun = 0;
+  private nextHardPowerUpPurchaseAt = 0;
   private spawnsSinceHazard = 0;
   private consecutiveHazards = 0;
   private spawnsSinceAirHazard = 6;
@@ -286,6 +296,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private readonly achievementToastQueue: AchievementToastRequest[] = [];
   private readonly achievementIconUrls = new Map<AchievementId, string>();
   private readonly patternDirector = new DribblePatternDirector();
+  private pendingClassicAirTrap: {
+    patternId: string;
+    laneX: number;
+    setupTarget: DribbleTarget;
+    setupType: NonNullable<DirectedPatternStep['airTrapSetup']>;
+  } | null = null;
   private readonly runDirector = new DribbleRunDirector();
   private readonly difficultyDirector = new DribbleDifficultyDirector();
   private readonly retentionDirector = new DribbleRetentionDirector();
@@ -308,9 +324,15 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private comboPopupCursor = 0;
   private previousGameCursor: string | null = null;
   private previousMenuCursorProperty: string | null = null;
+  private previousGameplayCursorProperty: string | null = null;
   private scoreStarAssetUrl = '';
   private readonly lanes = [-0.95, 0, 0.95];
   private readonly frenzyDuration = 5.5;
+  private readonly shieldDuration = 8;
+  private readonly coinMagnetDuration = 12;
+  private readonly normalPowerUpPurchaseLimit = 2;
+  private readonly hardPowerUpPurchaseLimit = 3;
+  private readonly hardPowerUpCooldown = 60;
   private readonly normalFrenzyStarGracePeriod = 28;
   private readonly hardFrenzyStarGracePeriod = 22;
   private readonly normalAirHazardGracePeriod = 16;
@@ -335,6 +357,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private laneSwitchCount = 0;
   private difficultyStage = 0;
   private achievementToastTimer: ReturnType<typeof setTimeout> | null = null;
+  private resumeCountdownTimer: ReturnType<typeof setTimeout> | null = null;
   private achievementToastActive = false;
   private runStartingHighScore = 0;
   private runHadPriorResult = false;
@@ -565,6 +588,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!world) {
       return;
     }
+    this.clearResumeCountdown();
     this.musicDirector?.setState('gameplay');
     this.clearAchievementToasts();
 
@@ -572,7 +596,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.stopTutorial();
     if (mode) {
       this.gameMode = mode;
-      this.maxLives = mode === 'hard' ? 1 : 3;
+      this.maxLives = mode === 'hard' ? 2 : 3;
     }
     this.prepareRunRecordTracking();
     this.runCoachStage = this.runHadPriorResult ? -1 : 0;
@@ -618,6 +642,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.timingReady = false;
     this.pendingPerfectSwitchUntil = 0;
     this.frenzyTimeRemaining = 0;
+    this.shieldTimeRemaining = 0;
+    this.coinMagnetTimeRemaining = 0;
+    this.powerUpPurchasesThisRun = 0;
+    this.nextHardPowerUpPurchaseAt = 0;
+    this.ball?.setShieldActive(false);
     this.spawnsSinceHazard = 0;
     this.consecutiveHazards = 0;
     this.spawnsSinceAirHazard = 6;
@@ -626,6 +655,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.centerRhythmCooldown = 12;
     this.centerRhythmOpportunityCount = 0;
     this.lastSpawnWasCenterRhythm = false;
+    this.pendingClassicAirTrap = null;
     this.lastSpawnIntervalScale = 1;
     this.laneSwitchCount = 0;
     this.difficultyStage = 0;
@@ -653,6 +683,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.livesDisplay?.resetLives(this.lives, this.maxLives);
     this.timingMeter?.setTiming(0, false, false);
     this.juiceHud?.setFrenzy(0, 0, false);
+    this.juiceHud?.setPowerUps(0, 0, false, 0, 0, false);
+    this.refreshPowerShopHud();
     this.mainMenu?.hide();
     this.overlay?.hide();
     this.setHudVisible(true);
@@ -770,6 +802,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.updateNormalFinalPush();
     this.centerRhythmCooldown = Math.max(0, this.centerRhythmCooldown - deltaTime);
     this.updateFrenzy(deltaTime);
+    this.updatePowerUps(deltaTime);
     const baseDifficulty = this.getDifficultyRamp();
     this.difficultyDirector.update(
       deltaTime,
@@ -807,6 +840,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const ballState = this.ball?.getState();
     if (ballState) {
       this.updateTargetSpacing(this.activeTargets, deltaTime, difficulty);
+      this.updateCoinMagnetAttraction(ballState, this.activeTargets);
       this.updateTimingMeter(ballState, this.activeTargets);
       this.checkBallTargetHits(ballState, this.activeTargets);
       this.updateHandAnimations(deltaTime, ballState);
@@ -838,12 +872,14 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   protected override doEndPlay(): void {
+    this.clearResumeCountdown();
     this.clearAchievementToasts();
     this.scoreDisplay?.destroy();
     this.musicDirector?.stop();
     this.musicDirector = null;
     this.handModelRoots.clear();
     this.pauseButton?.destroy();
+    this.powerShopHudButton?.destroy();
     this.livesDisplay?.destroy();
     this.sideHints?.destroy();
     this.timingMeter?.destroy();
@@ -860,6 +896,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.overlay?.destroy();
     this.scoreDisplay = null;
     this.pauseButton = null;
+    this.powerShopHudButton = null;
     this.livesDisplay = null;
     this.sideHints = null;
     this.timingMeter = null;
@@ -888,6 +925,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         gameContainer.style.removeProperty('--dribble-menu-cursor');
       }
       this.previousMenuCursorProperty = null;
+    }
+    if (gameContainer && this.previousGameplayCursorProperty !== null) {
+      if (this.previousGameplayCursorProperty) {
+        gameContainer.style.setProperty(
+          '--dribble-gameplay-cursor',
+          this.previousGameplayCursorProperty,
+        );
+      } else {
+        gameContainer.style.removeProperty('--dribble-gameplay-cursor');
+      }
+      this.previousGameplayCursorProperty = null;
     }
     for (const state of this.handAnimations.values()) {
       state.mixer.stopAllAction();
@@ -1173,13 +1221,21 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.previousGameCursor = gameContainer.style.cursor;
       gameContainer.style.cursor = 'none';
       this.previousMenuCursorProperty = gameContainer.style.getPropertyValue('--dribble-menu-cursor');
+      this.previousGameplayCursorProperty = gameContainer.style.getPropertyValue(
+        '--dribble-gameplay-cursor',
+      );
       const mouseCursorUrl = await ENGINE.resolveAssetPathsInText(
         '@project/assets/textures/mouse_cursor.png',
       );
+      const gameplayCursor = `url("${mouseCursorUrl}") 3 2, default`;
       gameContainer.style.setProperty(
         '--dribble-menu-cursor',
         `url("${mouseCursorUrl}") 3 2, pointer`,
       );
+      gameContainer.style.setProperty('--dribble-gameplay-cursor', gameplayCursor);
+      gameContainer.style.cursor = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+        ? gameplayCursor
+        : 'none';
       this.uiAudioFeedback = new DribbleUiAudioFeedback(world, gameContainer);
     }
 
@@ -1194,6 +1250,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.pauseButton = new DribblePauseButton(world.uiManager, {
       visible: false,
       onPause: () => this.pauseRun(),
+    });
+    this.powerShopHudButton = new DribblePowerShopHudButton(world.uiManager, {
+      visible: false,
+      onOpen: () => this.openPowerUpShop(),
     });
     this.livesDisplay = new DribbleLivesDisplay(world.uiManager, {
       position: 'top-left',
@@ -1253,6 +1313,9 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       onResume: () => this.resumeRun(),
       onRestart: () => this.tutorialActive ? this.startTutorial(this.tutorialMode) : this.restartRun(),
       onMainMenu: () => this.returnToMainMenu(),
+      onSettings: () => this.openPauseSettings(),
+      getPowerUpShopState: () => this.getPowerUpShopState(),
+      onPurchasePowerUp: kind => this.purchasePowerUp(kind),
     });
     this.tutorialHud = new DribbleTutorialHud(world.uiManager, {
       visible: false,
@@ -1285,6 +1348,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const uiInitializations: Promise<void>[] = [
       this.scoreDisplay.initialize(),
       this.pauseButton.initialize(),
+      this.powerShopHudButton.initialize(),
       this.livesDisplay.initialize(),
       this.sideHints.initialize(),
       this.timingMeter.initialize(),
@@ -1375,6 +1439,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       'color': '#ffffff',
       'letter-spacing': '0',
     }, '.ui-number-display-value');
+    const scoreRoot = this.scoreDisplay.getElement()?.element;
+    this.powerShopHudButton.anchorToScore(
+      scoreRoot?.querySelector('.ui-number-display') as HTMLElement | null,
+    );
+    this.refreshPowerShopHud();
     this.configureAchievementToast();
     this.syncUiState();
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
@@ -1638,11 +1707,13 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         : availableLanes[Math.floor(Math.random() * availableLanes.length)];
     const paceScale = rhythmTarget ? 1 : patternStep?.speedScale ?? 1;
     const speed = this.getTargetPace(difficulty) * paceScale;
+    const validAirTrapFollowUp = patternStep?.airTrapFollowUp === true
+      && this.hasValidClassicAirTrapSetup(patternStep, laneX);
     const targetHeight = this.selectTargetHeight(
       kind,
       rhythmTarget,
       patternStep?.height,
-      patternStep?.airTrapFollowUp ?? false,
+      validAirTrapFollowUp,
       Boolean(patternStep),
     );
     if (kind === 'hazard' && targetHeight > 1.5 && Math.abs(laneX) < 0.01) {
@@ -1668,6 +1739,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     });
     world.addActor(target);
     this.activeTargets.push(target);
+    this.updateClassicAirTrapSetup(patternStep, laneX, target);
     this.targetSpawnSwitchCounts.set(target, this.laneSwitchCount);
     this.targetPaceScales.set(target, paceScale);
     this.lastSpawnWasCenterRhythm = rhythmTarget;
@@ -2764,6 +2836,64 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     return authoredPattern ? 0.52 : THREE.MathUtils.randFloat(0.24, 0.68);
   }
 
+  private hasValidClassicAirTrapSetup(
+    step: DirectedPatternStep,
+    laneX: number,
+  ): boolean {
+    const pending = this.pendingClassicAirTrap;
+    if (
+      !pending
+      || pending.patternId !== step.patternId
+      || Math.abs(pending.laneX - laneX) > 0.01
+      || pending.setupTarget.isRemovalPending()
+      || !this.activeTargets.includes(pending.setupTarget)
+    ) {
+      return false;
+    }
+
+    return pending.setupType === 'ground-hazard'
+      ? pending.setupTarget.kind === 'hazard'
+        && pending.setupTarget.rootComponent.position.y < 1.5
+      : pending.setupTarget.kind === 'health'
+        && pending.setupTarget.rootComponent.position.y > 1.5;
+  }
+
+  private updateClassicAirTrapSetup(
+    step: DirectedPatternStep | null,
+    laneX: number,
+    target: DribbleTarget,
+  ): void {
+    if (step?.airTrapSetup) {
+      this.pendingClassicAirTrap = {
+        patternId: step.patternId,
+        laneX,
+        setupTarget: target,
+        setupType: step.airTrapSetup,
+      };
+      return;
+    }
+
+    if (!step || step.airTrapFollowUp || step.startsPattern) {
+      this.pendingClassicAirTrap = null;
+    }
+  }
+
+  public openPowerUpShop(): boolean {
+    if (
+      this.gameState !== 'playing'
+      || this.tutorialActive
+      || this.gameMode === 'last-bounce'
+      || this.normalFinaleActive
+      || this.frenzyTimeRemaining > 0
+    ) {
+      return false;
+    }
+    this.pauseRun();
+    this.overlay?.showPowerUpShop();
+    this.controllerNavigation?.refresh();
+    return true;
+  }
+
   private canSpawnAirHazard(): boolean {
     if (this.tutorialActive || (this.gameMode !== 'normal' && this.gameMode !== 'hard')) {
       return false;
@@ -2862,6 +2992,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     for (const target of targets) {
       const targetPosition = target.rootComponent.position;
       if (ballState.isBoosting) {
+        const boostLaneX = ballState.side === 'left' ? this.lanes[0] : this.lanes[2];
+        if (Math.abs(target.laneX - boostLaneX) > 0.05) continue;
         const depthRadius = target.radius * 0.62 + ballState.radius * 0.5;
         const lateralRadius = target.radius * 0.82 + ballState.radius * 0.58;
         const verticalRadius = target.radius * 0.92 + ballState.radius * 0.68;
@@ -2872,13 +3004,15 @@ export class DribbleGameplayManager extends ENGINE.Actor {
           continue;
         }
       } else {
+        const magnetActive = target.kind === 'score' && this.coinMagnetTimeRemaining > 0;
         const depthDistance = Math.abs(targetPosition.z - ballState.position.z);
-        if (depthDistance > 0.48) {
+        if (depthDistance > (magnetActive ? 0.58 : 0.48)) {
           continue;
         }
 
-        const lateralRadius = target.radius + ballState.radius * 0.8;
-        const verticalRadius = target.radius + ballState.radius * 0.85;
+        const magnetScale = magnetActive ? 1.15 : 1;
+        const lateralRadius = (target.radius + ballState.radius * 0.8) * magnetScale;
+        const verticalRadius = (target.radius + ballState.radius * 0.85) * magnetScale;
         const normalizedX = (targetPosition.x - ballState.position.x) / lateralRadius;
         const normalizedY = (targetPosition.y - ballState.position.y) / verticalRadius;
         if (normalizedX * normalizedX + normalizedY * normalizedY > 1) {
@@ -3040,6 +3174,17 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       return;
     }
 
+    if (this.shieldTimeRemaining > 0) {
+      this.spawnImpactBurst(position, 0x43e8ff, 1.35);
+      this.juiceHud?.showPraise('SHIELD BLOCK!', 'cyan', 900, 3);
+      playGamepadImpactFeedback('score');
+      void world.globalAudioManager.playGlobalSound('@engine/assets/sounds/laser.mp3', {
+        volume: 0.42,
+        bus: 'SFX',
+      });
+      return;
+    }
+
     this.lives = Math.max(0, this.lives - 1);
     this.combo = 0;
     this.difficultyDirector.recordFailure(true);
@@ -3144,6 +3289,129 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!active) {
       this.ball?.setFrenzyActive(false);
     }
+  }
+
+  private updatePowerUps(deltaTime: number): void {
+    const shieldWasActive = this.shieldTimeRemaining > 0;
+    this.shieldTimeRemaining = Math.max(0, this.shieldTimeRemaining - deltaTime);
+    this.coinMagnetTimeRemaining = Math.max(0, this.coinMagnetTimeRemaining - deltaTime);
+    const shieldActive = this.shieldTimeRemaining > 0;
+    const magnetActive = this.coinMagnetTimeRemaining > 0;
+    if (shieldWasActive !== shieldActive) this.ball?.setShieldActive(shieldActive);
+    this.juiceHud?.setPowerUps(
+      this.shieldTimeRemaining / this.shieldDuration,
+      this.shieldTimeRemaining,
+      shieldActive,
+      this.coinMagnetTimeRemaining / this.coinMagnetDuration,
+      this.coinMagnetTimeRemaining,
+      magnetActive,
+    );
+    this.refreshPowerShopHud();
+  }
+
+  private updateCoinMagnetAttraction(
+    ballState: DribbleBallState,
+    targets: DribbleTarget[],
+  ): void {
+    const magnetActive = this.coinMagnetTimeRemaining > 0;
+    const captureRadius = 4.5;
+    const releaseRadius = 5.15;
+    for (const target of targets) {
+      if (target.kind !== 'score' || target.isRemovalPending()) continue;
+      if (!magnetActive) {
+        if (target.isCoinMagnetized()) target.setCoinMagnetTarget(null);
+        continue;
+      }
+
+      const radius = target.isCoinMagnetized() ? releaseRadius : captureRadius;
+      const distanceSquared = target.rootComponent.position.distanceToSquared(ballState.position);
+      target.setCoinMagnetTarget(distanceSquared <= radius * radius ? ballState.position : null);
+    }
+  }
+
+  private getPowerUpShopState(requirePaused = true): DribblePowerUpShopState {
+    const purchaseLimit = this.gameMode === 'hard'
+      ? this.hardPowerUpPurchaseLimit
+      : this.normalPowerUpPurchaseLimit;
+    const purchasesRemaining = Math.max(0, purchaseLimit - this.powerUpPurchasesThisRun);
+    const cooldownRemaining = this.gameMode === 'hard'
+      ? Math.max(0, this.nextHardPowerUpPurchaseAt - this.elapsedTime)
+      : 0;
+    const ballX = this.ball?.getState().position.x ?? this.lanes[2];
+    const occupiedLaneX = this.lanes.reduce((closest, laneX) => (
+      Math.abs(laneX - ballX) < Math.abs(closest - ballX) ? laneX : closest
+    ), this.lanes[0]);
+    const dangerNearby = this.activeTargets.some(target => (
+      !target.isRemovalPending()
+      && target.kind === 'hazard'
+      && Math.abs(target.laneX - occupiedLaneX) <= 0.05
+      && target.rootComponent.position.z > -5.25
+    ));
+    const correctState = requirePaused
+      ? this.gameState === 'paused'
+      : this.gameState === 'playing' || this.gameState === 'paused';
+    const commonReady = correctState
+      && !this.tutorialActive
+      && this.gameMode !== 'last-bounce'
+      && purchasesRemaining > 0
+      && cooldownRemaining <= 0
+      && !dangerNearby;
+    return {
+      stars: this.progression.stars,
+      purchasesRemaining,
+      purchaseLimit,
+      cooldownRemaining,
+      lives: this.lives,
+      maxLives: this.maxLives,
+      shieldRemaining: this.shieldTimeRemaining,
+      magnetRemaining: this.coinMagnetTimeRemaining,
+      dangerNearby,
+      canPurchase: {
+        magnet: commonReady && this.coinMagnetTimeRemaining <= 0 && this.progression.stars >= 2,
+        shield: commonReady && this.shieldTimeRemaining <= 0 && this.progression.stars >= 3,
+        secondWind: commonReady && this.lives < this.maxLives && this.progression.stars >= 4,
+      },
+    };
+  }
+
+  private refreshPowerShopHud(): void {
+    if (this.gameMode === 'last-bounce' || this.tutorialActive) return;
+    this.powerShopHudButton?.setState(
+      this.getPowerUpShopState(false),
+      this.gameMode === 'hard' ? 'hard' : 'normal',
+    );
+  }
+
+  private purchasePowerUp(kind: DribblePowerUpKind): DribblePowerUpShopState {
+    const state = this.getPowerUpShopState();
+    if (!state.canPurchase[kind]) return state;
+    const cost = kind === 'magnet' ? 2 : kind === 'shield' ? 3 : 4;
+    const nextProgression = spendStars(this.progression, cost);
+    if (nextProgression === this.progression) return state;
+
+    this.progression = nextProgression;
+    this.unlockAchievementAndSync('firstPurchase', false);
+    this.powerUpPurchasesThisRun += 1;
+    if (this.gameMode === 'hard') {
+      this.nextHardPowerUpPurchaseAt = this.elapsedTime + this.hardPowerUpCooldown;
+    }
+    if (kind === 'magnet') {
+      this.coinMagnetTimeRemaining = this.coinMagnetDuration;
+    } else if (kind === 'shield') {
+      this.shieldTimeRemaining = this.shieldDuration;
+      this.ball?.setShieldActive(true);
+    } else {
+      this.lives = Math.min(this.maxLives, this.lives + 1);
+      this.livesDisplay?.setLives(this.lives);
+    }
+    this.mainMenu?.setProgression(this.progression);
+    this.updateScoreStarCounter();
+    this.refreshPowerShopHud();
+    void this.getWorld()?.globalAudioManager.playGlobalSound('@engine/assets/sounds/pickup.mp3', {
+      volume: 0.48,
+      bus: 'SFX',
+    });
+    return this.getPowerUpShopState();
   }
 
   private showScorePraise(): void {
@@ -3493,6 +3761,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!world) {
       return;
     }
+    this.clearResumeCountdown();
 
     if (!this.tutorialActive) this.commitRunResult(false);
     if (!this.tutorialActive) this.telemetry.finishRun('abandoned', this.score, this.elapsedTime);
@@ -3534,20 +3803,60 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (this.gameMode === 'last-bounce') {
       this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
     } else {
-      this.overlay?.showPause(this.score);
+      this.overlay?.showPause(this.score, !this.tutorialActive);
     }
     world.inputManager.exitPointerLock();
   }
 
+  private openPauseSettings(): void {
+    if (this.gameState !== 'paused') return;
+    this.overlay?.hide();
+    this.mainMenu?.showPauseSettings(() => {
+      if (this.gameState !== 'paused') return;
+      if (this.gameMode === 'last-bounce') {
+        this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
+      } else {
+        this.overlay?.showPause(this.score, !this.tutorialActive);
+      }
+    });
+  }
+
   private resumeRun(): void {
     const world = this.getWorld();
-    if (!world || this.gameState !== 'paused') {
+    if (!world || this.gameState !== 'paused' || this.resumeCountdownTimer) {
       return;
     }
+    this.overlay?.hide();
+    this.mainMenu?.hide();
+    this.juiceHud?.show();
+    let count = 3;
+    const advanceCountdown = (): void => {
+      if (this.gameState !== 'paused') {
+        this.resumeCountdownTimer = null;
+        return;
+      }
+      if (count > 0) {
+        this.juiceHud?.showResumeCountdown(count);
+        void world.globalAudioManager.playGlobalSound('@project/assets/audio/ui-type-click.wav', {
+          volume: 0.16,
+          bus: 'SFX',
+        });
+        count -= 1;
+        this.resumeCountdownTimer = setTimeout(advanceCountdown, 600);
+        return;
+      }
+      this.resumeCountdownTimer = null;
+      this.juiceHud?.showResumeCountdown(null);
+      this.completeResumeRun(world);
+    };
+    advanceCountdown();
+  }
+
+  private completeResumeRun(world: ENGINE.World): void {
+    if (this.gameState !== 'paused') return;
     this.gameState = 'playing';
     this.musicDirector?.setPaused(false);
     this.setGameplayActive(true);
-    this.overlay?.hide();
     this.setHudVisible(true);
     if (this.tutorialActive) {
       this.scoreDisplay?.hide();
@@ -3561,6 +3870,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       }
     }
     world.inputManager.exitPointerLock();
+  }
+
+  private clearResumeCountdown(): void {
+    if (this.resumeCountdownTimer) clearTimeout(this.resumeCountdownTimer);
+    this.resumeCountdownTimer = null;
+    this.juiceHud?.showResumeCountdown(null);
   }
 
   private updateNormalFinalPush(): void {
@@ -3592,7 +3907,10 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.patternDirector.cancel();
     this.centerRhythmSpawnsRemaining = 0;
     this.frenzyTimeRemaining = 0;
+    this.shieldTimeRemaining = 0;
+    this.coinMagnetTimeRemaining = 0;
     this.ball?.setFrenzyActive(false);
+    this.ball?.setShieldActive(false);
     this.ball?.setGameplayActive(true);
     for (const target of this.activeTargets) target.destroy();
     this.activeTargets.length = 0;
@@ -3771,6 +4089,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (this.gameMode === 'last-bounce' && !this.tutorialActive) {
       const standardComponents = [
         this.scoreDisplay,
+        this.powerShopHudButton,
         this.livesDisplay,
         this.timingMeter,
         this.juiceHud,
@@ -3792,6 +4111,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const components = [
       this.scoreDisplay,
       this.pauseButton,
+      this.powerShopHudButton,
       this.livesDisplay,
       this.sideHints,
       this.timingMeter,
@@ -3801,6 +4121,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       if (visible) component?.show();
       else component?.hide();
     }
+    if (visible && !this.tutorialActive) this.timingMeter?.hide();
+    if (visible && this.tutorialActive) this.powerShopHudButton?.hide();
     if (visible && !this.tutorialActive) this.runObjectivesHud?.show();
     else this.runObjectivesHud?.hide();
   }
@@ -4329,7 +4651,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       if (this.gameMode === 'last-bounce') {
         this.overlay?.showVersusPause(this.versusPlayerLosses, this.versusAiLosses);
       } else {
-        this.overlay?.showPause(this.score);
+        this.overlay?.showPause(this.score, !this.tutorialActive);
       }
     } else if (this.gameState === 'gameOver') {
       this.mainMenu?.hide();

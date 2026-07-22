@@ -9,6 +9,15 @@
     <i class="dribble-frenzy-streak"></i>
     <i class="dribble-frenzy-streak"></i>
   </div>
+  <div class="dribble-shield-screen" data-shield-screen aria-hidden="true">
+    <i class="dribble-shield-streak"></i>
+    <i class="dribble-shield-streak"></i>
+    <i class="dribble-shield-streak"></i>
+    <i class="dribble-shield-streak"></i>
+    <i class="dribble-shield-streak"></i>
+    <i class="dribble-shield-streak"></i>
+  </div>
+  <div class="dribble-shield-intro" aria-hidden="true">SHIELD UP</div>
   <section class="dribble-frenzy-meter" data-frenzy-meter data-active="false" data-urgent="false" role="progressbar" aria-label="Frenzy time remaining" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
     <div class="dribble-frenzy-track">
       <div class="dribble-frenzy-fill"><i aria-hidden="true"></i></div>
@@ -23,6 +32,19 @@
     <span style="--frenzy-letter: 4">Z</span>
     <span style="--frenzy-letter: 5">Y</span>
   </div>
+  <div class="dribble-power-up-status" aria-live="polite">
+    <div class="dribble-power-up-chip" data-shield-status data-active="false">
+      <img src="@project/assets/textures/Shield.png" alt="">
+      <span><b>SHIELD</b><i data-shield-time>0.0s</i></span>
+      <em><i data-shield-fill></i></em>
+    </div>
+    <div class="dribble-power-up-chip" data-magnet-status data-active="false">
+      <img src="@project/assets/textures/coinmagnet.png" alt="">
+      <span><b>COIN MAGNET</b><i data-magnet-time>0.0s</i></span>
+      <em><i data-magnet-fill></i></em>
+    </div>
+  </div>
+  <div class="dribble-resume-countdown" data-resume-countdown data-active="false" aria-live="assertive"></div>
   <div class="dribble-score-praise" data-score-praise data-tone="green"></div>
   <section class="dribble-coach" data-dribble-coach data-active="false" aria-live="polite">
     <strong data-dribble-coach-title></strong>

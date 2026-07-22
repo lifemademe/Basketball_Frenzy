@@ -342,6 +342,15 @@ export function awardStars(state: DribbleProgressionState, amount: number): Drib
   });
 }
 
+export function spendStars(
+  state: DribbleProgressionState,
+  amount: number,
+): DribbleProgressionState {
+  const cost = sanitizeCount(amount);
+  if (cost <= 0 || state.stars < cost) return state;
+  return persist({ ...state, stars: state.stars - cost });
+}
+
 export function awardCareerXp(
   state: DribbleProgressionState,
   amount: number,

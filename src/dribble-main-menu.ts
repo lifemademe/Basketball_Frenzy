@@ -100,6 +100,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   };
 
   private rootElement: HTMLElement | null = null;
+  private pauseSettingsReturn: (() => void) | null = null;
   private volumeInput: HTMLInputElement | null = null;
   private volumeValue: HTMLElement | null = null;
   private musicVolumeInput: HTMLInputElement | null = null;
@@ -664,7 +665,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
         label: 'Back',
-        onClick: () => this.showPanel('home'),
+        onClick: () => this.closeSettingsPanel(),
       }, settingsBackSlot),
       this.mountChild(ENGINE.Button, {
         ...ENGINE.Button.presets.outlineLarge,
@@ -861,7 +862,16 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   public showHome(): void {
+    this.pauseSettingsReturn = null;
+    if (this.rootElement) delete this.rootElement.dataset.pauseSettings;
     this.showPanel('home');
+    this.show();
+  }
+
+  public showPauseSettings(onClose: () => void): void {
+    this.pauseSettingsReturn = onClose;
+    if (this.rootElement) this.rootElement.dataset.pauseSettings = 'true';
+    this.showPanel('settings');
     this.show();
   }
 
@@ -884,6 +894,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     ) return false;
     if (this.rootElement?.dataset.panel === 'reset') {
       this.showPanel('settings');
+      return true;
+    }
+    if (this.rootElement?.dataset.panel === 'settings' && this.pauseSettingsReturn) {
+      this.closeSettingsPanel();
       return true;
     }
     if (this.rootElement?.dataset.panel && this.rootElement.dataset.panel !== 'home') {
@@ -1600,6 +1614,18 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     } catch {
       return false;
     }
+  }
+
+  private closeSettingsPanel(): void {
+    if (!this.pauseSettingsReturn) {
+      this.showPanel('home');
+      return;
+    }
+    const onClose = this.pauseSettingsReturn;
+    this.pauseSettingsReturn = null;
+    if (this.rootElement) delete this.rootElement.dataset.pauseSettings;
+    this.hide();
+    onClose();
   }
 
   private loadTouchControlMode(): DribbleTouchControlMode {

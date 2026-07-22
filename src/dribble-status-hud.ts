@@ -2,6 +2,7 @@ import * as ENGINE from '@gnsx/genesys.js';
 
 import type { DribbleSide } from './dribble-ball.js';
 import { t } from './dribble-localization.js';
+import type { DribblePowerUpShopState } from './dribble-overlay.js';
 import { RUN_OBJECTIVE_XP, type RunObjectiveProgress } from './dribble-retention-director.js';
 
 export interface DribbleRunObjectivesHudOptions extends ENGINE.BaseUIComponentOptions {}
@@ -320,6 +321,140 @@ export class DribblePauseButton extends ENGINE.BaseUIComponent<DribblePauseButto
   }
 }
 
+export interface DribblePowerShopHudButtonOptions extends ENGINE.BaseUIComponentOptions {
+  onOpen?: () => void;
+}
+
+export class DribblePowerShopHudButton extends ENGINE.BaseUIComponent<DribblePowerShopHudButtonOptions> {
+  public static metadata: ENGINE.UIComponentMetadata = {
+    displayName: 'Dribble Power-Up Shop HUD Button',
+    category: 'control',
+    summary: 'Score-adjacent access to the in-run Power-Up Shop.',
+    useCases: ['power-up shop', 'hud button', 'cooldown status'],
+    optionsType: 'DribblePowerShopHudButtonOptions',
+    assetPaths: {
+      template: '@project/assets/ui/dribble-power-shop-hud.html',
+      styles: '@project/assets/ui/dribble-power-shop-hud.css',
+    },
+  };
+
+  private buttonElement: HTMLButtonElement | null = null;
+  private badgeElement: HTMLElement | null = null;
+  private scoreElement: HTMLElement | null = null;
+  private scoreResizeObserver: ResizeObserver | null = null;
+  private lastSignature = '';
+
+  private readonly stopPointerEvent = (event: Event): void => {
+    event.stopPropagation();
+  };
+
+  private readonly handleClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    this.options.onOpen();
+  };
+
+  private readonly updateAnchor = (): void => {
+    if (!this.buttonElement || !this.scoreElement) return;
+    const scoreRect = this.scoreElement.getBoundingClientRect();
+    const viewportWidth = this.buttonElement.ownerDocument.defaultView?.innerWidth ?? window.innerWidth;
+    this.buttonElement.style.right = `${Math.max(18, viewportWidth - scoreRect.left + 8)}px`;
+  };
+
+  protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
+    return {
+      templatePath: DribblePowerShopHudButton.metadata.assetPaths.template,
+      stylesPath: DribblePowerShopHudButton.metadata.assetPaths.styles,
+    };
+  }
+
+  protected override getDefaultOptions(): Required<DribblePowerShopHudButtonOptions> {
+    return {
+      position: 'top-right',
+      visible: false,
+      customClasses: [],
+      customStyles: {},
+      onOpen: () => {},
+    };
+  }
+
+  protected override getInitialData(): Record<string, string> {
+    return {};
+  }
+
+  protected override cacheElements(): void {
+    this.buttonElement = this.layout?.querySelector('[data-power-shop-hud]') as HTMLButtonElement | null;
+    this.badgeElement = this.layout?.querySelector('[data-power-shop-hud-badge]') as HTMLElement | null;
+  }
+
+  protected override async onInitialize(): Promise<void> {
+    this.buttonElement?.addEventListener('pointerdown', this.stopPointerEvent);
+    this.buttonElement?.addEventListener('mousedown', this.stopPointerEvent);
+    this.buttonElement?.addEventListener('contextmenu', this.stopPointerEvent);
+    this.buttonElement?.addEventListener('click', this.handleClick);
+  }
+
+  public anchorToScore(scoreElement: HTMLElement | null): void {
+    this.scoreResizeObserver?.disconnect();
+    this.scoreResizeObserver = null;
+    this.scoreElement?.ownerDocument.defaultView?.removeEventListener('resize', this.updateAnchor);
+    this.scoreElement = scoreElement;
+    if (!scoreElement) return;
+    this.scoreResizeObserver = new ResizeObserver(this.updateAnchor);
+    this.scoreResizeObserver.observe(scoreElement);
+    scoreElement.ownerDocument.defaultView?.addEventListener('resize', this.updateAnchor);
+    requestAnimationFrame(this.updateAnchor);
+  }
+
+  public setState(state: DribblePowerUpShopState, mode: 'normal' | 'hard'): void {
+    const anyReady = Object.values(state.canPurchase).some(Boolean);
+    const visualState = state.purchasesRemaining <= 0
+      ? 'spent'
+      : state.cooldownRemaining > 0
+        ? 'cooldown'
+        : state.dangerNearby
+          ? 'danger'
+          : anyReady
+            ? 'ready'
+            : 'unaffordable';
+    const badge = mode === 'hard' && state.cooldownRemaining > 0
+      ? String(Math.ceil(state.cooldownRemaining))
+      : String(state.purchasesRemaining);
+    const gamepadConnected = navigator.getGamepads?.().some(gamepad => gamepad?.connected) ?? false;
+    const signature = `${visualState}:${badge}:${mode}:${gamepadConnected ? 1 : 0}`;
+    if (signature === this.lastSignature) return;
+    this.lastSignature = signature;
+    if (!this.buttonElement) return;
+    this.buttonElement.dataset.state = visualState;
+    this.buttonElement.dataset.gamepad = gamepadConnected ? 'true' : 'false';
+    if (this.badgeElement) this.badgeElement.textContent = badge;
+    const status = visualState === 'ready'
+      ? 'ready'
+      : visualState === 'cooldown'
+        ? `ready in ${badge} seconds`
+        : visualState === 'danger'
+          ? 'unavailable while a hazard is close'
+          : visualState === 'spent'
+            ? 'run purchase limit reached'
+            : 'more stars or a missing heart required';
+    this.buttonElement.setAttribute('aria-label', `Open Power-Up Shop, ${status}`);
+  }
+
+  protected override onDestroy(): void {
+    this.buttonElement?.removeEventListener('pointerdown', this.stopPointerEvent);
+    this.buttonElement?.removeEventListener('mousedown', this.stopPointerEvent);
+    this.buttonElement?.removeEventListener('contextmenu', this.stopPointerEvent);
+    this.buttonElement?.removeEventListener('click', this.handleClick);
+    this.scoreResizeObserver?.disconnect();
+    this.scoreElement?.ownerDocument.defaultView?.removeEventListener('resize', this.updateAnchor);
+    this.scoreResizeObserver = null;
+    this.scoreElement = null;
+    this.buttonElement = null;
+    this.badgeElement = null;
+    this.lastSignature = '';
+  }
+}
+
 export interface DribbleSideHintsOptions extends ENGINE.BaseUIComponentOptions {}
 
 export class DribbleSideHints extends ENGINE.BaseUIComponent<DribbleSideHintsOptions> {
@@ -627,18 +762,32 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private rootElement: HTMLElement | null = null;
   private frenzyElement: HTMLElement | null = null;
   private praiseElement: HTMLElement | null = null;
+  private resumeCountdownElement: HTMLElement | null = null;
   private coachElement: HTMLElement | null = null;
   private coachTitleElement: HTMLElement | null = null;
   private coachBodyElement: HTMLElement | null = null;
+  private shieldStatusElement: HTMLElement | null = null;
+  private shieldTimeElement: HTMLElement | null = null;
+  private shieldFillElement: HTMLElement | null = null;
+  private magnetStatusElement: HTMLElement | null = null;
+  private magnetTimeElement: HTMLElement | null = null;
+  private magnetFillElement: HTMLElement | null = null;
   private praiseTimer: ReturnType<typeof setTimeout> | null = null;
   private praisePriority = 0;
   private praiseVisibleUntil = 0;
   private activationTimer: ReturnType<typeof setTimeout> | null = null;
+  private shieldActivationTimer: ReturnType<typeof setTimeout> | null = null;
   private focusReturnTimer: ReturnType<typeof setTimeout> | null = null;
   private coachTimer: ReturnType<typeof setTimeout> | null = null;
   private frenzyActive = false;
   private frenzyUrgent = false;
   private lastFrenzyPercent = -1;
+  private shieldActive = false;
+  private magnetActive = false;
+  private lastShieldPercent = -1;
+  private lastMagnetPercent = -1;
+  private lastShieldTenths = -1;
+  private lastMagnetTenths = -1;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -665,9 +814,67 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.rootElement = this.layout.querySelector('[data-dribble-juice]') as HTMLElement | null;
     this.frenzyElement = this.layout.querySelector('[data-frenzy-meter]') as HTMLElement | null;
     this.praiseElement = this.layout.querySelector('[data-score-praise]') as HTMLElement | null;
+    this.resumeCountdownElement = this.layout.querySelector('[data-resume-countdown]') as HTMLElement | null;
     this.coachElement = this.layout.querySelector('[data-dribble-coach]') as HTMLElement | null;
     this.coachTitleElement = this.layout.querySelector('[data-dribble-coach-title]') as HTMLElement | null;
     this.coachBodyElement = this.layout.querySelector('[data-dribble-coach-body]') as HTMLElement | null;
+    this.shieldStatusElement = this.layout.querySelector('[data-shield-status]') as HTMLElement | null;
+    this.shieldTimeElement = this.layout.querySelector('[data-shield-time]') as HTMLElement | null;
+    this.shieldFillElement = this.layout.querySelector('[data-shield-fill]') as HTMLElement | null;
+    this.magnetStatusElement = this.layout.querySelector('[data-magnet-status]') as HTMLElement | null;
+    this.magnetTimeElement = this.layout.querySelector('[data-magnet-time]') as HTMLElement | null;
+    this.magnetFillElement = this.layout.querySelector('[data-magnet-fill]') as HTMLElement | null;
+  }
+
+  public setPowerUps(
+    shieldProgress: number,
+    shieldRemaining: number,
+    shieldActive: boolean,
+    magnetProgress: number,
+    magnetRemaining: number,
+    magnetActive: boolean,
+  ): void {
+    if (shieldActive !== this.shieldActive) {
+      if (this.rootElement) this.rootElement.dataset.shieldActive = shieldActive ? 'true' : 'false';
+      if (this.shieldStatusElement) this.shieldStatusElement.dataset.active = shieldActive ? 'true' : 'false';
+      if (this.rootElement && shieldActive) {
+        if (this.shieldActivationTimer) clearTimeout(this.shieldActivationTimer);
+        this.rootElement.classList.remove('is-shield-activating');
+        void this.rootElement.offsetWidth;
+        this.rootElement.classList.add('is-shield-activating');
+        this.shieldActivationTimer = setTimeout(() => {
+          this.rootElement?.classList.remove('is-shield-activating');
+          this.shieldActivationTimer = null;
+        }, 960);
+      } else {
+        this.rootElement?.classList.remove('is-shield-activating');
+      }
+      this.shieldActive = shieldActive;
+    }
+    if (magnetActive !== this.magnetActive) {
+      if (this.magnetStatusElement) this.magnetStatusElement.dataset.active = magnetActive ? 'true' : 'false';
+      this.magnetActive = magnetActive;
+    }
+    const shieldPercent = Math.round(Math.max(0, Math.min(1, shieldProgress)) * 100);
+    const magnetPercent = Math.round(Math.max(0, Math.min(1, magnetProgress)) * 100);
+    const shieldTenths = Math.ceil(Math.max(0, shieldRemaining) * 10);
+    const magnetTenths = Math.ceil(Math.max(0, magnetRemaining) * 10);
+    if (shieldPercent !== this.lastShieldPercent && this.shieldFillElement) {
+      this.lastShieldPercent = shieldPercent;
+      this.shieldFillElement.style.width = `${shieldPercent}%`;
+    }
+    if (magnetPercent !== this.lastMagnetPercent && this.magnetFillElement) {
+      this.lastMagnetPercent = magnetPercent;
+      this.magnetFillElement.style.width = `${magnetPercent}%`;
+    }
+    if (shieldTenths !== this.lastShieldTenths && this.shieldTimeElement) {
+      this.lastShieldTenths = shieldTenths;
+      this.shieldTimeElement.textContent = `${(shieldTenths / 10).toFixed(1)}s`;
+    }
+    if (magnetTenths !== this.lastMagnetTenths && this.magnetTimeElement) {
+      this.lastMagnetTenths = magnetTenths;
+      this.magnetTimeElement.textContent = `${(magnetTenths / 10).toFixed(1)}s`;
+    }
   }
 
   public setFrenzy(progress: number, remaining: number, active: boolean): void {
@@ -723,7 +930,7 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
 
   public showPraise(
     label: string,
-    tone: 'green' | 'gold',
+    tone: 'green' | 'gold' | 'cyan',
     duration = 760,
     priority = 1,
   ): void {
@@ -750,6 +957,19 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     }, Math.max(400, duration));
   }
 
+  public showResumeCountdown(value: number | null): void {
+    if (!this.resumeCountdownElement) return;
+    if (value === null) {
+      this.resumeCountdownElement.dataset.active = 'false';
+      this.resumeCountdownElement.textContent = '';
+      return;
+    }
+    this.resumeCountdownElement.textContent = String(value);
+    this.resumeCountdownElement.dataset.active = 'false';
+    void this.resumeCountdownElement.offsetWidth;
+    this.resumeCountdownElement.dataset.active = 'true';
+  }
+
   public showCoach(title: string, body: string, duration = 3200): void {
     if (!this.coachElement) return;
     if (this.coachTimer) clearTimeout(this.coachTimer);
@@ -771,6 +991,10 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
       clearTimeout(this.activationTimer);
       this.activationTimer = null;
     }
+    if (this.shieldActivationTimer) {
+      clearTimeout(this.shieldActivationTimer);
+      this.shieldActivationTimer = null;
+    }
     if (this.focusReturnTimer) {
       clearTimeout(this.focusReturnTimer);
       this.focusReturnTimer = null;
@@ -787,12 +1011,25 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.rootElement = null;
     this.frenzyElement = null;
     this.praiseElement = null;
+    this.resumeCountdownElement = null;
     this.coachElement = null;
     this.coachTitleElement = null;
     this.coachBodyElement = null;
+    this.shieldStatusElement = null;
+    this.shieldTimeElement = null;
+    this.shieldFillElement = null;
+    this.magnetStatusElement = null;
+    this.magnetTimeElement = null;
+    this.magnetFillElement = null;
     this.frenzyActive = false;
     this.frenzyUrgent = false;
     this.lastFrenzyPercent = -1;
+    this.shieldActive = false;
+    this.magnetActive = false;
+    this.lastShieldPercent = -1;
+    this.lastMagnetPercent = -1;
+    this.lastShieldTenths = -1;
+    this.lastMagnetTenths = -1;
     this.praisePriority = 0;
     this.praiseVisibleUntil = 0;
   }
