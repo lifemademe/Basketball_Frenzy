@@ -789,6 +789,10 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
   private lastMagnetPercent = -1;
   private lastShieldTenths = -1;
   private lastMagnetTenths = -1;
+  private lastEnvironmentFocusActive: boolean | null = null;
+  private lastEnvironmentFocusLane: -1 | 0 | 1 | null = null;
+  private lastEnvironmentFocusKind: 'score' | 'hazard' | 'health' | 'bonus' | 'recovery' | null = null;
+  private lastEnvironmentFocusStep = -1;
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {
     return {
@@ -886,19 +890,31 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     active: boolean,
   ): void {
     if (!this.rootElement || !this.environmentFocusElement) return;
-    this.rootElement.dataset.environmentFocusActive = active ? 'true' : 'false';
-    const x = 50 + lane * 12;
-    const rgb = kind === 'hazard'
-      ? '255, 77, 72'
-      : kind === 'health' || kind === 'recovery'
-        ? '77, 230, 184'
-        : '255, 211, 74';
-    this.environmentFocusElement.style.setProperty('--environment-focus-x', `${x}%`);
-    this.environmentFocusElement.style.setProperty('--environment-focus-rgb', rgb);
-    this.environmentFocusElement.style.setProperty(
-      '--environment-focus-strength',
-      String(Math.max(0, Math.min(0.8, urgency * 0.8))),
-    );
+    if (active !== this.lastEnvironmentFocusActive) {
+      this.rootElement.dataset.environmentFocusActive = active ? 'true' : 'false';
+      this.lastEnvironmentFocusActive = active;
+    }
+    if (lane !== this.lastEnvironmentFocusLane) {
+      this.environmentFocusElement.style.setProperty('--environment-focus-x', `${50 + lane * 12}%`);
+      this.lastEnvironmentFocusLane = lane;
+    }
+    if (kind !== this.lastEnvironmentFocusKind) {
+      const rgb = kind === 'hazard'
+        ? '255, 77, 72'
+        : kind === 'health' || kind === 'recovery'
+          ? '77, 230, 184'
+          : '255, 211, 74';
+      this.environmentFocusElement.style.setProperty('--environment-focus-rgb', rgb);
+      this.lastEnvironmentFocusKind = kind;
+    }
+    const strengthStep = Math.round(Math.max(0, Math.min(0.8, urgency * 0.8)) * 8);
+    if (strengthStep !== this.lastEnvironmentFocusStep) {
+      this.environmentFocusElement.style.setProperty(
+        '--environment-focus-strength',
+        String(strengthStep / 8),
+      );
+      this.lastEnvironmentFocusStep = strengthStep;
+    }
   }
 
   public setFrenzy(progress: number, remaining: number, active: boolean): void {
@@ -1055,6 +1071,10 @@ export class DribbleJuiceHud extends ENGINE.BaseUIComponent<DribbleJuiceHudOptio
     this.lastMagnetPercent = -1;
     this.lastShieldTenths = -1;
     this.lastMagnetTenths = -1;
+    this.lastEnvironmentFocusActive = null;
+    this.lastEnvironmentFocusLane = null;
+    this.lastEnvironmentFocusKind = null;
+    this.lastEnvironmentFocusStep = -1;
     this.praisePriority = 0;
     this.praiseVisibleUntil = 0;
   }

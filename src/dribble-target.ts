@@ -64,6 +64,17 @@ function createCardGeometry(): THREE.ExtrudeGeometry {
   return geometry;
 }
 
+const targetGeometry = {
+  score: new THREE.TorusGeometry(0.42, 0.12, 12, 28),
+  scoreGlow: new THREE.TorusGeometry(0.515, 0.014, 6, 32),
+  health: new THREE.BoxGeometry(0.2, 0.9, 0.18),
+  healthCrossbar: new THREE.BoxGeometry(0.9, 0.2, 0.18),
+  recovery: createCardGeometry(),
+  bonus: createStarGeometry(),
+  hazard: new THREE.OctahedronGeometry(0.55, 0),
+  threatMarker: new THREE.ConeGeometry(0.14, 0.25, 3),
+};
+
 export interface DribbleTargetOptions extends ENGINE.ActorOptions {
   kind?: TargetKind;
   laneX?: number;
@@ -126,14 +137,14 @@ export class DribbleTarget extends ENGINE.Actor {
 
     const color = this.getDisplayColor();
     const geometry = this.kind === 'score'
-      ? new THREE.TorusGeometry(0.42, 0.12, 12, 28)
+      ? targetGeometry.score
       : this.kind === 'health'
-        ? new THREE.BoxGeometry(0.2, 0.9, 0.18)
+        ? targetGeometry.health
         : this.kind === 'recovery'
-          ? createCardGeometry()
+          ? targetGeometry.recovery
         : this.kind === 'bonus'
-          ? createStarGeometry()
-          : new THREE.OctahedronGeometry(0.55, 0);
+          ? targetGeometry.bonus
+          : targetGeometry.hazard;
     this.baseEmissiveIntensity = this.kind === 'bonus'
       ? 4.2
       : this.kind === 'health' || this.kind === 'recovery'
@@ -151,7 +162,7 @@ export class DribbleTarget extends ENGINE.Actor {
       name: 'Target Mesh',
       geometry,
       material,
-      castShadow: true,
+      castShadow: false,
       physicsOptions: { enabled: false },
     });
     this.targetMesh = rootComponent;
@@ -172,8 +183,8 @@ export class DribbleTarget extends ENGINE.Actor {
       toneMapped: false,
     });
     const glowGeometry = this.kind === 'score'
-      ? new THREE.TorusGeometry(0.515, 0.014, 6, 32)
-      : geometry.clone();
+      ? targetGeometry.scoreGlow
+      : geometry;
     this.glowShell = ENGINE.MeshComponent.create({
       name: 'Target Glow Shell',
       geometry: glowGeometry,
@@ -198,7 +209,7 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.kind === 'health') {
       rootComponent.add(ENGINE.MeshComponent.create({
         name: 'Health Crossbar',
-        geometry: new THREE.BoxGeometry(0.9, 0.2, 0.18),
+        geometry: targetGeometry.healthCrossbar,
         material,
         physicsOptions: { enabled: false },
       }));
@@ -224,7 +235,7 @@ export class DribbleTarget extends ENGINE.Actor {
     } else if (this.kind === 'bonus') {
       this.bonusContrastOutline = ENGINE.MeshComponent.create({
         name: 'Bonus Star Contrast Outline',
-        geometry: geometry.clone(),
+        geometry,
         material: new THREE.MeshBasicMaterial({
           color: 0x4a2800,
           side: THREE.BackSide,
@@ -334,8 +345,53 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.rootComponent.position.z > 2.5) {
       this.missedScoreTarget = this.kind === 'score';
       this.avoidedHazard = this.kind === 'hazard' && !this.hit;
-      this.destroy();
+      this.requestRemoval();
     }
+  }
+
+  public reactivate(options: DribbleTargetOptions): void {
+    if ((options.kind ?? this.kind) !== this.kind) {
+      throw new Error(`Cannot reactivate ${this.kind} target as ${options.kind}`);
+    }
+    this.laneX = options.laneX ?? this.laneX;
+    this.speed = options.speed ?? this.speed;
+    this.isRhythmTarget = options.rhythmTarget ?? false;
+    this.spacingGroup = options.spacingGroup ?? null;
+    this.hit = false;
+    this.gameplayActive = true;
+    this.removalRequested = false;
+    this.missedScoreTarget = false;
+    this.avoidedHazard = false;
+    this.pressureLevel = 0;
+    this.spacingSpeedLimit = Number.POSITIVE_INFINITY;
+    this.presentationFocus = 0;
+    this.presentationFrenzy = 0;
+    this.coinMagnetActive = false;
+    this.coinMagnetAge = 0;
+    this.coinMagnetVelocity.set(0, 0, 0);
+    this.rootComponent.visible = true;
+    if (options.position) this.rootComponent.position.copy(options.position);
+    else this.rootComponent.position.set(this.laneX, 0.3, -18);
+    this.rootComponent.rotation.set(0, 0, 0);
+    this.rootComponent.scale.set(1, 1, 1);
+    if (this.threatMarker) this.threatMarker.visible = false;
+    this.applyAccessibilityPalette();
+  }
+
+  public deactivateForPool(): void {
+    this.gameplayActive = false;
+    this.removalRequested = true;
+    this.coinMagnetActive = false;
+    this.coinMagnetAge = 0;
+    this.coinMagnetVelocity.set(0, 0, 0);
+    this.rootComponent.visible = false;
+  }
+
+  public requestRemoval(): void {
+    if (this.removalRequested) return;
+    this.removalRequested = true;
+    this.gameplayActive = false;
+    this.rootComponent.visible = false;
   }
 
   public override destroy(): void {
@@ -406,7 +462,7 @@ export class DribbleTarget extends ENGINE.Actor {
       });
       this.threatMarker = ENGINE.MeshComponent.create({
         name: 'Threat Ownership Chevron',
-        geometry: new THREE.ConeGeometry(0.14, 0.25, 3),
+        geometry: targetGeometry.threatMarker,
         material: this.threatMarkerMaterial,
         position: new THREE.Vector3(0, 0.88, 0),
         rotation: new THREE.Euler(0, 0, Math.PI),
@@ -414,6 +470,7 @@ export class DribbleTarget extends ENGINE.Actor {
       });
       this.rootComponent.add(this.threatMarker);
     }
+    if (this.threatMarker) this.threatMarker.visible = true;
     this.threatMarkerMaterial?.color.setHex(color);
   }
 
@@ -421,13 +478,20 @@ export class DribbleTarget extends ENGINE.Actor {
     DribbleTarget.highContrastEnabled = enabled;
   }
 
+  public static preloadModels(): Promise<void> {
+    return Promise.all(
+      [scoreTokenModelPath, hazardModelPath, frenzyStarModelPath].map(modelPath => (
+        ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(modelPath))
+          .then(() => undefined)
+          .catch(error => {
+            console.warn(`Could not preload target model: ${modelPath}`, error);
+          })
+      )),
+    ).then(() => undefined);
+  }
+
   public static preloadScoreToken(): void {
-    for (const modelPath of [scoreTokenModelPath, hazardModelPath, frenzyStarModelPath]) {
-      void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(modelPath))
-        .catch(error => {
-          console.warn(`Could not preload target model: ${modelPath}`, error);
-        });
-    }
+    void DribbleTarget.preloadModels();
   }
 
   public applyAccessibilityPalette(): void {
@@ -457,14 +521,8 @@ export class DribbleTarget extends ENGINE.Actor {
     if (this.threatMarker) this.threatMarker.visible = false;
     if (this.hazardModel) this.hazardModel.visible = false;
 
-    const scoreGeometry = new THREE.TorusGeometry(0.42, 0.12, 12, 28);
-    const scoreGlowGeometry = new THREE.TorusGeometry(0.515, 0.014, 6, 32);
-    const oldTargetGeometry = this.targetMesh?.geometry;
-    const oldGlowGeometry = this.glowShell?.geometry;
-    if (this.targetMesh) this.targetMesh.geometry = scoreGeometry;
-    if (this.glowShell) this.glowShell.geometry = scoreGlowGeometry;
-    oldTargetGeometry?.dispose();
-    oldGlowGeometry?.dispose();
+    if (this.targetMesh) this.targetMesh.geometry = targetGeometry.score;
+    if (this.glowShell) this.glowShell.geometry = targetGeometry.scoreGlow;
     this.glowShell?.scale.setScalar(1.04);
     this.attachScoreTokenModel(this.rootComponent, true);
     this.applyAccessibilityPalette();
@@ -480,19 +538,18 @@ export class DribbleTarget extends ENGINE.Actor {
       name: 'Basketball Score Token',
       modelUrl: scoreTokenModelPath,
       useDynamicMaterials: true,
-      castShadow: true,
-      receiveShadow: true,
+      castShadow: false,
+      receiveShadow: false,
       scale: new THREE.Vector3(0.96, 0.96, 0.96),
       rotation: new THREE.Euler(Math.PI / 2, 0, 0),
       physicsOptions: { enabled: false },
     });
     model.onMeshLoaded.add((_component, modelRoot) => {
-      if (this.removalRequested) return;
       this.scoreTokenMaterialIntensity.clear();
       modelRoot.traverse(child => {
         if (!(child instanceof THREE.Mesh)) return;
-        child.castShadow = true;
-        child.receiveShadow = true;
+        child.castShadow = false;
+        child.receiveShadow = false;
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         for (const material of materials) {
           if (!(material instanceof THREE.MeshStandardMaterial)) continue;
@@ -519,18 +576,18 @@ export class DribbleTarget extends ENGINE.Actor {
       name: 'Bad Target Model',
       modelUrl: hazardModelPath,
       useDynamicMaterials: true,
-      castShadow: true,
-      receiveShadow: true,
+      castShadow: false,
+      receiveShadow: false,
       scale: new THREE.Vector3(hazardModelScale, hazardModelScale, hazardModelScale),
       physicsOptions: { enabled: false },
     });
     model.onMeshLoaded.add((_component, modelRoot) => {
-      if (this.removalRequested || this.kind !== 'hazard') return;
+      if (this.kind !== 'hazard') return;
       this.hazardModelMaterials.clear();
       modelRoot.traverse(child => {
         if (!(child instanceof THREE.Mesh)) return;
-        child.castShadow = true;
-        child.receiveShadow = true;
+        child.castShadow = false;
+        child.receiveShadow = false;
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         for (const material of materials) {
           if (!(material instanceof THREE.MeshStandardMaterial)) continue;
@@ -551,8 +608,8 @@ export class DribbleTarget extends ENGINE.Actor {
       name: 'Frenzy Star Model',
       modelUrl: frenzyStarModelPath,
       useDynamicMaterials: true,
-      castShadow: true,
-      receiveShadow: true,
+      castShadow: false,
+      receiveShadow: false,
       scale: new THREE.Vector3(
         frenzyStarModelScale,
         frenzyStarModelScale,
@@ -561,12 +618,12 @@ export class DribbleTarget extends ENGINE.Actor {
       physicsOptions: { enabled: false },
     });
     model.onMeshLoaded.add((_component, modelRoot) => {
-      if (this.removalRequested || this.kind !== 'bonus') return;
+      if (this.kind !== 'bonus') return;
       this.frenzyStarModelMaterials.clear();
       modelRoot.traverse(child => {
         if (!(child instanceof THREE.Mesh)) return;
-        child.castShadow = true;
-        child.receiveShadow = true;
+        child.castShadow = false;
+        child.receiveShadow = false;
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         for (const material of materials) {
           if (!(material instanceof THREE.MeshStandardMaterial)) continue;

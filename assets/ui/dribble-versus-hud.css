@@ -310,6 +310,15 @@
   line-height: 14px;
 }
 
+.dribble-versus-hud[data-pace-phase='clutch'] .dribble-versus-title small {
+  color: #ff9b55;
+}
+
+.dribble-versus-hud[data-pace-phase='sudden-death'] .dribble-versus-title small {
+  color: #ff675f;
+  text-shadow: 0 0 10px rgba(255, 69, 58, 0.62);
+}
+
 .dribble-versus-title strong {
   font-size: 20px;
   line-height: 22px;

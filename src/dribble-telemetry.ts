@@ -25,6 +25,9 @@ export interface DribbleTelemetryReport {
   peakDifficulty: number;
   aiOpponent: string;
   patterns: Record<string, number>;
+  slowFrames: number;
+  minimumFps: number;
+  qualityChanges: number;
 }
 
 const telemetryStorageKey = 'basketball-frenzy-telemetry-v1';
@@ -60,6 +63,9 @@ export class DribbleTelemetry {
       peakDifficulty: 0,
       aiOpponent,
       patterns: {},
+      slowFrames: 0,
+      minimumFps: 240,
+      qualityChanges: 0,
     };
   }
 
@@ -113,6 +119,13 @@ export class DribbleTelemetry {
   public recordPattern(patternId: string): void {
     if (!this.current) return;
     this.current.patterns[patternId] = (this.current.patterns[patternId] ?? 0) + 1;
+  }
+
+  public recordPerformanceSample(fps: number, qualityChanged: boolean): void {
+    if (!this.current) return;
+    this.current.minimumFps = Math.min(this.current.minimumFps, Math.max(0, fps));
+    if (fps < 30) this.current.slowFrames += 1;
+    if (qualityChanged) this.current.qualityChanges += 1;
   }
 
   public finishRun(outcome: DribbleRunOutcome, score: number, durationSeconds: number): void {

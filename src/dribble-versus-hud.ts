@@ -21,6 +21,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
 
   private rootElement: HTMLElement | null = null;
   private roundElement: HTMLElement | null = null;
+  private phaseElement: HTMLElement | null = null;
   private ownerElement: HTMLElement | null = null;
   private actionElement: HTMLElement | null = null;
   private pressureElement: HTMLElement | null = null;
@@ -42,6 +43,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   private renderedAiRiskCards = -1;
   private renderedOwner: VersusOwner | null = null;
   private renderedRound = -1;
+  private renderedPhase = '';
   private renderedAction = '';
   private renderedPressurePercent = -1;
   private renderedPressureState = '';
@@ -71,6 +73,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
   protected override cacheElements(): void {
     this.rootElement = this.layout?.querySelector('[data-versus-hud]') as HTMLElement | null;
     this.roundElement = this.layout?.querySelector('[data-versus-round]') as HTMLElement | null;
+    this.phaseElement = this.layout?.querySelector('[data-versus-phase]') as HTMLElement | null;
     this.ownerElement = this.layout?.querySelector('[data-versus-owner]') as HTMLElement | null;
     this.actionElement = this.layout?.querySelector('[data-versus-action]') as HTMLElement | null;
     this.pressureElement = this.layout?.querySelector('[data-versus-pressure]') as HTMLElement | null;
@@ -172,6 +175,19 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     if (this.rootElement) this.rootElement.dataset.tutorial = active ? 'true' : 'false';
   }
 
+  public setPacePhase(phase: 'rally' | 'fast-break' | 'clutch' | 'sudden-death'): void {
+    if (phase === this.renderedPhase) return;
+    this.renderedPhase = phase;
+    const labels = {
+      rally: 'BEST OF 5',
+      'fast-break': 'FAST BREAK',
+      clutch: 'CLUTCH',
+      'sudden-death': 'SUDDEN DEATH',
+    } as const;
+    if (this.phaseElement) this.phaseElement.textContent = labels[phase];
+    if (this.rootElement) this.rootElement.dataset.pacePhase = phase;
+  }
+
   public setTutorialFocus(focus: VersusTutorialFocus): void {
     if (!this.rootElement) return;
     if (focus) this.rootElement.dataset.tutorialFocus = focus;
@@ -255,6 +271,7 @@ export class DribbleVersusHud extends ENGINE.BaseUIComponent<DribbleVersusHudOpt
     this.ownerElement = null;
     this.actionElement = null;
     this.pressureElement = null;
+    this.phaseElement = null;
     this.playerRoundsElement = null;
     this.aiRoundsElement = null;
     this.playerRiskCardsElement = null;

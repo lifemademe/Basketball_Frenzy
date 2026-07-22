@@ -5,8 +5,8 @@ function createAmbientDustDefinition(): ENGINE.VFXDefinition {
   const definition = new ENGINE.VFXDefinition();
   definition.name = 'DribbleAmbientCourtDust';
   definition.particles = [Object.assign(new ENGINE.VFXParticlesSettings(), {
-    nbParticles: 48,
-    intensity: 0.92,
+    nbParticles: 16,
+    intensity: 0.72,
     renderMode: 'billboard' as const,
     fadeSize: [0.04, 0.9] as [number, number],
     fadeAlpha: [0.08, 0.78] as [number, number],
@@ -20,10 +20,10 @@ function createAmbientDustDefinition(): ENGINE.VFXDefinition {
     Object.assign(new ENGINE.VFXEmitterSettings(), {
       particlesIndex: 0,
       loop: true,
-      duration: 1.5,
-      nbParticles: 6,
+      duration: 2.4,
+      nbParticles: 3,
       spawnMode: 'time' as const,
-      particlesLifetime: [5.5, 9] as [number, number],
+      particlesLifetime: [4.5, 7] as [number, number],
       startPositionMin: [-3.7, -2, -7] as [number, number, number],
       startPositionMax: [3.7, 3.8, 2] as [number, number, number],
       directionMin: [-0.07, 0.04, 0.08] as [number, number, number],
@@ -32,23 +32,6 @@ function createAmbientDustDefinition(): ENGINE.VFXDefinition {
       speed: [0.03, 0.12] as [number, number],
       colorStart: ['#fff0cf', '#ffd6a3', '#ffe8c2'],
       colorEnd: ['#e8b77f', '#ffd9a7', '#fff4dc'],
-      useLocalDirection: false,
-    }),
-    Object.assign(new ENGINE.VFXEmitterSettings(), {
-      particlesIndex: 0,
-      loop: true,
-      duration: 2.3,
-      nbParticles: 2,
-      spawnMode: 'time' as const,
-      particlesLifetime: [3.5, 6.5] as [number, number],
-      startPositionMin: [-2.8, -1.8, -2] as [number, number, number],
-      startPositionMax: [2.8, 2.6, 2.5] as [number, number, number],
-      directionMin: [-0.05, 0.03, 0.1] as [number, number, number],
-      directionMax: [0.06, 0.1, 0.28] as [number, number, number],
-      size: [0.035, 0.075] as [number, number],
-      speed: [0.025, 0.08] as [number, number],
-      colorStart: ['#fff7df', '#ffdba8'],
-      colorEnd: ['#eab77e', '#ffe7bd'],
       useLocalDirection: false,
     }),
   ];
@@ -97,6 +80,7 @@ export class DribbleAmbientDust extends ENGINE.Actor {
   private active = false;
   private frenzyActive = false;
   private reducedMotion = false;
+  private qualityTier: 'high' | 'balanced' | 'performance' = 'high';
   private readonly cameraPosition = new THREE.Vector3();
   private readonly cameraDirection = new THREE.Vector3();
 
@@ -124,7 +108,7 @@ export class DribbleAmbientDust extends ENGINE.Actor {
   public setActive(active: boolean): void {
     if (this.active === active) return;
     this.active = active;
-    if (active) this.dustVfx?.startEmitting(true);
+    if (active && this.qualityTier !== 'performance') this.dustVfx?.startEmitting(true);
     else this.dustVfx?.stopEmitting();
     this.syncFrenzyEmission();
   }
@@ -136,6 +120,16 @@ export class DribbleAmbientDust extends ENGINE.Actor {
 
   public setReducedMotion(enabled: boolean): void {
     this.reducedMotion = enabled;
+    this.syncFrenzyEmission();
+  }
+
+  public setQualityTier(tier: 'high' | 'balanced' | 'performance'): void {
+    if (this.qualityTier === tier) return;
+    this.qualityTier = tier;
+    if (this.active) {
+      if (tier === 'performance') this.dustVfx?.stopEmitting();
+      else this.dustVfx?.startEmitting(true);
+    }
     this.syncFrenzyEmission();
   }
 
@@ -161,7 +155,7 @@ export class DribbleAmbientDust extends ENGINE.Actor {
   }
 
   private syncFrenzyEmission(): void {
-    if (this.active && this.frenzyActive && !this.reducedMotion) {
+    if (this.active && this.frenzyActive && !this.reducedMotion && this.qualityTier !== 'performance') {
       this.frenzyDustVfx?.startEmitting(true);
     } else {
       this.frenzyDustVfx?.stopEmitting();

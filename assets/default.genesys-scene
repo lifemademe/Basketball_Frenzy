@@ -1320,126 +1320,6 @@
         "$initOptions": {
           "modelUrl": "@project/assets/models/editedseat2.glb"
         },
-        "name": "Editedseat 08",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/editedseat2.glb",
-          "name": "RootComponent",
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -23.6,
-              0,
-              -0.406667
-            ]
-          },
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              1.570796,
-              0
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              10,
-              10,
-              10
-            ]
-          },
-          "uuid": "04660d5673f31dab"
-        },
-        "uuid": "65961d3d55a970b8"
-      },
-      "32": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "$initOptions": {
-          "modelUrl": "@project/assets/models/editedseat.glb"
-        },
-        "name": "Editedseat 09",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/editedseat.glb",
-          "name": "RootComponent",
-          "physicsOptions": {
-            "enabled": false
-          },
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -23.6,
-              0,
-              -7.871667
-            ]
-          },
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              1.570796,
-              0
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              10,
-              10,
-              10
-            ]
-          },
-          "uuid": "6709a9f9ce22bbd7"
-        },
-        "uuid": "d7912f05d4566a6b"
-      },
-      "33": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "$initOptions": {
-          "modelUrl": "@project/assets/models/editedseat.glb"
-        },
-        "name": "Editedseat 10",
-        "rootComponent": {
-          "$bc": "ENGINE.ModelMeshComponent",
-          "modelUrl": "@project/assets/models/editedseat.glb",
-          "name": "RootComponent",
-          "physicsOptions": {
-            "enabled": false
-          },
-          "position": {
-            "$bc": "v3",
-            "_": [
-              -23.6,
-              0,
-              -15.421667
-            ]
-          },
-          "rotation": {
-            "$bc": "e",
-            "_": [
-              0,
-              1.570796,
-              0
-            ]
-          },
-          "scale": {
-            "$bc": "v3",
-            "_": [
-              10,
-              10,
-              10
-            ]
-          },
-          "uuid": "dada352add68ffb7"
-        },
-        "uuid": "90b52a8a0552fb01"
-      },
-      "34": {
-        "$bc": "ENGINE.ModelMeshActor",
-        "$initOptions": {
-          "modelUrl": "@project/assets/models/editedseat2.glb"
-        },
         "name": "Editedseat 11",
         "rootComponent": {
           "$bc": "ENGINE.ModelMeshComponent",
@@ -1473,7 +1353,7 @@
         },
         "uuid": "804099fda2d6e140"
       },
-      "35": {
+      "32": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/editedseat.glb"
@@ -1514,7 +1394,7 @@
         },
         "uuid": "29108f5b7e5d5177"
       },
-      "36": {
+      "33": {
         "$bc": "ENGINE.ModelMeshActor",
         "$initOptions": {
           "modelUrl": "@project/assets/models/editedseat.glb"
@@ -1555,7 +1435,45 @@
         },
         "uuid": "5f55eac064a252eb"
       },
-      "$length": 37
+      "34": {
+        "$bc": "ENGINE.ModelMeshActor",
+        "$initOptions": {
+          "modelUrl": "@project/assets/models/wall1.glb"
+        },
+        "name": "Wall 1",
+        "rootComponent": {
+          "$bc": "ENGINE.ModelMeshComponent",
+          "modelUrl": "@project/assets/models/wall1.glb",
+          "name": "RootComponent",
+          "position": {
+            "$bc": "v3",
+            "_": [
+              -20.1,
+              0.2,
+              -9.8
+            ]
+          },
+          "rotation": {
+            "$bc": "e",
+            "_": [
+              0,
+              -1.570796,
+              0
+            ]
+          },
+          "scale": {
+            "$bc": "v3",
+            "_": [
+              1.43,
+              1.43,
+              1.43
+            ]
+          },
+          "uuid": "368551fc-08f2-466f-89cf-3ef753707191"
+        },
+        "uuid": "9e60600dfbd00c4d"
+      },
+      "$length": 35
     },
     "editorData": {
       "sceneTree": {
@@ -1681,17 +1599,7 @@
             "nodeType": "actor"
           },
           {
-            "id": "65961d3d55a970b8",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "d7912f05d4566a6b",
-            "isExpanded": false,
-            "nodeType": "actor"
-          },
-          {
-            "id": "90b52a8a0552fb01",
+            "id": "9e60600dfbd00c4d",
             "isExpanded": false,
             "nodeType": "actor"
           },

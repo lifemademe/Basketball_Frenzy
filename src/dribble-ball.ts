@@ -113,6 +113,15 @@ export class DribbleBall extends ENGINE.Actor {
   private static readonly finalShotGroundDropEnd = 0.56;
   public readonly radius = 0.32;
 
+  public static preloadFrenzyModel(): Promise<void> {
+    const modelPath = ballModelPaths.gold;
+    return ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(modelPath))
+      .then(() => undefined)
+      .catch(error => {
+        console.warn(`Could not preload basketball model: ${modelPath}`, error);
+      });
+  }
+
   private side: DribbleSide = 'left';
   private phase = 0;
   private transferTime = 0;
@@ -484,9 +493,8 @@ export class DribbleBall extends ENGINE.Actor {
     void this.ballModel?.waitForLoad().then(() => this.startModelAnimations());
     this.frenzyPreloadTimer = setTimeout(() => {
       this.frenzyPreloadTimer = null;
-      void ENGINE.resourceManager.loadModel(ENGINE.AssetPath.fromString(ballModelPaths.gold))
-        .catch(error => console.warn('Could not preload the frenzy basketball model', error));
-    }, 600);
+      void DribbleBall.preloadFrenzyModel();
+    }, 250);
   }
 
   protected override doEndPlay(): void {

@@ -47,6 +47,7 @@ export function playGamepadImpactFeedback(kind: 'score' | 'hazard' | 'frenzy'): 
       ? { duration: 110, strongMagnitude: 0.4, weakMagnitude: 0.44 }
       : { duration: 38, strongMagnitude: 0.08, weakMagnitude: 0.18 };
   playGamepadRumble(gamepadIndex, feedback);
+  playDeviceVibration(kind === 'hazard' ? [28, 18, 42] : kind === 'frenzy' ? [18, 20, 24] : 8);
 }
 
 export function playGamepadUiFeedback(gamepadIndex: number, confirm = false): void {
@@ -80,4 +81,14 @@ function playGamepadRumble(
     strongMagnitude: feedback.strongMagnitude,
     weakMagnitude: feedback.weakMagnitude,
   }).catch(() => {});
+}
+
+function playDeviceVibration(pattern: number | number[]): void {
+  if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+  try {
+    if (localStorage.getItem('basketball-frenzy-reduced-motion') === 'true') return;
+  } catch {
+    // Haptics can still run when storage is unavailable.
+  }
+  navigator.vibrate(pattern);
 }

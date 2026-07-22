@@ -14,8 +14,6 @@ interface LanePresentation {
   color: THREE.Color;
   guideActor: ENGINE.Actor;
   guideMaterial: THREE.MeshStandardMaterial;
-  lightActor: ENGINE.Actor;
-  light: ENGINE.PointLightComponent;
   energy: number;
 }
 
@@ -42,8 +40,6 @@ export class DribbleEnvironmentFocus {
   private readonly arenaAccents: ArenaAccentMaterial[] = [];
   private readonly accentColor = new THREE.Color();
   private readonly frenzyAccentColor = new THREE.Color(0xffb928);
-  private readonly hazeMaterial: THREE.MeshBasicMaterial;
-  private readonly hazeActor: ENGINE.Actor;
   private readonly centerMarkMaterial: THREE.MeshStandardMaterial;
   private readonly centerMarkActor: ENGINE.Actor;
   private pulseCursor = 0;
@@ -51,6 +47,7 @@ export class DribbleEnvironmentFocus {
   private frenzyActive = false;
   private reducedMotion = false;
   private reducedFlashes = false;
+  private qualityTier: 'high' | 'balanced' | 'performance' = 'high';
   private arenaSurge = 0;
   private presentationTime = 0;
   private sunsetKey: ENGINE.DirectionalLightComponent | null = null;
@@ -84,22 +81,9 @@ export class DribbleEnvironmentFocus {
         rootComponent: guide,
         actorTags: ['dribble-environment', 'reactive-lane'],
       });
-      const light = ENGINE.PointLightComponent.create({
-        color,
-        intensity: index === 1 ? 3.1 : 3.8,
-        distance: 8.5,
-        decay: 2,
-        castShadow: false,
-        position: new THREE.Vector3(x, 1.45, -5.2),
-      });
-      const lightActor = ENGINE.Actor.create({
-        name: `Reactive Lane Light ${index + 1}`,
-        rootComponent: light,
-        actorTags: ['dribble-environment', 'lane-light'],
-      });
-      this.world.addActors(guideActor, lightActor);
-      this.actors.push(guideActor, lightActor);
-      this.lanes.push({ x, color, guideActor, guideMaterial, lightActor, light, energy: 0 });
+      this.world.addActor(guideActor);
+      this.actors.push(guideActor);
+      this.lanes.push({ x, color, guideActor, guideMaterial, energy: 0 });
     }
 
     this.centerMarkMaterial = new THREE.MeshStandardMaterial({
@@ -126,27 +110,6 @@ export class DribbleEnvironmentFocus {
 
     this.createOuterRail(-1.52, 0x17364d);
     this.createOuterRail(1.52, 0x442438);
-
-    this.hazeMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffb07d,
-      transparent: true,
-      opacity: 0.055,
-      depthWrite: false,
-      toneMapped: false,
-    });
-    this.hazeActor = ENGINE.Actor.create({
-      name: 'Sunset Depth Haze',
-      rootComponent: ENGINE.MeshComponent.create({
-        name: 'Sunset Haze Plane',
-        geometry: new THREE.PlaneGeometry(28, 12),
-        material: this.hazeMaterial,
-        position: new THREE.Vector3(0, 4.8, -20.5),
-        physicsOptions: { enabled: false },
-      }),
-      actorTags: ['dribble-environment', 'depth-haze'],
-    });
-    this.world.addActor(this.hazeActor);
-    this.actors.push(this.hazeActor);
 
     for (let index = 0; index < 5; index += 1) {
       const material = new THREE.MeshBasicMaterial({
@@ -193,11 +156,9 @@ export class DribbleEnvironmentFocus {
     this.active = active;
     for (const lane of this.lanes) {
       lane.guideActor.rootComponent.visible = active;
-      lane.lightActor.rootComponent.visible = active;
       lane.energy = 0;
     }
     this.centerMarkActor.rootComponent.visible = active;
-    this.hazeActor.rootComponent.visible = active;
     for (const actor of this.boundaryActors) actor.rootComponent.visible = active;
     if (!active) {
       this.resetFocus();
@@ -212,11 +173,9 @@ export class DribbleEnvironmentFocus {
       lane.energy = 0;
       lane.guideMaterial.emissiveIntensity = index === 1 ? 1.15 : 0.82;
       lane.guideMaterial.color.copy(lane.color).multiplyScalar(0.7);
-      lane.light.intensity = index === 1 ? 3.1 : 3.8;
       lane.guideActor.rootComponent.scale.set(1, 1, 1);
     }
     this.centerMarkMaterial.emissiveIntensity = 1.45;
-    this.hazeMaterial.opacity = 0.055;
     for (const accent of this.arenaAccents) {
       accent.material.emissive.copy(accent.baseEmissive);
       accent.material.emissiveIntensity = accent.baseIntensity;
@@ -227,6 +186,13 @@ export class DribbleEnvironmentFocus {
   public setAccessibility(reducedMotion: boolean, reducedFlashes: boolean): void {
     this.reducedMotion = reducedMotion;
     this.reducedFlashes = reducedFlashes;
+  }
+
+  public setQualityTier(tier: 'high' | 'balanced' | 'performance'): void {
+    this.qualityTier = tier;
+    if (tier === 'performance') {
+      for (const pulse of this.pulses) this.stopPulse(pulse);
+    }
   }
 
   public setFrenzyActive(active: boolean): void {
@@ -243,7 +209,7 @@ export class DribbleEnvironmentFocus {
     const lane = this.getNearestLane(laneX);
     lane.energy = Math.max(lane.energy, THREE.MathUtils.clamp(intensity, 0.65, 1.5));
     this.arenaSurge = Math.max(this.arenaSurge, Math.min(0.34, intensity * 0.2));
-    if (this.reducedMotion) return;
+    if (this.reducedMotion || this.qualityTier === 'performance') return;
     const pulse = this.pulses[this.pulseCursor];
     this.pulseCursor = (this.pulseCursor + 1) % this.pulses.length;
     pulse.elapsed = 0;
@@ -294,7 +260,7 @@ export class DribbleEnvironmentFocus {
       }
     }
 
-    const motionScale = this.reducedMotion ? 0.45 : 1;
+    const motionScale = this.reducedMotion ? 0.45 : this.qualityTier === 'performance' ? 0.65 : 1;
     for (let index = 0; index < this.lanes.length; index += 1) {
       const lane = this.lanes[index];
       lane.energy = Math.max(laneThreats[index] * 0.48, lane.energy - deltaTime * 2.2);
@@ -309,23 +275,18 @@ export class DribbleEnvironmentFocus {
       );
       lane.guideMaterial.emissiveIntensity = 0.74 + energy * 2.15;
       lane.guideMaterial.color.copy(lane.color).multiplyScalar(0.58 + energy * 0.18);
-      lane.light.intensity = 2.2 + energy * 5.2;
       lane.guideActor.rootComponent.scale.x = 1 + energy * 0.22 * motionScale;
     }
 
     const sunsetDeepening = THREE.MathUtils.smoothstep(runProgress, 0.15, 1);
-    this.hazeMaterial.opacity = 0.045
-      + sunsetDeepening * 0.035
-      + frenzy * 0.055
-      + this.arenaSurge * 0.025;
     this.centerMarkMaterial.emissiveIntensity = 1.2 + focusUrgency * 0.6 + frenzy * 2.4;
     for (const accent of this.arenaAccents) {
       this.accentColor.copy(accent.baseEmissive).lerp(this.frenzyAccentColor, frenzy * 0.78);
       accent.material.emissive.copy(this.accentColor);
       accent.material.emissiveIntensity = accent.baseIntensity
         + focusUrgency * 0.18
-        + frenzy * 2.1
-        + this.arenaSurge * 1.25;
+        + frenzy * (this.qualityTier === 'performance' ? 1.25 : 2.1)
+        + this.arenaSurge * (this.qualityTier === 'performance' ? 0.65 : 1.25);
     }
     if (this.sunsetKey) {
       this.sunsetKey.intensity = 5.25 + sunsetDeepening * 0.25 + frenzy * 0.65;
