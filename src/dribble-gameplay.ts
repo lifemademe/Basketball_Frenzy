@@ -340,6 +340,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   private previousGameCursor: string | null = null;
   private previousMenuCursorProperty: string | null = null;
   private previousGameplayCursorProperty: string | null = null;
+  private virtualJoystickObserver: MutationObserver | null = null;
   private scoreStarAssetUrl = '';
   private readonly lanes = [-0.95, 0, 0.95];
   private readonly frenzyDuration = 5.5;
@@ -891,6 +892,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         ...world.inputManager.options.virtualJoystickOptions,
         hidden: true,
       };
+      this.setupVirtualJoystickSuppression();
       this.musicDirector = new DribbleMusicDirector(world);
       this.musicDirector.preload();
       void this.prewarmGameplayAssets();
@@ -908,6 +910,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
   }
 
   protected override doEndPlay(): void {
+    this.virtualJoystickObserver?.disconnect();
+    this.virtualJoystickObserver = null;
     this.clearResumeCountdown();
     this.clearAchievementToasts();
     this.scoreDisplay?.destroy();
@@ -986,6 +990,36 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     this.targetPool.clear();
     super.doEndPlay();
   }
+
+  private setupVirtualJoystickSuppression(): void {
+    this.virtualJoystickObserver?.disconnect();
+    this.suppressVirtualJoysticks();
+    const gameContainer = this.getWorld()?.gameContainer;
+    if (!gameContainer || typeof MutationObserver === 'undefined') return;
+    this.virtualJoystickObserver = new MutationObserver(this.suppressVirtualJoysticks);
+    this.virtualJoystickObserver.observe(gameContainer, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  private readonly suppressVirtualJoysticks = (): void => {
+    const world = this.getWorld();
+    const gameContainer = world?.gameContainer;
+    if (!world || !gameContainer) return;
+    if (world.inputManager.isVirtualJoystickVisible()) {
+      world.inputManager.hideVirtualJoystick();
+    }
+    for (const joystick of gameContainer.querySelectorAll<HTMLElement>('.nipple')) {
+      if (joystick.style.display !== 'none') joystick.style.display = 'none';
+      const zone = joystick.parentElement;
+      if (!zone) continue;
+      if (zone.style.visibility !== 'hidden') zone.style.visibility = 'hidden';
+      if (zone.style.pointerEvents !== 'none') zone.style.pointerEvents = 'none';
+    }
+  };
 
   private hideReferenceHands(): void {
     const world = this.getWorld();

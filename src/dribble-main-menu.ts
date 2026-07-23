@@ -46,6 +46,10 @@ import {
   touchControlModeKey,
   type DribbleTouchControlMode,
 } from './dribble-touch-controls.js';
+import {
+  createDribbleResponsiveUiController,
+  type DribbleResponsiveUiController,
+} from './dribble-responsive-ui.js';
 
 export type DribbleGameMode = 'normal' | 'hard' | 'last-bounce';
 export type DribbleTutorialSelection = 'classic' | 'last-bounce';
@@ -194,6 +198,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private ballLastPointerTime = 0;
   private ballLastFrameTime = 0;
   private ballHasPosition = false;
+  private responsiveUiController: DribbleResponsiveUiController | null = null;
 
   private readonly handlePlayerNameInput = (event: Event): void => {
     if (!this.playerNameInput) return;
@@ -273,9 +278,18 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   };
 
   private readonly handleMenuResize = (): void => {
+    this.responsiveUiController?.refresh();
+    if (!this.supportsDesktopMenuBall()) {
+      this.stopBallPhysics();
+      this.cancelBallDrag();
+      this.disposeMenuBallModel();
+      return;
+    }
     this.clampMenuBall();
     this.resizeMenuBallRenderer();
     this.renderMenuBall();
+    if (!this.menuBallRenderer) void this.setupMenuBallModel();
+    if (this.rootElement?.dataset.panel === 'home') this.startBallPhysics();
   };
 
   private readonly handleVolumeInput = (): void => {
@@ -518,6 +532,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   protected override async onInitialize(): Promise<void> {
     if (!this.layout) return;
+    if (this.rootElement) {
+      this.responsiveUiController = createDribbleResponsiveUiController(
+        this.rootElement,
+        this.rootElement.closest('#ui-container') as HTMLElement | null,
+      );
+    }
     const slot = (name: string): HTMLElement | null => (
       this.layout?.querySelector(`[data-menu-${name}-slot]`) as HTMLElement | null
     );
@@ -804,11 +824,13 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.showPanel('home');
     await this.preloadCriticalMenuAssets();
     this.showFirstLaunchEntryIfNeeded();
-    void this.setupMenuBallModel();
-    requestAnimationFrame(() => {
-      this.resetMenuBall();
-      this.startBallPhysics();
-    });
+    if (this.supportsDesktopMenuBall()) {
+      void this.setupMenuBallModel();
+      requestAnimationFrame(() => {
+        this.resetMenuBall();
+        this.startBallPhysics();
+      });
+    }
   }
 
   private async preloadCriticalMenuAssets(): Promise<void> {
@@ -1294,6 +1316,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   protected override onShow(): void {
+    if (!this.supportsDesktopMenuBall()) return;
     if (this.rootElement?.dataset.panel === 'home') this.startBallPhysics();
     if (!this.menuBallRenderer) void this.setupMenuBallModel();
   }
@@ -1319,6 +1342,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   private startBallPhysics(): void {
+    if (!this.supportsDesktopMenuBall()) return;
     if (this.ballAnimationFrame !== null || !this.menuBall || !this.rootElement) return;
     if (!this.ballHasPosition) this.resetMenuBall();
     this.ballLastFrameTime = performance.now();
@@ -1403,6 +1427,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   private async setupMenuBallModel(): Promise<void> {
+    if (!this.supportsDesktopMenuBall()) return;
     if (!this.menuBallCanvas || this.menuBallRenderer) return;
     const loadToken = ++this.menuBallModelLoadToken;
     const renderer = new THREE.WebGLRenderer({
@@ -1616,6 +1641,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     }
   }
 
+  private supportsDesktopMenuBall(): boolean {
+    return window.innerWidth > 760
+      && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  }
+
   private closeSettingsPanel(): void {
     if (!this.pauseSettingsReturn) {
       this.showPanel('home');
@@ -1645,6 +1675,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   }
 
   protected override onDestroy(): void {
+    this.responsiveUiController?.dispose();
+    this.responsiveUiController = null;
     this.volumeInput?.removeEventListener('input', this.handleVolumeInput);
     this.musicVolumeInput?.removeEventListener('input', this.handleMusicVolumeInput);
     this.sfxVolumeInput?.removeEventListener('input', this.handleSfxVolumeInput);

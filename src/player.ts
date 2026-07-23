@@ -17,10 +17,17 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
   private static readonly gameplayCameraPullback = -0.17;
   private static readonly gameplayCameraDownwardPitch = THREE.MathUtils.degToRad(12);
   private static readonly gameplayCameraFov = 70;
+  private static readonly narrowCameraPullback = 0.05;
+  private static readonly narrowCameraLift = 0.045;
+  private static readonly narrowCameraDownwardPitch = THREE.MathUtils.degToRad(16);
+  private static readonly narrowCameraFov = 78;
 
   private powerBounceImpulseTime = FirstPersonPlayer.powerBounceImpulseDuration;
   private powerBounceImpulseSide = 1;
   private cameraTransformCaptured = false;
+  private cameraFramingAspect = -1;
+  private readonly cameraUnframedPosition = new THREE.Vector3();
+  private readonly cameraUnframedQuaternion = new THREE.Quaternion();
   private readonly cameraBasePosition = new THREE.Vector3();
   private readonly cameraBaseQuaternion = new THREE.Quaternion();
   private readonly cameraImpulseQuaternion = new THREE.Quaternion();
@@ -64,18 +71,11 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
 
   protected override updateCamera(deltaTime: number): void {
     if (!this.cameraTransformCaptured) {
-      this.camera.position.z += FirstPersonPlayer.gameplayCameraPullback;
-      if (this.camera instanceof THREE.PerspectiveCamera) {
-        this.camera.fov = FirstPersonPlayer.gameplayCameraFov;
-        this.camera.updateProjectionMatrix();
-      }
-      this.cameraImpulseEuler.set(-FirstPersonPlayer.gameplayCameraDownwardPitch, 0, 0);
-      this.cameraImpulseQuaternion.setFromEuler(this.cameraImpulseEuler);
-      this.camera.quaternion.multiply(this.cameraImpulseQuaternion);
-      this.cameraBasePosition.copy(this.camera.position);
-      this.cameraBaseQuaternion.copy(this.camera.quaternion);
+      this.cameraUnframedPosition.copy(this.camera.position);
+      this.cameraUnframedQuaternion.copy(this.camera.quaternion);
       this.cameraTransformCaptured = true;
     }
+    this.updateResponsiveCameraFraming();
 
     const duration = FirstPersonPlayer.powerBounceImpulseDuration;
     if (this.powerBounceImpulseTime >= duration) {
@@ -100,6 +100,46 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
     );
     this.cameraImpulseQuaternion.setFromEuler(this.cameraImpulseEuler);
     this.camera.quaternion.copy(this.cameraBaseQuaternion).multiply(this.cameraImpulseQuaternion);
+  }
+
+  private updateResponsiveCameraFraming(): void {
+    const gameContainer = this.getWorld()?.gameContainer;
+    const width = gameContainer?.clientWidth ?? window.innerWidth;
+    const height = gameContainer?.clientHeight ?? window.innerHeight;
+    const aspect = width / Math.max(height, 1);
+    if (Math.abs(aspect - this.cameraFramingAspect) < 0.01) return;
+    this.cameraFramingAspect = aspect;
+
+    const narrowAmount = 1 - THREE.MathUtils.smoothstep(aspect, 0.62, 1.25);
+    const offsetZ = THREE.MathUtils.lerp(
+      FirstPersonPlayer.gameplayCameraPullback,
+      FirstPersonPlayer.narrowCameraPullback,
+      narrowAmount,
+    );
+    const lift = FirstPersonPlayer.narrowCameraLift * narrowAmount;
+    const downwardPitch = THREE.MathUtils.lerp(
+      FirstPersonPlayer.gameplayCameraDownwardPitch,
+      FirstPersonPlayer.narrowCameraDownwardPitch,
+      narrowAmount,
+    );
+
+    this.cameraBasePosition.copy(this.cameraUnframedPosition);
+    this.cameraBasePosition.y += lift;
+    this.cameraBasePosition.z += offsetZ;
+    this.cameraImpulseEuler.set(-downwardPitch, 0, 0);
+    this.cameraImpulseQuaternion.setFromEuler(this.cameraImpulseEuler);
+    this.cameraBaseQuaternion
+      .copy(this.cameraUnframedQuaternion)
+      .multiply(this.cameraImpulseQuaternion);
+
+    if (this.camera instanceof THREE.PerspectiveCamera) {
+      this.camera.fov = THREE.MathUtils.lerp(
+        FirstPersonPlayer.gameplayCameraFov,
+        FirstPersonPlayer.narrowCameraFov,
+        narrowAmount,
+      );
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   protected override setupAnimationComponent(): ENGINE.AnimationStateMachineComponent | null {

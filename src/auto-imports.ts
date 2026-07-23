@@ -21,6 +21,7 @@ import './dribble-pattern-director.ts';
 import './dribble-performance-director.ts';
 import './dribble-power-bounce-audio.ts';
 import './dribble-progression.ts';
+import './dribble-responsive-ui.ts';
 import './dribble-retention-director.ts';
 import './dribble-run-director.ts';
 import './dribble-status-hud.ts';

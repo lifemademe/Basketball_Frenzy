@@ -1,5 +1,9 @@
 import * as ENGINE from '@gnsx/genesys.js';
 import { t } from './dribble-localization.js';
+import {
+  createDribbleResponsiveUiController,
+  type DribbleResponsiveUiController,
+} from './dribble-responsive-ui.js';
 
 export type DribblePowerUpKind = 'magnet' | 'shield' | 'secondWind';
 
@@ -102,6 +106,7 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   private secondWindButton: ENGINE.Button | null = null;
   private shopStarsElement: HTMLElement | null = null;
   private shopLimitElement: HTMLElement | null = null;
+  private responsiveUiController: DribbleResponsiveUiController | null = null;
 
   private readonly stopPointerEvent = (event: Event): void => {
     event.stopPropagation();
@@ -196,6 +201,12 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   }
 
   protected override async onInitialize(): Promise<void> {
+    if (this.rootElement) {
+      this.responsiveUiController = createDribbleResponsiveUiController(
+        this.rootElement,
+        this.rootElement.closest('#ui-container') as HTMLElement | null,
+      );
+    }
     const restartSlot = this.layout?.querySelector('[data-overlay-restart-slot]') as HTMLElement | null;
     const mainMenuSlot = this.layout?.querySelector('[data-overlay-main-menu-slot]') as HTMLElement | null;
     const settingsSlot = this.layout?.querySelector('[data-overlay-settings-slot]') as HTMLElement | null;
@@ -524,6 +535,8 @@ export class DribbleOverlay extends ENGINE.BaseUIComponent<DribbleOverlayOptions
   }
 
   protected override onDestroy(): void {
+    this.responsiveUiController?.dispose();
+    this.responsiveUiController = null;
     this.closeButton?.removeEventListener('pointerdown', this.stopPointerEvent);
     this.closeButton?.removeEventListener('mousedown', this.stopPointerEvent);
     this.closeButton?.removeEventListener('click', this.handleClose);
