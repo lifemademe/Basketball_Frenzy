@@ -56,6 +56,10 @@ export type DribbleTutorialSelection = 'classic' | 'last-bounce';
 
 type MainMenuPanel = 'home' | 'mode-select' | 'tutorial-select' | 'how-to-play' | 'settings' | 'shop' | 'achievements' | 'reset';
 type ResetMenuTarget = ProgressionResetTarget | 'audio';
+type SettingsTab = 'general' | 'controls' | 'credits';
+type PendingPurchase =
+  | { kind: 'ball'; cosmetic: BallCosmetic; label: string; price: number }
+  | { kind: 'court'; cosmetic: CourtCosmetic; label: string; price: number };
 
 const masterVolumeKey = 'basketball-frenzy-master-volume';
 const musicVolumeKey = 'basketball-frenzy-music-volume';
@@ -115,6 +119,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private reducedFlashesInput: HTMLInputElement | null = null;
   private highContrastTargetsInput: HTMLInputElement | null = null;
   private touchControlModeSelect: HTMLSelectElement | null = null;
+  private settingsTabButtons: HTMLButtonElement[] = [];
+  private settingsTabPanes: HTMLElement[] = [];
   private homeStarsElement: HTMLElement | null = null;
   private playerLevelElement: HTMLElement | null = null;
   private playerXpElement: HTMLElement | null = null;
@@ -136,6 +142,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private blackHoleStatusElement: HTMLElement | null = null;
   private blueCourtStatusElement: HTMLElement | null = null;
   private lightWoodCourtStatusElement: HTMLElement | null = null;
+  private purchaseConfirmation: HTMLElement | null = null;
+  private purchaseConfirmationTitle: HTMLElement | null = null;
+  private purchaseConfirmationCopy: HTMLElement | null = null;
   private achievementCountElement: HTMLElement | null = null;
   private achievementRows: HTMLElement[] = [];
   private courtChallengeElement: HTMLElement | null = null;
@@ -169,6 +178,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private modePlayerNameElement: HTMLElement | null = null;
   private playerName = 'PLAYER';
   private readonly localizedButtons: [ENGINE.Button, TranslationKey][] = [];
+  private pendingPurchase: PendingPurchase | null = null;
   private pendingReset: ResetMenuTarget | null = null;
   private classicActionButton: ENGINE.Button | null = null;
   private epicActionButton: ENGINE.Button | null = null;
@@ -351,6 +361,29 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.applyLocalization();
   };
 
+  private readonly handleSettingsTabClick = (event: Event): void => {
+    const button = event.currentTarget as HTMLButtonElement;
+    const tab = button.dataset.settingsTab;
+    if (this.isSettingsTab(tab)) this.showSettingsTab(tab);
+  };
+
+  private readonly handleSettingsTabKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    const button = event.currentTarget as HTMLButtonElement;
+    const currentIndex = this.settingsTabButtons.indexOf(button);
+    if (currentIndex < 0) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const nextIndex = (currentIndex + direction + this.settingsTabButtons.length)
+      % this.settingsTabButtons.length;
+    const nextButton = this.settingsTabButtons[nextIndex];
+    const tab = nextButton?.dataset.settingsTab;
+    if (nextButton && this.isSettingsTab(tab)) {
+      this.showSettingsTab(tab);
+      nextButton.focus();
+    }
+  };
+
   private readonly handleWristbandClick = (event: Event): void => {
     const button = event.currentTarget as HTMLButtonElement;
     const side = button.dataset.wristbandSide as WristbandSide | undefined;
@@ -474,6 +507,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedFlashesInput = this.layout.querySelector('[data-menu-reduced-flashes]') as HTMLInputElement | null;
     this.highContrastTargetsInput = this.layout.querySelector('[data-menu-high-contrast]') as HTMLInputElement | null;
     this.touchControlModeSelect = this.layout.querySelector('[data-menu-touch-controls]') as HTMLSelectElement | null;
+    this.settingsTabButtons = Array.from(
+      this.layout.querySelectorAll('[data-settings-tab]'),
+    ) as HTMLButtonElement[];
+    this.settingsTabPanes = Array.from(
+      this.layout.querySelectorAll('[data-settings-pane]'),
+    ) as HTMLElement[];
     this.homeStarsElement = this.layout.querySelector('[data-menu-stars]') as HTMLElement | null;
     this.playerLevelElement = this.layout.querySelector('[data-menu-player-level]') as HTMLElement | null;
     this.playerXpElement = this.layout.querySelector('[data-menu-player-xp]') as HTMLElement | null;
@@ -495,6 +534,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = this.layout.querySelector('[data-shop-blackhole-status]') as HTMLElement | null;
     this.blueCourtStatusElement = this.layout.querySelector('[data-shop-blue-court-status]') as HTMLElement | null;
     this.lightWoodCourtStatusElement = this.layout.querySelector('[data-shop-light-wood-court-status]') as HTMLElement | null;
+    this.purchaseConfirmation = this.layout.querySelector('[data-purchase-confirmation]') as HTMLElement | null;
+    this.purchaseConfirmationTitle = this.layout.querySelector('[data-purchase-confirm-title]') as HTMLElement | null;
+    this.purchaseConfirmationCopy = this.layout.querySelector('[data-purchase-confirm-copy]') as HTMLElement | null;
     this.achievementCountElement = this.layout.querySelector('[data-achievement-count]') as HTMLElement | null;
     this.achievementRows = Array.from(this.layout.querySelectorAll('[data-achievement-id]')) as HTMLElement[];
     this.courtChallengeElement = this.layout.querySelector('[data-court-challenge]') as HTMLElement | null;
@@ -568,6 +610,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     const blackHoleActionSlot = slot('blackhole-action');
     const blueCourtActionSlot = slot('blue-court-action');
     const lightWoodCourtActionSlot = slot('light-wood-court-action');
+    const purchaseCancelSlot = slot('purchase-cancel');
+    const purchaseConfirmSlot = slot('purchase-confirm');
     const levelInfoSlot = slot('level-info');
     const levelInfoCloseSlot = slot('level-info-close');
     const languageSlots = supportedLanguages.map(language => (
@@ -582,6 +626,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       || !classicActionSlot || !epicActionSlot
       || !discoActionSlot || !blackHoleActionSlot
       || !blueCourtActionSlot || !lightWoodCourtActionSlot
+      || !purchaseCancelSlot || !purchaseConfirmSlot
       || !levelInfoSlot || !levelInfoCloseSlot
       || languageSlots.some(languageSlot => !languageSlot)
     ) return;
@@ -746,6 +791,18 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleActionButton = mounted[26];
     this.blueCourtActionButton = mounted[27];
     this.lightWoodCourtActionButton = mounted[28];
+    await Promise.all([
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.outlineLarge,
+        label: 'Cancel',
+        onClick: () => this.closePurchaseConfirmation(),
+      }, purchaseCancelSlot),
+      this.mountChild(ENGINE.Button, {
+        ...ENGINE.Button.presets.primaryLarge,
+        label: 'Purchase',
+        onClick: () => this.confirmPurchase(),
+      }, purchaseConfirmSlot),
+    ]);
     const localizedButtonEntries: readonly [TranslationKey, number][] = [
       ['menu.play', 0], ['menu.close', 2], ['mode.normal', 3], ['mode.hard', 4],
       ['mode.lastBounce', 5], ['mode.multiplayer', 6], ['tutorial.classic', 7],
@@ -805,6 +862,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.highContrastTargetsInput?.addEventListener('change', this.handleHighContrastTargetsInput);
     this.touchControlModeSelect?.addEventListener('change', this.handleTouchControlModeInput);
     this.languageSelect?.addEventListener('change', this.handleLanguageSelect);
+    for (const button of this.settingsTabButtons) {
+      button.addEventListener('click', this.handleSettingsTabClick);
+      button.addEventListener('keydown', this.handleSettingsTabKeyDown);
+    }
     this.playerNameInput?.addEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.addEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.addEventListener('click', this.handleResetConfirm);
@@ -906,6 +967,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
       this.hideLevelInfo();
       return true;
     }
+    if (this.purchaseConfirmation?.dataset.active === 'true') {
+      this.closePurchaseConfirmation();
+      return true;
+    }
     if (this.resetConfirmation?.dataset.active === 'true') {
       this.closeResetConfirmation();
       return true;
@@ -932,7 +997,9 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
   private showPanel(panel: MainMenuPanel): void {
     this.hideLevelInfo(false);
     if (this.rootElement) this.rootElement.dataset.panel = panel;
+    if (panel === 'settings') this.showSettingsTab('general');
     if (panel === 'shop' || panel === 'achievements' || panel === 'reset') this.refreshProgressionUi();
+    if (panel !== 'shop') this.closePurchaseConfirmation();
     if (panel !== 'reset') this.closeResetConfirmation();
     if (this.resetStatusElement) this.resetStatusElement.textContent = '';
     if (panel === 'home') this.startBallPhysics();
@@ -1057,7 +1124,12 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   private handleBallAction(cosmetic: BallCosmetic): void {
     if (!isBallOwned(this.progression, cosmetic)) {
-      this.setProgression(this.options.onPurchaseBall(cosmetic));
+      this.openPurchaseConfirmation({
+        kind: 'ball',
+        cosmetic,
+        label: this.getBallLabel(cosmetic),
+        price: getBallPrice(cosmetic),
+      });
       return;
     }
     this.setProgression(this.options.onEquipBall(cosmetic));
@@ -1065,10 +1137,71 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   private handleCourtAction(cosmetic: CourtCosmetic): void {
     if (!isCourtOwned(this.progression, cosmetic)) {
-      this.setProgression(this.options.onPurchaseCourt(cosmetic));
+      this.openPurchaseConfirmation({
+        kind: 'court',
+        cosmetic,
+        label: this.getCourtLabel(cosmetic),
+        price: getCourtPrice(cosmetic),
+      });
       return;
     }
     this.setProgression(this.options.onEquipCourt(cosmetic));
+  }
+
+  private openPurchaseConfirmation(purchase: PendingPurchase): void {
+    if (!this.purchaseConfirmation || this.progression.stars < purchase.price) return;
+    this.pendingPurchase = purchase;
+    if (this.purchaseConfirmationTitle) {
+      this.purchaseConfirmationTitle.textContent = `Purchase ${purchase.label}?`;
+    }
+    if (this.purchaseConfirmationCopy) {
+      const starLabel = purchase.price === 1 ? 'Star' : 'Stars';
+      this.purchaseConfirmationCopy.textContent =
+        `Spend ${purchase.price} ${starLabel}? This item will be added permanently to your Locker.`;
+    }
+    this.purchaseConfirmation.dataset.active = 'true';
+    this.purchaseConfirmation.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => {
+      this.purchaseConfirmation
+        ?.querySelector<HTMLButtonElement>('[data-menu-purchase-cancel-slot] button')
+        ?.focus();
+    });
+  }
+
+  private confirmPurchase(): void {
+    const purchase = this.pendingPurchase;
+    if (!purchase || this.progression.stars < purchase.price) {
+      this.closePurchaseConfirmation();
+      return;
+    }
+    this.closePurchaseConfirmation();
+    if (purchase.kind === 'ball') {
+      if (!isBallOwned(this.progression, purchase.cosmetic)) {
+        this.setProgression(this.options.onPurchaseBall(purchase.cosmetic));
+      }
+      return;
+    }
+    if (!isCourtOwned(this.progression, purchase.cosmetic)) {
+      this.setProgression(this.options.onPurchaseCourt(purchase.cosmetic));
+    }
+  }
+
+  private closePurchaseConfirmation(): void {
+    this.pendingPurchase = null;
+    if (!this.purchaseConfirmation) return;
+    this.purchaseConfirmation.dataset.active = 'false';
+    this.purchaseConfirmation.setAttribute('aria-hidden', 'true');
+  }
+
+  private getBallLabel(cosmetic: BallCosmetic): string {
+    if (cosmetic === 'epic') return 'Epic Ball';
+    if (cosmetic === 'disco') return 'Disco Ball';
+    if (cosmetic === 'blackhole') return 'Black Hole';
+    return 'Classic Ball';
+  }
+
+  private getCourtLabel(cosmetic: CourtCosmetic): string {
+    return cosmetic === 'light-wood' ? 'Light Wood Court' : 'Blue Court';
   }
 
   private refreshProgressionUi(): void {
@@ -1323,6 +1456,7 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
 
   protected override onHide(): void {
     this.hideLevelInfo(false);
+    this.closePurchaseConfirmation();
     this.stopBallPhysics();
     this.cancelBallDrag();
     this.disposeMenuBallModel();
@@ -1658,6 +1792,21 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     onClose();
   }
 
+  private showSettingsTab(tab: SettingsTab): void {
+    for (const button of this.settingsTabButtons) {
+      const active = button.dataset.settingsTab === tab;
+      button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
+    }
+    for (const pane of this.settingsTabPanes) {
+      pane.hidden = pane.dataset.settingsPane !== tab;
+    }
+  }
+
+  private isSettingsTab(value: string | undefined): value is SettingsTab {
+    return value === 'general' || value === 'controls' || value === 'credits';
+  }
+
   private loadTouchControlMode(): DribbleTouchControlMode {
     try {
       return localStorage.getItem(touchControlModeKey) === 'swipe' ? 'swipe' : 'split-tap';
@@ -1685,6 +1834,10 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.highContrastTargetsInput?.removeEventListener('change', this.handleHighContrastTargetsInput);
     this.touchControlModeSelect?.removeEventListener('change', this.handleTouchControlModeInput);
     this.languageSelect?.removeEventListener('change', this.handleLanguageSelect);
+    for (const button of this.settingsTabButtons) {
+      button.removeEventListener('click', this.handleSettingsTabClick);
+      button.removeEventListener('keydown', this.handleSettingsTabKeyDown);
+    }
     this.playerNameInput?.removeEventListener('input', this.handlePlayerNameInput);
     this.playerNameInput?.removeEventListener('keydown', this.handlePlayerNameKeyDown);
     this.resetConfirmButton?.removeEventListener('click', this.handleResetConfirm);
@@ -1715,6 +1868,8 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.reducedFlashesInput = null;
     this.highContrastTargetsInput = null;
     this.touchControlModeSelect = null;
+    this.settingsTabButtons = [];
+    this.settingsTabPanes = [];
     this.languageEntryElement = null;
     this.languageSelect = null;
     this.homeStarsElement = null;
@@ -1732,7 +1887,11 @@ export class DribbleMainMenu extends ENGINE.BaseUIComponent<DribbleMainMenuOptio
     this.blackHoleStatusElement = null;
     this.blueCourtStatusElement = null;
     this.lightWoodCourtStatusElement = null;
+    this.purchaseConfirmation = null;
+    this.purchaseConfirmationTitle = null;
+    this.purchaseConfirmationCopy = null;
     this.localizedButtons.length = 0;
+    this.pendingPurchase = null;
     this.wristbandButtons = [];
     this.levelCourtTitleElement = null;
     this.levelNextRewardElement = null;

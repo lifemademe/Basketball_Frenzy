@@ -115,7 +115,7 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
     const container = this.options.container;
     if (!container) return [];
     const activeScope = container.querySelector<HTMLElement>(
-      '[data-reset-confirmation][data-active="true"], [data-language-entry][data-active="true"], [data-name-entry][data-active="true"], [data-level-info][data-active="true"]',
+      '[data-purchase-confirmation][data-active="true"], [data-reset-confirmation][data-active="true"], [data-language-entry][data-active="true"], [data-name-entry][data-active="true"], [data-level-info][data-active="true"]',
     ) ?? container;
     const candidates = Array.from(activeScope.querySelectorAll<HTMLElement>(
       'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]',
@@ -147,6 +147,10 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
   }
 
   private getDefaultElement(focusable: HTMLElement[]): HTMLElement | null {
+    const purchaseCancel = this.options.container?.querySelector<HTMLElement>(
+      '[data-purchase-confirmation][data-active="true"] [data-menu-purchase-cancel-slot] button',
+    );
+    if (purchaseCancel && focusable.includes(purchaseCancel)) return purchaseCancel;
     const resetCancel = this.options.container?.querySelector<HTMLElement>(
       '[data-reset-confirmation][data-active="true"] [data-reset-cancel]',
     );
@@ -168,7 +172,7 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
         : panel === 'tutorial-select'
           ? ['[data-menu-classic-tutorial-slot] button']
           : panel === 'settings'
-            ? ['[data-menu-volume]']
+            ? ['[data-settings-tab="general"]']
             : panel === 'shop'
               ? ['[data-menu-classic-action-slot] button', '[data-menu-epic-action-slot] button']
               : panel === 'reset'

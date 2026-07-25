@@ -302,6 +302,16 @@
           </div>
         </div>
       </div>
+      <div class="dribble-reset-confirmation dribble-purchase-confirmation" data-purchase-confirmation data-active="false" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="dribble-purchase-confirm-title">
+        <span class="dribble-reset-confirmation-label">Confirm Purchase</span>
+        <p id="dribble-purchase-confirm-title" data-purchase-confirm-title>Purchase this item?</p>
+        <small data-purchase-confirm-copy>This item will be added to your Locker.</small>
+        <div class="dribble-reset-confirmation-actions">
+          <div data-menu-purchase-cancel-slot></div>
+          <div data-menu-purchase-confirm-slot></div>
+        </div>
+      </div>
+      <div class="dribble-reset-confirmation-shade" aria-hidden="true"></div>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-shop-back-slot></div>
     </section>
 
@@ -431,6 +441,12 @@
       <div class="dribble-main-menu-panel-heading">
         <h2 data-i18n="settings.title">Settings</h2>
       </div>
+      <div class="dribble-settings-tabs" role="tablist" aria-label="Settings sections">
+        <button id="dribble-settings-tab-general" type="button" role="tab" aria-selected="true" aria-controls="dribble-settings-general" tabindex="0" data-settings-tab="general">General</button>
+        <button id="dribble-settings-tab-controls" type="button" role="tab" aria-selected="false" aria-controls="dribble-settings-controls" tabindex="-1" data-settings-tab="controls">Controls</button>
+        <button id="dribble-settings-tab-credits" type="button" role="tab" aria-selected="false" aria-controls="dribble-settings-credits" tabindex="-1" data-settings-tab="credits">Credits</button>
+      </div>
+      <div id="dribble-settings-general" class="dribble-settings-pane" role="tabpanel" aria-labelledby="dribble-settings-tab-general" data-settings-pane="general">
       <label class="dribble-main-menu-setting dribble-main-menu-language" for="dribble-menu-language">
         <span><b data-i18n="settings.language">Language</b></span>
         <select id="dribble-menu-language" data-menu-language aria-label="Language">
@@ -478,6 +494,49 @@
       <div class="dribble-settings-management">
         <span class="dribble-settings-management-label" data-i18n="settings.playerData">PLAYER DATA</span>
         <div class="dribble-main-menu-action dribble-main-menu-settings-reset-action" data-menu-reset-slot></div>
+      </div>
+      </div>
+
+      <div id="dribble-settings-controls" class="dribble-settings-pane dribble-settings-controls" role="tabpanel" aria-labelledby="dribble-settings-tab-controls" data-settings-pane="controls" hidden>
+        <section class="dribble-control-group" aria-labelledby="dribble-controls-desktop">
+          <h3 id="dribble-controls-desktop"><span aria-hidden="true">KB</span> Desktop</h3>
+          <div class="dribble-control-row"><kbd>Left Click</kbd><span>Left hand action</span></div>
+          <div class="dribble-control-row"><kbd>Right Click</kbd><span>Right hand action</span></div>
+          <div class="dribble-control-row"><kbd>Esc</kbd><span>Pause game</span></div>
+          <div class="dribble-control-row"><kbd>Mouse</kbd><span>Navigate and select menus</span></div>
+        </section>
+        <section class="dribble-control-group" aria-labelledby="dribble-controls-mobile">
+          <h3 id="dribble-controls-mobile"><span aria-hidden="true">TO</span> Mobile</h3>
+          <div class="dribble-control-row"><kbd>Tap Left</kbd><span>Left hand action</span></div>
+          <div class="dribble-control-row"><kbd>Tap Right</kbd><span>Right hand action</span></div>
+          <div class="dribble-control-row"><kbd>Swipe</kbd><span>Switch sides</span></div>
+          <div class="dribble-control-row"><kbd>Swipe Up</kbd><span>Power bounce</span></div>
+        </section>
+        <section class="dribble-control-group" aria-labelledby="dribble-controls-gamepad">
+          <h3 id="dribble-controls-gamepad"><span aria-hidden="true">GP</span> Gamepad</h3>
+          <div class="dribble-control-row"><kbd>X / Square</kbd><span>Left hand action</span></div>
+          <div class="dribble-control-row"><kbd>B / Circle</kbd><span>Right hand action / back</span></div>
+          <div class="dribble-control-row"><kbd>Y / Triangle</kbd><span>Open power-up shop</span></div>
+          <div class="dribble-control-row"><kbd>A / Cross</kbd><span>Confirm selection</span></div>
+          <div class="dribble-control-row"><kbd>D-Pad / LS</kbd><span>Navigate menus</span></div>
+          <div class="dribble-control-row"><kbd>Menu</kbd><span>Pause game</span></div>
+        </section>
+      </div>
+
+      <div id="dribble-settings-credits" class="dribble-settings-pane dribble-settings-credits" role="tabpanel" aria-labelledby="dribble-settings-tab-credits" data-settings-pane="credits" hidden>
+        <section class="dribble-credit-group">
+          <span>Music</span>
+          <h3>Freesound</h3>
+          <p><strong>joshuaempyre</strong></p>
+          <p><strong>jadis0x</strong></p>
+        </section>
+        <section class="dribble-credit-group">
+          <span>Design</span>
+          <h3>Sketchfab</h3>
+          <p><strong>4M CgiWorks</strong></p>
+          <p><strong>Santiago Andr&eacute;s Ruiz</strong></p>
+        </section>
+        <p class="dribble-credits-thanks">Thank you for helping bring Basketball Frenzy to life.</p>
       </div>
       </div>
       <div class="dribble-main-menu-action dribble-main-menu-back" data-menu-settings-back-slot></div>
