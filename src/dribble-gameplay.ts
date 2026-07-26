@@ -1192,9 +1192,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const deviceRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
     renderer?.setPixelRatio?.(Math.min(deviceRatio, this.performanceDirector.getPixelRatioCap()));
     if (renderer?.shadowMap) {
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.autoUpdate = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.enabled = false;
+      renderer.shadowMap.autoUpdate = false;
     }
   }
 
@@ -1290,8 +1289,8 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         color: new THREE.Color(1, 0.52, 0.3),
         intensity: 3.8,
         isSunLight: false,
-        castShadow: true,
-        shadowMapSize: this.performanceDirector.getTier() === 'high' ? 2048 : 1024,
+        castShadow: false,
+        shadowMapSize: 512,
         shadowBias: -0.0006,
         shadowCameraBottom: -15,
         shadowCameraLeft: -30,
