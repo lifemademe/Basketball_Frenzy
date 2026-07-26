@@ -4800,12 +4800,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
       this.runStarsEarned += 1;
       this.mainMenu?.setProgression(this.progression);
       this.updateScoreStarCounter();
-      this.juiceHud?.showPraise(
-        t('feedback.allObjectives', { xp: RUN_OBJECTIVE_XP }),
-        'gold',
-        2200,
-        3,
-      );
       playGamepadImpactFeedback('frenzy');
       playDribbleFeedback(this.getWorld(), 'star');
       return;
