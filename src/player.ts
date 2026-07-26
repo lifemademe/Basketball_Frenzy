@@ -17,10 +17,6 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
   private static readonly gameplayCameraPullback = -0.17;
   private static readonly gameplayCameraDownwardPitch = THREE.MathUtils.degToRad(12);
   private static readonly gameplayCameraFov = 70;
-  private static readonly narrowCameraPullback = 0.05;
-  private static readonly narrowCameraLift = 0.045;
-  private static readonly narrowCameraDownwardPitch = THREE.MathUtils.degToRad(16);
-  private static readonly narrowCameraFov = 78;
 
   private powerBounceImpulseTime = FirstPersonPlayer.powerBounceImpulseDuration;
   private powerBounceImpulseSide = 1;
@@ -110,34 +106,16 @@ export class FirstPersonPlayer extends ENGINE.CharacterPawn {
     if (Math.abs(aspect - this.cameraFramingAspect) < 0.01) return;
     this.cameraFramingAspect = aspect;
 
-    const narrowAmount = 1 - THREE.MathUtils.smoothstep(aspect, 0.62, 1.25);
-    const offsetZ = THREE.MathUtils.lerp(
-      FirstPersonPlayer.gameplayCameraPullback,
-      FirstPersonPlayer.narrowCameraPullback,
-      narrowAmount,
-    );
-    const lift = FirstPersonPlayer.narrowCameraLift * narrowAmount;
-    const downwardPitch = THREE.MathUtils.lerp(
-      FirstPersonPlayer.gameplayCameraDownwardPitch,
-      FirstPersonPlayer.narrowCameraDownwardPitch,
-      narrowAmount,
-    );
-
     this.cameraBasePosition.copy(this.cameraUnframedPosition);
-    this.cameraBasePosition.y += lift;
-    this.cameraBasePosition.z += offsetZ;
-    this.cameraImpulseEuler.set(-downwardPitch, 0, 0);
+    this.cameraBasePosition.z += FirstPersonPlayer.gameplayCameraPullback;
+    this.cameraImpulseEuler.set(-FirstPersonPlayer.gameplayCameraDownwardPitch, 0, 0);
     this.cameraImpulseQuaternion.setFromEuler(this.cameraImpulseEuler);
     this.cameraBaseQuaternion
       .copy(this.cameraUnframedQuaternion)
       .multiply(this.cameraImpulseQuaternion);
 
     if (this.camera instanceof THREE.PerspectiveCamera) {
-      this.camera.fov = THREE.MathUtils.lerp(
-        FirstPersonPlayer.gameplayCameraFov,
-        FirstPersonPlayer.narrowCameraFov,
-        narrowAmount,
-      );
+      this.camera.fov = FirstPersonPlayer.gameplayCameraFov;
       this.camera.updateProjectionMatrix();
     }
   }
