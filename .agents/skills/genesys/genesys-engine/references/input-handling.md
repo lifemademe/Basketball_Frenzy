@@ -12,6 +12,26 @@ BaseInputHandler — Convenience base class with default no-op methods. Extend t
 
 Reference: See InputManager.ts in engine source.
 
+## Virtual Joysticks (Mobile)
+
+On mobile browsers, InputManager creates nipplejs virtual joysticks in the game container. Configure them via `virtualJoystickOptions` on `BaseGameLoopOptions` (forwarded through `WorldOptions` to `InputManager`).
+
+Key types: `VirtualJoystickOptions`, `VirtualJoystickStickOptions`, `VirtualJoystickZoneOptions`.
+
+- Shared options apply to both sticks: `size`, `color`, `opacity`, `mode`, `fadeTime`, `threshold`, `catchDistance`
+- Per-stick overrides: `left` and `right` (each `VirtualJoystickStickOptions | false`)
+- `enabled: 'auto' | boolean` — `auto` (default) limits joysticks to mobile; set `VITE_DEBUG_TOUCH_INPUT=true` to test on desktop
+- `hidden: true` is deprecated; use `enabled: false`
+- Modes: `static`, `dynamic`, `semi`
+- Zone elements use `data-genesys-virtual-joystick-zone="left"` or `"right"` for CSS targeting
+
+Runtime API on `world.inputManager`:
+
+- `showVirtualJoystick()` / `hideVirtualJoystick()`
+- `isVirtualJoystickEnabled()` / `isVirtualJoystickVisible()`
+
+See [mobile-controls pattern](../patterns/mobile-controls.md) for configuration recipes.
+
 ## Registering Handlers
 
 Register handlers with inputManager.addInputHandler and remove with removeInputHandler.

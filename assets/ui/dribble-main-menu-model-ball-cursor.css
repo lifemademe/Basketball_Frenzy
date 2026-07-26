@@ -297,46 +297,6 @@
   transform: translateY(-2px) scale(1.02);
 }
 
-.dribble-menu-ball {
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  left: 0;
-  width: 84px;
-  height: 84px;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: none;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, grab) !important;
-  touch-action: none;
-  transform: translate3d(0, 0, 0);
-  transform-origin: center;
-  will-change: transform;
-}
-
-.dribble-menu-ball canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: transparent;
-  pointer-events: none;
-}
-
-.dribble-menu-ball[data-grabbed='true'] {
-  z-index: 5;
-  cursor: var(--dribble-menu-cursor, url('@project/assets/textures/mouse_cursor.png') 3 2, grabbing) !important;
-  box-shadow: none;
-}
-
-.dribble-main-menu:not([data-panel='home']) .dribble-menu-ball {
-  opacity: 0;
-  pointer-events: none;
-}
-
 .dribble-main-menu-content {
   position: relative;
   z-index: 3;
@@ -3050,11 +3010,6 @@
 }
 
 @media (max-width: 760px) {
-  .dribble-menu-ball {
-    display: none;
-    pointer-events: none;
-  }
-
   .dribble-language-entry-card {
     width: min(440px, calc(100vw - 20px));
     min-height: 470px;
@@ -3159,11 +3114,6 @@
   .dribble-profile-mode-score strong {
     font-size: 19px;
     line-height: 21px;
-  }
-
-  .dribble-menu-ball {
-    width: 70px;
-    height: 70px;
   }
 
   .dribble-main-menu-logo {
@@ -3382,8 +3332,7 @@
   justify-content: center;
 }
 
-.dribble-main-menu[data-compact-landscape='true'][data-panel='home'] .dribble-main-menu-brand,
-.dribble-main-menu[data-compact-landscape='true'] .dribble-menu-ball {
+.dribble-main-menu[data-compact-landscape='true'][data-panel='home'] .dribble-main-menu-brand {
   display: none;
 }
 
@@ -3652,7 +3601,6 @@
 @media (prefers-reduced-motion: reduce) {
   .dribble-main-menu-panel,
   .dribble-main-menu-logo,
-  .dribble-menu-ball,
   .dribble-logo-sparkle,
   .dribble-main-menu-logo::after,
   .dribble-main-menu-action .ui-button,
@@ -3666,7 +3614,6 @@
 [data-reduced-motion='true'] .dribble-name-entry-card,
 [data-reduced-motion='true'] .dribble-main-menu-panel,
 [data-reduced-motion='true'] .dribble-logo-sparkle,
-[data-reduced-motion='true'] .dribble-menu-ball,
 [data-reduced-motion='true'] .dribble-main-menu-action .ui-button,
 [data-reduced-motion='true'] .dribble-main-menu-toggle i::after {
   animation: none !important;

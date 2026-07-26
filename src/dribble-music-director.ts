@@ -2,8 +2,8 @@ import * as ENGINE from '@gnsx/genesys.js';
 
 type MusicState = 'menu' | 'gameplay' | 'none';
 
-const menuMusicPath = '@project/assets/audio/733259__jadis0x__simple-video-game-music-loop (1).wav';
-const gameplayMusicPath = '@project/assets/audio/251461__joshuaempyre__arcade-music-loop.wav';
+const menuMusicPath = '@project/assets/audio/733259__jadis0x__simple-video-game-music-loop (1).mp3';
+const gameplayMusicPath = '@project/assets/audio/251461__joshuaempyre__arcade-music-loop.mp3';
 
 export class DribbleMusicDirector {
   private state: MusicState = 'none';

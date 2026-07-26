@@ -7,6 +7,8 @@ description: Use Genesys MCP for live editor scene/selection/asset/diagnostic qu
 
 Use this skill when a task needs live Genesys editor/project context through MCP rather than static file edits alone.
 
+When the user asks **how to do something in the editor UI** (where is the button, which menu or hotkey), or MCP is Off, read [genesys-editor-manual](../genesys-editor-manual/SKILL.md) instead of inventing UI steps.
+
 ## Quick Reference (Approval and Build)
 
 | Path | Approval behavior |
@@ -68,9 +70,16 @@ When MCP is **connected** or **probe-capable**, skip broad discovery preamble �
 
 ## Prerequisites
 
-- Genesys editor running with this project open.
+- Genesys editor running with **this** project open (bearer must match; wrong project → `project_mismatch`).
+- Genesys MCP enabled (listener uses a stable app URL; `.cursor/mcp.json` alone is not readiness).
 - `genesys` MCP server enabled and connected in Cursor.
 - Genesys MCP reachable in **this** chat session — either first-class tools in the tool list, or `CallMcpTool` plus Genesys MCP descriptors under `mcps/*genesys*/tools/`.
+
+Signals that do **not** mean MCP is ready:
+
+- Only `.cursor/mcp.json` on disk
+- Genesys running with a **different** project open
+- HTTP reachable but `project_none` / `editorReady: false`
 
 ## Three Core Flows
 
@@ -161,18 +170,19 @@ Exact minimal arguments for the direct tools. The `operation` (query tools) or `
 
 | Tool | Required | Common optional |
 |------|---------|-----------------|
-| `query_scene` | `operation` ∈ {`getActive`, `getOpenScenes`, `getSummary`, `getGraph`, `getSelection`, `findActors`, `getActorSummaries`, `validateScene`} | `findActors`: `query` (case-insensitive name substring, top-level string — **not** a filter object), `limit`. `getGraph`: `sceneName`, `maxNodes`. `getActorSummaries`: `actorIds`. |
+| `query_scene` | `operation` ∈ {`getActive`, `getOpenScenes`, `getSummary`, `getGraph`, `getSelection`, `findActors`, `getActorSummaries`} | `findActors`: `query` (case-insensitive name substring, top-level string — **not** a filter object), `limit`. `getGraph`: `sceneName`, `maxNodes`. `getActorSummaries`: `actorIds`. |
 | `query_actor` | `operation` ∈ {`getState`, `getDetails`, `getTransform`, `getBounds`, `getComponents`, `getChildren`, `getReferences`, `getEditableProperties`}, `actorIds: [...]` | `getDetails`: `include`, `exclude`. |
-| `query_editor` | `operation` ∈ {`getState`, `getSelection`, `getViewport`, `getPlayModeState`, `getRecentActions`, `getBusyState`, `getRegisteredClasses`, `getNodeMaterialClasses`} | `getRegisteredClasses`: actor/component filter. `getNodeMaterialClasses`: node material asset filter. |
+| `query_editor` | `operation` ∈ {`getState`, `getSelection`, `getViewport`, `getPlayModeState`, `getBusyState`, `getRegisteredClasses`, `getNodeMaterialClasses`} | `getRegisteredClasses`: actor/component filter. `getNodeMaterialClasses`: node material asset filter. |
 | `query_project` | `operation` ∈ {`getManifest`, `getStructure`, `getBuildErrors`, `getPackageInfo`, `getScripts`, `getTemplates`, `getAssetPacks`, `findFiles`} | `getStructure`: `maxDepth`. `findFiles`: `query`, `limit`. |
-| `query_asset` | `operation` ∈ {`find`, `getDetails`, `getAssetPackInfo`} | `find`: `query`, `assetType`, `extension`, `pack`, `limit`, `cursor`. `getDetails`: `assetPath`. |
-| `action_actor` | `action` ∈ {`select`, `focus`, `rename`, `create`, `createMany`, `duplicate`, `delete`, `setTransform`, `reparent`} | `setTransform`: `actorId`, `position`/`rotation`/`scale` (3-tuples). `create`: exactly one of `className`/`primitiveType`/`assetPath`. `select`/`focus`/`duplicate`/`delete`/`reparent`: `actorIds`. |
-| `action_component` | `action` ∈ {`add`, `setProperties`, `setEnabled`}, `actorId` | `add`: `className`. `setProperties`: `componentId`, `properties`. `setEnabled`: `componentId`, `enabled`. |
-| `action_scene` | `action` ∈ {`open`, `save`, `setActive`} | `open`/`setActive`: `scenePath`. |
-| `action_editor` | `action` ∈ {`frameSelection`, `enterPlayMode`, `exitPlayMode`, `captureScreenshot`} | `captureScreenshot`: `includeImage`, `filename`, `width`+`height` (together or neither). |
-| `action_asset` | `action` ∈ {`createFolder`, `createMaterial`, `move`, `rename`, `delete`, `import`, `installAssetPack`} | `createMaterial`: `materialClassName`, `name`, `parentPath`. `createFolder`: `parentPath`, `folderName`. per-operation: `assetPath`, `sourcePath`, `destinationPath`, `newName`, `packName`, `packId`. |
-| `action_prefab` | `action` ∈ {`createFromActor`, `instantiate`, `apply`, `unpack`} | `createFromActor`: `actorId`, `parentPath`, `preferredName`. `instantiate`: `prefabPath`, `position`/`rotation`/`scale`. |
-| `action_build` | `action` ∈ {`compile`, `buildProject`, `validatePrefabs`, `buildLightmap`} | `buildLightmap`: `scenePath`. |
+| `query_asset` | `operation` ∈ {`find`, `getDetails`, `getAssetPackInfo`, `getReferences`} | `find`: `query`, `assetType`, `extension`, `pack`, `limit`, `cursor`. `getDetails`/`getReferences`: `assetPath`. |
+| `action_actor` | `action` ∈ {`select`, `focus`, `rename`, `create`, `createMany`, `duplicate`, `delete`, `setTransform`, `reparent`, `setEditorVisible`, `setEditorLocked`} | `setTransform`: `actorId`, `position`/`rotation`/`scale` (3-tuples). `create`: exactly one of `className`/`primitiveType`/`assetPath`. `select`/`focus`/`duplicate`/`delete`/`reparent`/`setEditorVisible`/`setEditorLocked`: `actorIds`. `setEditorVisible`/`setEditorLocked`: **editor viewport only** (not runtime). |
+| `action_component` | `action` ∈ {`add`, `setProperties`, `setEnabled`, `remove`, `duplicate`, `resetToDefaults`}, `actorId` | `add`: `className`. `setProperties`: `componentId`, `properties`. `setEnabled`: `componentId`, `enabled`. `remove`/`duplicate`/`resetToDefaults`: `componentId`. |
+| `action_scene` | `action` ∈ {`open`, `save`, `setActive`, `create`, `duplicate`} | `open`/`setActive`/`duplicate`: `scenePath`. `create`: optional name / default flags. |
+| `action_editor` | `action` ∈ {`frameSelection`, `enterPlayMode`, `exitPlayMode`, `captureScreenshot`, `undo`, `redo`} | `captureScreenshot`: `includeImage`, `filename`, `width`+`height` (together or neither). |
+| `action_asset` | `action` ∈ {`createFolder`, `createMaterial`, `move`, `rename`, `delete`, `import`, `installAssetPack`} | Bridged through the editor (except pack scaffolding). `createMaterial`: `materialClassName`, `name`, `parentPath`. `createFolder`: `parentPath`, `folderName`. per-operation: `assetPath`, `sourcePath`, `destinationPath`, `newName`, `packName`, `packId`. `installAssetPack` scaffolds an empty pack only. |
+| `action_prefab` | `action` ∈ {`createFromActor`, `instantiate`, `apply`, `unpack`, `open`, `close`, `save`, `resync`} | `createFromActor`: `actorId`, `parentPath`, `preferredName`. `instantiate`: `prefabPath`, `position`/`rotation`/`scale`. `open`/`save`: `prefabPath`. `resync`: `actorId`. |
+| `action_build` | `action` ∈ {`buildProject`, `validatePrefabs`, `buildLightmap`} | `buildLightmap`: `scenePath`. |
+| `query_navmesh` / `action_navmesh` | Hidden in compact — use `run_script` / `batch_execute` / `search_tools` | `query_navmesh`: `getInfo`, `getSettings`. `action_navmesh`: `generate`, `export`, `import`, `clear`, `setSettings`, `toggleDebug`. |
 
 ## Efficiency Default
 
@@ -253,19 +263,18 @@ describe_tool({ name: "action_component" })  ← skip this
 | Tool | Operations |
 |------|------------|
 | `query_asset` | `find`, `getDetails`, `getAssetPackInfo` |
-| `action_actor` | `select`, `focus`, `rename`, `create`, `createMany`, `duplicate`, `delete` *(destructive)*, `setTransform`, `reparent` |
-| `action_component` | `add`, `setProperties`, `setEnabled` |
-| `action_scene` | `open`, `save`, `setActive` |
-| `action_editor` | `frameSelection`, `enterPlayMode`, `exitPlayMode`, `captureScreenshot` |
+| `action_actor` | `select`, `focus`, `rename`, `create`, `createMany`, `duplicate`, `delete` *(destructive)*, `setTransform`, `reparent`, `setEditorVisible`, `setEditorLocked` *(editor viewport only)* |
+| `action_component` | `add`, `setProperties`, `setEnabled`, `remove` *(destructive)*, `duplicate`, `resetToDefaults` |
+| `action_scene` | `open`, `save`, `setActive`, `create`, `duplicate` |
+| `action_editor` | `frameSelection`, `enterPlayMode`, `exitPlayMode`, `captureScreenshot`, `undo`, `redo` |
 | `action_asset` | `createFolder`, `createMaterial`, `move`, `rename`, `delete` *(destructive)*, `import`, `installAssetPack` |
-| `action_prefab` | `createFromActor`, `instantiate`, `apply`, `unpack` |
-| `action_build` | `compile`, `buildProject`, `validatePrefabs`, `buildLightmap` |
-
-**Planned later** — `query_diagnostics` validation/job providers (`validateProject`, `validateScene`, `validatePrefab`, `getLastJob`).
+| `action_prefab` | `createFromActor`, `instantiate`, `apply`, `unpack`, `open`, `close`, `save`, `resync` |
+| `action_build` | `buildProject`, `validatePrefabs`, `buildLightmap` |
+| `query_navmesh` / `action_navmesh` | Hidden in compact — `getInfo`/`getSettings`; `generate`/`export`/`import`/`clear`/`setSettings`/`toggleDebug` |
 
 **Approval** — In `auto` mode: direct tools auto-mint a scoped token per call; `batch_execute` auto-derives scopes from its `operations` array; `run_script` auto-derives scopes from `genesys.*` calls in `code` when `approval.operations` is omitted. Pass an optional `approval={summary, operations}` for a clearer `prompt`-mode dialog; `genesys_request_approval`/`approvalId` remain for pre-approval or token reuse. In `prompt` mode every apply triggers the Genesys editor UI.
 
-**Undo** — `undoGroupId` on results; batch `undoGroupIds` on apply batches. Build, asset filesystem, prefab apply/unpack, and screenshots have no undo.
+**Undo** — `undoGroupId` on results; batch `undoGroupIds` on apply batches. Build, pack scaffolding, move/rename relocate, import, prefab apply/unpack, and screenshots have no undo. `createFolder`, `createMaterial`, and `delete` can return editor undo ids when recorded.
 
 **Diagnostics** — `getBuildErrors` / `getConsole` are authoritative when connected. Unavailable diagnostics = unknown state, not success.
 
@@ -423,15 +432,15 @@ MCP-first properties include per-instance `material` (MeshComponent material ass
 - Do not pull `getEditableProperties` to verify assignment — re-query only the `material` field if needed.
 - See [webgpu-tsl-node-material-assets/SKILL.md](../webgpu-tsl-node-material-assets/SKILL.md) for the full class pattern.
 
-**After TypeScript edits** — normal file tools → `action_build(validatePrefabs)` if prefabs changed → `compile` or `buildProject` (both run the full `.dist` pipeline for now) → `getBusyState` → `query_diagnostics(getBuildErrors)` when authoritative.
+**After TypeScript edits** — normal file tools → `action_build(validatePrefabs)` if prefabs changed → `action_build(buildProject)` (full `.dist` pipeline; registers game classes) → `getBusyState` → `query_diagnostics(getBuildErrors)` when authoritative.
 
 | Build action | Use for |
 |--------------|---------|
-| `compile` | Full `.dist` pipeline (registers game classes) |
-| `buildProject` | Same as `compile` today |
+| `buildProject` | Full `.dist` pipeline (registers game classes) |
 | `validatePrefabs` | Prefab JSON check (no editor IPC) |
+| `buildLightmap` | Headless lightmap bake (`scenePath` required) |
 
-Do not run `compile` then `buildProject` unless debugging a failure. MCP `buildProject` ≠ game `pnpm build-project`.
+There is no separate `compile` MCP action. MCP `buildProject` ≠ game `pnpm build-project`.
 
 **Screenshot** — `action_editor` is a **first-class compact tool**, so call `captureScreenshot` directly; do not call `describe_tool` or `search_tools` first.
 

@@ -1630,9 +1630,12 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     const existingModel = existing?.rootComponent instanceof ENGINE.ModelMeshComponent
       ? existing.rootComponent
       : existing?.getComponent(ENGINE.ModelMeshComponent);
-    if (existingModel?.modelUrl === modelUrl) {
+    if (existing && existingModel?.modelUrl === modelUrl) {
+      existing.setHiddenInGame(false);
+      existing.setHidden(false);
       existingModel.replacePhysicsOptions({ enabled: false });
       existingModel.castShadow = true;
+      existingModel.visible = true;
       return;
     }
     existing?.destroy();

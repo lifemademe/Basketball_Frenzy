@@ -49,7 +49,7 @@ export class DribbleUiAudioFeedback {
     if (!(target instanceof Element)) return null;
     const interactive = target.closest<HTMLElement>('button, select, [role="button"]');
     if (!interactive || !this.container.contains(interactive)) return null;
-    if (interactive.matches('[disabled], [aria-disabled="true"], [data-menu-ball]')) return null;
+    if (interactive.matches('[disabled], [aria-disabled="true"]')) return null;
     return interactive;
   }
 

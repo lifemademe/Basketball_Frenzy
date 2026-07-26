@@ -1,6 +1,6 @@
 ---
 name: genesys-engine
-description: Provides comprehensive reference for the Genesys game engine including architecture, actors, components, APIs, and project structure. Use when implementing game features, exploring the codebase or project structure, working with engine classes, or when the user mentions Genesys, engine, game logic, actors, components, scenes, worlds, levels, pawns, controllers, input handling, cameras, serialization, game loop, project structure, or project organization.
+description: Provides comprehensive reference for the Genesys game engine including architecture, actors, components, APIs, and project structure. Use when implementing game features, exploring the codebase or project structure, working with engine classes, or when the user mentions Genesys, engine, game logic, actors, components, scenes, worlds, levels, pawns, controllers, input handling, mobile controls, touch input, virtual joystick, on-screen controls, cameras, serialization, game loop, project structure, or project organization.
 ---
 
 # Methodology
@@ -59,6 +59,7 @@ Guides for specific implementations:
 - [Sprint Movement](patterns/sprint-movement.md): Implementing sprinting with pawn and controller logic.
 - [Isometric Camera](patterns/isometric-camera.md): Setting up an orthographic camera that follows the player.
 - [Top-Down Camera](patterns/top-down-camera.md): RTS/strategy overhead pan, zoom, and input toggles.
+- [Mobile Controls](patterns/mobile-controls.md): Virtual joystick configuration, floating sticks, and touch control customization.
 
 # Tips
 

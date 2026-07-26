@@ -25,6 +25,8 @@ MCP availability rules:
 
 Descriptor/server presence means probe-capable, not ready. Before any mutation, run `query_editor(getState)` or the orchestrator skill's equivalent readiness probe. If the probe fails, report the blocking reason, continue with normal code/filesystem work where possible, and do not retry MCP in the same turn.
 
+Genesys must have **this** project open (matching bearer). Disk `.cursor/mcp.json` alone is not readiness. Transport errors such as `project_none` or `project_mismatch` mean open/switch the matching project in Genesys before retrying MCP.
+
 Never call the MCP HTTP endpoint, `curl`, `Invoke-WebRequest`, localhost URLs, or shell workarounds. Use only Genesys MCP tools directly or via `CallMcpTool` after checking schemas when required.
 
 When MCP is ready, query the editor for live scene state. Do not grep/read `*.genesys-scene` unless the user explicitly asks or MCP is genuinely unavailable.

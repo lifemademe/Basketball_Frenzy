@@ -121,7 +121,7 @@ export class DribbleControllerNavigation extends ENGINE.BaseUIComponent<DribbleC
       'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"]',
     ));
     return candidates.filter(element => (
-      !element.matches('[data-menu-ball], [data-controller-nav="false"]')
+      !element.matches('[data-controller-nav="false"]')
       && !element.closest('[aria-hidden="true"]')
       && this.isElementVisible(element)
     ));

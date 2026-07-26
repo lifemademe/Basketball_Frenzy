@@ -96,6 +96,7 @@ Do **not** use `BeginPlay`, `doBeginPlay`, constructors, or one-off runtime hack
 ## Testing Constraints
 - You may **only** use `pnpm build` to verify code compilation.
 - You **must** use `pnpm lint` to detect and auto-fix linting issues.
+- For every shell command (`pnpm`, `git`, TypeScript tools, etc.), set `workingDirectory` to this game project root — the folder that contains `package.json` and the `.genesys-project` file. Do not rely on the default shell cwd; it may be the Genesys desktop app process directory.
 - To register newly added game classes in the running editor, use MCP `action_build(action="buildProject")`; `pnpm build-project` talks to the SDK app file server and is not reliable from an agent shell.
 - Do **not** run `pnpm test`, `pnpm dev`, or `pnpm start` — these commands are **not supported**.
 - All testing is the responsibility of the user.  
