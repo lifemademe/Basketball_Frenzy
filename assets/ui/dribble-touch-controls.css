@@ -128,3 +128,42 @@
     transform: translate(-50%, 0) scale(1);
   }
 }
+
+.dribble-touch-feedback-left {
+  border-left-color: #66dcff;
+  background: linear-gradient(90deg, rgba(102, 220, 255, 0.32), transparent);
+  filter: drop-shadow(0 0 8px rgba(102, 220, 255, 0.66));
+}
+
+.dribble-touch-feedback-right {
+  border-right-color: #ff7a22;
+  background: linear-gradient(270deg, rgba(255, 122, 34, 0.32), transparent);
+  filter: drop-shadow(0 0 8px rgba(255, 122, 34, 0.66));
+}
+
+.dribble-touch-feedback-up {
+  bottom: max(18%, calc(env(safe-area-inset-bottom) + 62px));
+  border-color: rgba(255, 211, 79, 0.9);
+  border-radius: 7px;
+  background: rgba(7, 20, 37, 0.84);
+  color: #ffd34f;
+  filter: drop-shadow(0 0 9px rgba(255, 211, 79, 0.62));
+}
+
+@media (orientation: portrait) {
+  .dribble-touch-feedback {
+    top: 31%;
+    height: 42%;
+  }
+}
+
+@media (max-height: 620px) and (min-aspect-ratio: 5 / 4) {
+  .dribble-touch-feedback {
+    top: 20%;
+    height: 56%;
+  }
+
+  .dribble-touch-feedback-up {
+    bottom: max(12%, calc(env(safe-area-inset-bottom) + 38px));
+  }
+}

@@ -73,7 +73,7 @@ export class DribblePerformanceDirector {
   }
 
   public getPixelRatioCap(): number {
-    return this.tier === 'high' ? 1 : this.tier === 'balanced' ? 0.9 : 0.75;
+    return this.tier === 'high' ? 1.5 : this.tier === 'balanced' ? 1.15 : 0.9;
   }
 
   private detectInitialTier(): DribbleQualityTier {

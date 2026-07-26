@@ -8,9 +8,12 @@ const scoreTokenModelPath = '@project/assets/models/score_token.glb';
 const hazardModelPath = '@project/assets/models/Badtarget_runtime_v2.glb';
 const frenzyStarModelPath = '@project/assets/models/Star_runtime.glb';
 const hazardModelScale = 1;
-const hazardModelEmissionIntensity = 4.2;
+const hazardModelEmissionIntensity = 2.4;
 const frenzyStarModelScale = 1.08;
-const frenzyStarModelEmissionIntensity = 4.2;
+const frenzyStarModelEmissionIntensity = 2.4;
+const scoreTargetEmissionIntensity = 1.7;
+const healthTargetEmissionIntensity = 2;
+const bonusTargetEmissionIntensity = 2.4;
 
 function createStarGeometry(): THREE.ExtrudeGeometry {
   const shape = new THREE.Shape();
@@ -113,7 +116,7 @@ export class DribbleTarget extends ENGINE.Actor {
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowPhase = Math.random() * Math.PI * 2;
   private glowBaseOpacity = 0.24;
-  private baseEmissiveIntensity = 2.8;
+  private baseEmissiveIntensity = scoreTargetEmissionIntensity;
   private targetMaterial: THREE.MeshStandardMaterial | null = null;
   private pressureLevel = 0;
   private threatMarker: ENGINE.MeshComponent | null = null;
@@ -146,10 +149,10 @@ export class DribbleTarget extends ENGINE.Actor {
           ? targetGeometry.bonus
           : targetGeometry.hazard;
     this.baseEmissiveIntensity = this.kind === 'bonus'
-      ? 4.2
+      ? bonusTargetEmissionIntensity
       : this.kind === 'health' || this.kind === 'recovery'
-        ? 3.2
-        : 2.8;
+        ? healthTargetEmissionIntensity
+        : scoreTargetEmissionIntensity;
     const material = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
@@ -168,12 +171,12 @@ export class DribbleTarget extends ENGINE.Actor {
     this.targetMesh = rootComponent;
 
     this.glowBaseOpacity = this.kind === 'bonus'
-      ? 0.4
+      ? 0.26
       : this.kind === 'score'
-        ? 0.18
+        ? 0.13
       : this.kind === 'health' || this.kind === 'recovery'
-        ? 0.3
-        : 0.24;
+        ? 0.2
+        : 0.17;
     if (this.kind !== 'hazard' && this.kind !== 'bonus') {
       this.glowMaterial = new THREE.MeshBasicMaterial({
         color,
@@ -292,35 +295,35 @@ export class DribbleTarget extends ENGINE.Actor {
     );
     if (this.glowMaterial) {
       this.glowMaterial.opacity = this.glowBaseOpacity
-        + this.pressureLevel * 0.17
-        + presentationEnergy * 0.13
-        + magnetVisualStrength * 0.24
-        + glowPulse * (0.07 + this.pressureLevel * 0.03 + magnetVisualStrength * 0.04);
+        + this.pressureLevel * 0.11
+        + presentationEnergy * 0.08
+        + magnetVisualStrength * 0.15
+        + glowPulse * (0.045 + this.pressureLevel * 0.02 + magnetVisualStrength * 0.025);
     }
     if (this.targetMaterial) {
       this.targetMaterial.emissiveIntensity = this.baseEmissiveIntensity
-        + this.pressureLevel * 2.2
-        + presentationEnergy * 1.6
-        + magnetVisualStrength * 1.4;
+        + this.pressureLevel * 1.15
+        + presentationEnergy * 0.82
+        + magnetVisualStrength * 0.8;
     }
     for (const [material, baseIntensity] of this.scoreTokenMaterialIntensity) {
       material.emissiveIntensity = baseIntensity
-        + this.pressureLevel * 1.4
-        + presentationEnergy * 1.05
-        + magnetVisualStrength * 1.15
-        + Math.max(0, glowPulse) * 0.32;
+        + this.pressureLevel * 0.8
+        + presentationEnergy * 0.62
+        + magnetVisualStrength * 0.72
+        + Math.max(0, glowPulse) * 0.2;
     }
     for (const material of this.hazardModelMaterials) {
       material.emissiveIntensity = hazardModelEmissionIntensity
-        + this.pressureLevel * 2.2
-        + presentationEnergy * 1.6
-        + Math.max(0, glowPulse) * 0.35;
+        + this.pressureLevel * 1.15
+        + presentationEnergy * 0.82
+        + Math.max(0, glowPulse) * 0.22;
     }
     for (const material of this.frenzyStarModelMaterials) {
       material.emissiveIntensity = frenzyStarModelEmissionIntensity
-        + this.pressureLevel * 2.2
-        + presentationEnergy * 1.6
-        + Math.max(0, glowPulse) * 0.45;
+        + this.pressureLevel * 1.15
+        + presentationEnergy * 0.82
+        + Math.max(0, glowPulse) * 0.28;
     }
     this.threatMarker?.scale.setScalar(0.92 + glowPulse * 0.08);
     if (this.threatMarkerMaterial) {
@@ -517,8 +520,8 @@ export class DribbleTarget extends ENGINE.Actor {
 
     this.kind = 'score';
     this.pressureLevel = 0;
-    this.baseEmissiveIntensity = 2.8;
-    this.glowBaseOpacity = 0.24;
+    this.baseEmissiveIntensity = scoreTargetEmissionIntensity;
+    this.glowBaseOpacity = 0.17;
     this.rootComponent.rotation.set(0, 0, 0);
     if (this.threatMarker) this.threatMarker.visible = false;
     if (this.hazardModel) this.hazardModel.visible = false;
@@ -556,7 +559,7 @@ export class DribbleTarget extends ENGINE.Actor {
         for (const material of materials) {
           if (!(material instanceof THREE.MeshStandardMaterial)) continue;
           const edgeMaterial = material.name.toLowerCase().includes('amber');
-          this.scoreTokenMaterialIntensity.set(material, edgeMaterial ? 1.15 : 2.65);
+          this.scoreTokenMaterialIntensity.set(material, edgeMaterial ? 0.8 : 1.65);
         }
       });
       this.updateScoreTokenMaterials();

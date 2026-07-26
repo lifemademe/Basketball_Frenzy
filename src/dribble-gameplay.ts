@@ -890,7 +890,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (world) {
       world.inputManager.options.virtualJoystickOptions = {
         ...world.inputManager.options.virtualJoystickOptions,
-        hidden: true,
+        enabled: false,
       };
       this.setupVirtualJoystickSuppression();
       this.musicDirector = new DribbleMusicDirector(world);
@@ -1059,7 +1059,6 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     courtFloor.rootComponent.receiveShadow = true;
 
     this.configureRendererForPerformance(world);
-    this.configurePostProcessing(world);
     this.configureSunsetLighting(world);
     this.setupCourtModel(world);
     this.addHand(world, 'Left Hand', '@project/assets/models/right_hand_runtime.glb');
@@ -1165,6 +1164,11 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     if (!texture) return null;
     texture.flipY = false;
     texture.colorSpace = THREE.SRGBColorSpace;
+    const renderer = this.getWorld()?.getRenderer() as unknown as {
+      capabilities?: { getMaxAnisotropy?: () => number };
+    } | null;
+    const maximumAnisotropy = renderer?.capabilities?.getMaxAnisotropy?.() ?? 1;
+    texture.anisotropy = Math.min(maximumAnisotropy, 8);
     texture.needsUpdate = true;
     this.courtTextureCache.set(cosmetic, texture);
     return texture;
@@ -1182,19 +1186,19 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
   private configureRendererForPerformance(world: ENGINE.World): void {
     const renderer = world.getRenderer() as unknown as {
-      getPixelRatio?: () => number;
       setPixelRatio?: (ratio: number) => void;
-      shadowMap?: { enabled: boolean; autoUpdate?: boolean };
+      shadowMap?: { enabled: boolean; autoUpdate?: boolean; type?: THREE.ShadowMapType };
     } | null;
-    const currentPixelRatio = renderer?.getPixelRatio?.() ?? 1;
-    renderer?.setPixelRatio?.(Math.min(currentPixelRatio, 1));
+    const deviceRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
+    renderer?.setPixelRatio?.(Math.min(deviceRatio, this.performanceDirector.getPixelRatioCap()));
     if (renderer?.shadowMap) {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.autoUpdate = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     }
   }
 
-  private configurePostProcessing(world: ENGINE.World): void {
+  private configurePostProcessing(world: ENGINE.World, tier: DribbleQualityTier): void {
     const configuration = world.getPostProcessConfiguration();
     if (!configuration) {
       return;
@@ -1202,10 +1206,38 @@ export class DribbleGameplayManager extends ENGINE.Actor {
 
     const effects = configuration.effects.map(effect => {
       if (effect.type === 'bloom') {
-        return Object.assign({}, effect, { levels: 2 });
+        return Object.assign({}, effect, {
+          strength: 0.72,
+          threshold: 1.15,
+          smoothing: 0.12,
+          radius: 0.46,
+          levels: tier === 'high' ? 5 : 3,
+          ignoreBackground: true,
+        });
       }
       if (effect.type === 'ao') {
-        return Object.assign({}, effect, { enabled: false });
+        return Object.assign({}, effect, {
+          enabled: tier !== 'performance',
+          resolutionScale: tier === 'high' ? 0.65 : 0.5,
+          ssaoStrength: 0.68,
+          ssaoRadius: 0.08,
+          ssaoSamples: tier === 'high' ? 12 : 8,
+          gtaoStrength: 0.58,
+          gtaoRadius: 0.2,
+          gtaoSamples: tier === 'high' ? 12 : 8,
+          gtaoMaxScreenRadius: 40,
+        });
+      }
+      if (effect.type === 'toneMapping') {
+        return Object.assign({}, effect, {
+          mode: THREE.ACESFilmicToneMapping,
+          exposure: 0.82,
+        });
+      }
+      if (effect.type === 'antiAliasing') {
+        return Object.assign({}, effect, {
+          preset: tier === 'high' ? 3 : 2,
+        });
       }
       return effect;
     });
@@ -1223,7 +1255,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         // This light drives only the procedural sky; the gameplay key below preserves object lighting.
         sunLight.position.set(-30, 18, 12);
         sunLight.rotation.set(0.15, -0.62, 0);
-        sunLight.color = new THREE.Color(1, 0.296138, 0.088656);
+        sunLight.color = new THREE.Color(1, 0.52, 0.3);
         sunLight.intensity = 0;
         sunLight.castShadow = false;
         hasSkyDriver = true;
@@ -1238,29 +1270,29 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         sky.cloudDensity = 0.46;
         sky.cloudElevation = 0.3;
         sky.showSunDisc = true;
-        sky.environmentMapIntensity = 0.85;
+        sky.environmentMapIntensity = 0.72;
       }
 
       for (const hemisphere of actor.getComponents(ENGINE.HemisphereLightComponent)) {
         hemisphere.color = new THREE.Color(0.155926, 0.168269, 0.584078);
         hemisphere.groundColor = new THREE.Color(0.799103, 0.099899, 0.084376);
-        hemisphere.intensity = 1.6;
+        hemisphere.intensity = 1.32;
       }
 
       for (const ambient of actor.getComponents(ENGINE.AmbientLightComponent)) {
         ambient.color = new THREE.Color(0.040915, 0.024158, 0.109462);
-        ambient.intensity = 0.35;
+        ambient.intensity = 0.42;
       }
     }
 
     if (hasSkyDriver) {
       const keyLight = ENGINE.DirectionalLightComponent.create({
-        color: new THREE.Color(1, 0.296138, 0.088656),
-        intensity: 5.5,
+        color: new THREE.Color(1, 0.52, 0.3),
+        intensity: 3.8,
         isSunLight: false,
         castShadow: true,
-        shadowMapSize: 1024,
-        shadowBias: -0.001,
+        shadowMapSize: this.performanceDirector.getTier() === 'high' ? 2048 : 1024,
+        shadowBias: -0.0006,
         shadowCameraBottom: -15,
         shadowCameraLeft: -30,
         shadowCameraRight: 30,
@@ -1321,9 +1353,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
         `url("${mouseCursorUrl}") 3 2, pointer`,
       );
       gameContainer.style.setProperty('--dribble-gameplay-cursor', gameplayCursor);
-      gameContainer.style.cursor = window.matchMedia('(hover: hover) and (pointer: fine)').matches
-        ? gameplayCursor
-        : 'none';
+      gameContainer.style.cursor = gameplayCursor;
       this.uiAudioFeedback = new DribbleUiAudioFeedback(world, gameContainer);
     }
 
@@ -4302,6 +4332,7 @@ export class DribbleGameplayManager extends ENGINE.Actor {
     } | null;
     const deviceRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
     renderer?.setPixelRatio?.(Math.min(deviceRatio, this.performanceDirector.getPixelRatioCap()));
+    if (world) this.configurePostProcessing(world, tier);
     this.ambientDust?.setQualityTier(tier);
     this.environmentFocus?.setQualityTier(tier);
     if (world?.gameContainer) world.gameContainer.dataset.dribbleQuality = tier;

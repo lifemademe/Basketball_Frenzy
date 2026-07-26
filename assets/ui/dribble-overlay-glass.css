@@ -910,3 +910,256 @@
   animation: none !important;
   transition: none !important;
 }
+
+/* Broadcast arcade overlay */
+.dribble-overlay {
+  --bf-panel: rgba(6, 18, 33, 0.97);
+  --bf-line: rgba(102, 220, 255, 0.36);
+  --bf-cyan: #66dcff;
+  --bf-orange: #ff7a22;
+  --bf-gold: #ffd34f;
+  --bf-secondary-action-height: 58px;
+}
+
+.dribble-overlay-backdrop {
+  background: rgba(2, 8, 16, 0.76);
+  backdrop-filter: blur(10px) saturate(0.72);
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-panel,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-panel {
+  width: min(560px, calc(100vw - 32px));
+  min-height: min(630px, calc(100vh - 32px));
+  padding: 58px 54px 46px;
+  border: 1px solid var(--bf-line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(18, 47, 75, 0.98), var(--bf-panel) 28%, rgba(4, 13, 25, 0.98)) !important;
+  box-shadow: inset 0 4px 0 var(--bf-orange), 0 28px 80px rgba(0, 0, 0, 0.58);
+}
+
+.dribble-overlay-close {
+  top: 16px;
+  right: 16px;
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-title,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-title {
+  font-size: 42px;
+  line-height: 45px;
+  text-shadow: none;
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-subtitle,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-subtitle {
+  color: #a9c8d8;
+  text-shadow: none;
+}
+
+.dribble-overlay[data-mode='pause'] .dribble-overlay-score,
+.dribble-overlay[data-mode='game-over'] .dribble-overlay-score,
+.dribble-overlay-summary > div {
+  border-color: rgba(102, 220, 255, 0.24);
+  background: rgba(2, 12, 23, 0.62);
+  box-shadow: inset 3px 0 0 rgba(102, 220, 255, 0.7);
+}
+
+.dribble-overlay-score strong,
+.dribble-overlay-summary strong {
+  color: var(--bf-gold) !important;
+}
+
+.dribble-overlay-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 0.72fr) 58px;
+  width: min(390px, 100%);
+}
+
+[data-overlay-restart-slot] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dribble-overlay-main-menu {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.dribble-overlay-settings {
+  grid-column: 3;
+  grid-row: 2;
+  width: 58px;
+  height: 58px;
+  justify-self: stretch;
+}
+
+.dribble-overlay-action,
+[data-overlay-resume-slot],
+.dribble-overlay-main-menu {
+  height: var(--bf-secondary-action-height);
+  min-height: var(--bf-secondary-action-height);
+}
+
+.dribble-overlay[data-mode='pause'] [data-overlay-restart-slot],
+.dribble-overlay[data-mode='pause'] [data-overlay-main-menu-slot],
+.dribble-overlay[data-mode='game-over'] [data-overlay-restart-slot],
+.dribble-overlay[data-mode='game-over'] [data-overlay-main-menu-slot] {
+  height: var(--bf-secondary-action-height);
+  min-height: var(--bf-secondary-action-height);
+  max-height: var(--bf-secondary-action-height);
+}
+
+.dribble-overlay[data-mode='pause'] [data-overlay-restart-slot] > .ui-button,
+.dribble-overlay[data-mode='pause'] [data-overlay-main-menu-slot] > .ui-button,
+.dribble-overlay[data-mode='game-over'] [data-overlay-restart-slot] > .ui-button,
+.dribble-overlay[data-mode='game-over'] [data-overlay-main-menu-slot] > .ui-button {
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+}
+
+.dribble-overlay-action .ui-button,
+[data-overlay-resume-slot] .ui-button,
+[data-overlay-restart-slot] .ui-button,
+[data-overlay-resume-slot] .ui-button:hover,
+[data-overlay-resume-slot] .ui-button:focus-visible,
+[data-overlay-restart-slot] .ui-button:hover,
+[data-overlay-restart-slot] .ui-button:focus-visible {
+  border: 1px solid var(--bf-line);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(24, 62, 94, 0.98), rgba(7, 24, 42, 0.98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  font-size: 20px;
+  text-shadow: none;
+}
+
+[data-overlay-resume-slot] .ui-button,
+[data-overlay-resume-slot] .ui-button:hover,
+[data-overlay-resume-slot] .ui-button:focus-visible {
+  border-color: rgba(255, 222, 160, 0.72);
+  background: linear-gradient(180deg, #ff9632, #e65c16) !important;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3), inset 0 -3px 0 rgba(118, 36, 3, 0.28);
+}
+
+[data-overlay-resume-slot] .ui-button-label {
+  font-size: 26px;
+}
+
+.dribble-overlay-main-menu > img,
+.dribble-overlay-utility > img {
+  display: none;
+}
+
+.dribble-overlay-settings > img {
+  z-index: 2;
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0, 12, 40, 0.5));
+}
+
+.dribble-overlay-settings:has(.ui-button:hover) > img,
+.dribble-overlay-settings:has(.ui-button:focus-visible) > img {
+  filter: brightness(1.12) drop-shadow(0 0 8px rgba(102, 220, 255, 0.56));
+  transform: rotate(18deg) scale(1.06);
+}
+
+.dribble-overlay-main-menu > .ui-button,
+.dribble-overlay-utility > .ui-button,
+[data-overlay-main-menu-slot] .ui-button,
+[data-overlay-main-menu-slot] .ui-button:hover,
+[data-overlay-main-menu-slot] .ui-button:focus-visible {
+  position: static;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--bf-line);
+  border-radius: 6px;
+  background: rgba(9, 29, 48, 0.96) !important;
+  color: #ffffff;
+  font-size: 17px;
+  opacity: 1;
+}
+
+[data-overlay-main-menu-slot] .ui-button-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  color: inherit;
+  font-size: 17px;
+  clip: auto;
+  clip-path: none;
+}
+
+.dribble-power-shop-list article {
+  border-color: rgba(102, 220, 255, 0.24);
+  background: rgba(3, 15, 28, 0.62);
+}
+
+.dribble-power-shop-list .ui-button,
+.dribble-power-shop-list .ui-button:hover,
+.dribble-power-shop-list .ui-button:focus-visible {
+  border-color: rgba(255, 211, 79, 0.76);
+  background: linear-gradient(180deg, #ff9130, #d95317) !important;
+  color: #ffffff;
+}
+
+@media (max-width: 520px) {
+  .dribble-overlay[data-mode='pause'] .dribble-overlay-panel,
+  .dribble-overlay[data-mode='game-over'] .dribble-overlay-panel {
+    min-height: min(610px, calc(100vh - 20px));
+    padding: 52px 28px 34px;
+  }
+
+  .dribble-overlay-actions {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  [data-overlay-resume-slot] {
+    grid-column: 1 / -1;
+  }
+
+  [data-overlay-restart-slot] {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .dribble-overlay-main-menu {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .dribble-overlay-settings {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 58px;
+    justify-self: center;
+  }
+
+  .dribble-overlay-settings > img {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.dribble-overlay[data-compact-landscape='true'] .dribble-overlay-panel,
+.dribble-overlay[data-compact-landscape='true'][data-mode='pause'] .dribble-overlay-panel,
+.dribble-overlay[data-compact-landscape='true'][data-mode='game-over'] .dribble-overlay-panel {
+  width: min(760px, calc(100% - 20px));
+  height: min(440px, calc(100% - 12px));
+  padding: 34px 44px 30px;
+}
+
+.dribble-overlay[data-compact-landscape='true'] {
+  --bf-secondary-action-height: 52px;
+}
+
+.dribble-overlay[data-compact-landscape='true'] .dribble-overlay-close {
+  top: 8px;
+  right: 8px;
+}
+
+.dribble-overlay[data-compact-landscape='true'] .dribble-overlay-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 0.72fr) 58px;
+  width: min(410px, 100%);
+}

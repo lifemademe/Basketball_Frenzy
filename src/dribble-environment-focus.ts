@@ -63,7 +63,7 @@ export class DribbleEnvironmentFocus {
       const guideMaterial = new THREE.MeshStandardMaterial({
         color: color.clone().multiplyScalar(0.7),
         emissive: color,
-        emissiveIntensity: index === 1 ? 1.15 : 0.82,
+        emissiveIntensity: index === 1 ? 0.9 : 0.68,
         roughness: 0.42,
         metalness: 0.08,
       });
@@ -89,7 +89,7 @@ export class DribbleEnvironmentFocus {
     this.centerMarkMaterial = new THREE.MeshStandardMaterial({
       color: 0xffd36a,
       emissive: 0xffb62e,
-      emissiveIntensity: 1.45,
+      emissiveIntensity: 1.05,
       roughness: 0.38,
     });
     this.centerMarkActor = ENGINE.Actor.create({
@@ -171,16 +171,16 @@ export class DribbleEnvironmentFocus {
     for (let index = 0; index < this.lanes.length; index += 1) {
       const lane = this.lanes[index];
       lane.energy = 0;
-      lane.guideMaterial.emissiveIntensity = index === 1 ? 1.15 : 0.82;
+      lane.guideMaterial.emissiveIntensity = index === 1 ? 0.9 : 0.68;
       lane.guideMaterial.color.copy(lane.color).multiplyScalar(0.7);
       lane.guideActor.rootComponent.scale.set(1, 1, 1);
     }
-    this.centerMarkMaterial.emissiveIntensity = 1.45;
+    this.centerMarkMaterial.emissiveIntensity = 1.05;
     for (const accent of this.arenaAccents) {
       accent.material.emissive.copy(accent.baseEmissive);
       accent.material.emissiveIntensity = accent.baseIntensity;
     }
-    if (this.sunsetKey) this.sunsetKey.intensity = 5.5;
+    if (this.sunsetKey) this.sunsetKey.intensity = 3.8;
   }
 
   public setAccessibility(reducedMotion: boolean, reducedFlashes: boolean): void {
@@ -273,13 +273,13 @@ export class DribbleEnvironmentFocus {
         0,
         1.65,
       );
-      lane.guideMaterial.emissiveIntensity = 0.74 + energy * 2.15;
+      lane.guideMaterial.emissiveIntensity = 0.62 + energy * 1.32;
       lane.guideMaterial.color.copy(lane.color).multiplyScalar(0.58 + energy * 0.18);
       lane.guideActor.rootComponent.scale.x = 1 + energy * 0.22 * motionScale;
     }
 
     const sunsetDeepening = THREE.MathUtils.smoothstep(runProgress, 0.15, 1);
-    this.centerMarkMaterial.emissiveIntensity = 1.2 + focusUrgency * 0.6 + frenzy * 2.4;
+    this.centerMarkMaterial.emissiveIntensity = 0.92 + focusUrgency * 0.42 + frenzy * 1.3;
     for (const accent of this.arenaAccents) {
       this.accentColor.copy(accent.baseEmissive).lerp(this.frenzyAccentColor, frenzy * 0.78);
       accent.material.emissive.copy(this.accentColor);
@@ -289,7 +289,7 @@ export class DribbleEnvironmentFocus {
         + this.arenaSurge * (this.qualityTier === 'performance' ? 0.65 : 1.25);
     }
     if (this.sunsetKey) {
-      this.sunsetKey.intensity = 5.25 + sunsetDeepening * 0.25 + frenzy * 0.65;
+      this.sunsetKey.intensity = 3.65 + sunsetDeepening * 0.18 + frenzy * 0.45;
     }
     this.updatePulses(deltaTime);
 

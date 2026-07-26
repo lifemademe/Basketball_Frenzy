@@ -1977,7 +1977,13 @@
 .dribble-purchase-confirmation [data-menu-purchase-confirm-slot],
 .dribble-purchase-confirmation .ui-button {
   width: 100%;
-  height: 66px;
+  height: 60px;
+}
+
+.dribble-purchase-confirmation .dribble-reset-confirmation-actions {
+  width: 94%;
+  margin: 4px auto 0;
+  gap: 14px;
 }
 
 .dribble-purchase-confirmation [data-menu-purchase-cancel-slot],
@@ -1995,8 +2001,14 @@
 .dribble-main-menu .dribble-purchase-confirmation .ui-button[data-controller-focus='true'] {
   border: 0 !important;
   outline: 0 !important;
-  background: transparent url('@project/assets/textures/play_button_background.png') center / 118% 150% no-repeat !important;
+  background: transparent url('@project/assets/textures/play_button_background.png') center / 100% 100% no-repeat !important;
   box-shadow: none !important;
+  font-size: 25px !important;
+}
+
+.dribble-main-menu .dribble-purchase-confirmation .ui-button-label {
+  font-size: 25px !important;
+  line-height: 28px !important;
 }
 
 .dribble-main-menu .dribble-purchase-confirmation [data-menu-purchase-confirm-slot] .ui-button,
@@ -2004,7 +2016,7 @@
 .dribble-main-menu .dribble-purchase-confirmation [data-menu-purchase-confirm-slot] .ui-button:focus-visible,
 .dribble-main-menu .dribble-purchase-confirmation [data-menu-purchase-confirm-slot] .ui-button:active,
 .dribble-main-menu .dribble-purchase-confirmation [data-menu-purchase-confirm-slot] .ui-button[data-controller-focus='true'] {
-  background: transparent url('@project/assets/textures/Confirm_button.png') center / 118% 150% no-repeat !important;
+  background: transparent url('@project/assets/textures/Confirm_button.png') center / 100% 100% no-repeat !important;
   text-shadow: 0 2px 0 rgba(109, 5, 22, 0.82), 0 3px 7px rgba(64, 0, 10, 0.62);
 }
 
@@ -3657,4 +3669,422 @@
 [data-reduced-motion='true'] .dribble-main-menu-toggle i::after {
   animation: none !important;
   transition: none !important;
+}
+
+/* Broadcast arcade identity */
+.dribble-main-menu {
+  --bf-ink: #071425;
+  --bf-panel: rgba(7, 20, 37, 0.95);
+  --bf-line: rgba(102, 220, 255, 0.34);
+  --bf-cyan: #66dcff;
+  --bf-orange: #ff7a22;
+  --bf-gold: #ffd34f;
+  --bf-danger: #ff5f68;
+}
+
+.dribble-main-menu-background::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(3, 10, 20, 0.8), rgba(3, 10, 20, 0.32) 46%, transparent 72%),
+    linear-gradient(0deg, rgba(3, 10, 20, 0.42), transparent 45%);
+  content: '';
+  pointer-events: none;
+}
+
+.dribble-main-menu-content {
+  width: min(520px, calc(54vw - 54px));
+}
+
+.dribble-main-menu-profile {
+  border-color: var(--bf-line);
+  background: rgba(5, 16, 29, 0.9);
+  box-shadow: inset 0 3px 0 rgba(102, 220, 255, 0.68), 0 14px 34px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(12px);
+}
+
+.dribble-main-menu-home {
+  width: min(430px, 100%);
+  gap: 8px;
+}
+
+.dribble-main-menu-home .dribble-main-menu-action {
+  margin: 0;
+  overflow: visible;
+}
+
+.dribble-main-menu-home .ui-button,
+.dribble-main-menu .dribble-main-menu-home .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-home .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-home .ui-button[data-controller-focus='true'] {
+  position: relative;
+  height: 58px;
+  min-height: 58px;
+  padding: 0 16px !important;
+  overflow: hidden;
+  justify-content: center;
+  border: 1px solid var(--bf-line);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(17, 44, 70, 0.97), rgba(7, 22, 40, 0.97)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 8px 20px rgba(0, 0, 0, 0.24);
+  color: #ffffff;
+  font-size: 21px;
+  text-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.dribble-main-menu-home .ui-button::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--bf-cyan);
+  content: '';
+}
+
+.dribble-main-menu-home .ui-button-label {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  color: inherit;
+  font-size: inherit !important;
+  line-height: 1;
+  clip: auto;
+  clip-path: none;
+  transform: none;
+}
+
+.dribble-main-menu .dribble-main-menu-home .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-home .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-home .ui-button[data-controller-focus='true'] {
+  border-color: var(--bf-cyan);
+  background: linear-gradient(180deg, rgba(25, 67, 102, 0.98), rgba(8, 31, 54, 0.98)) !important;
+  box-shadow: 0 0 0 2px rgba(102, 220, 255, 0.18), 0 10px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.dribble-main-menu-play,
+.dribble-main-menu-achievements-action {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.dribble-main-menu-play .ui-button,
+.dribble-main-menu-play .ui-button.size-large,
+.dribble-main-menu .dribble-main-menu-play .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-play .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-play .ui-button[data-controller-focus='true'] {
+  height: 78px;
+  min-height: 78px;
+  border-color: rgba(255, 222, 160, 0.72);
+  background: linear-gradient(180deg, #ff9a32, #eb5b13) !important;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.32), inset 0 -4px 0 rgba(135, 44, 4, 0.3), 0 13px 25px rgba(93, 32, 2, 0.38);
+  font-size: 38px !important;
+  text-shadow: 0 2px 0 rgba(112, 37, 4, 0.54);
+}
+
+.dribble-main-menu-play .ui-button::before {
+  width: 0;
+}
+
+.dribble-main-menu-play .ui-button-label {
+  font-size: 38px !important;
+}
+
+.dribble-main-menu .dribble-main-menu-play .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-play .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-play .ui-button[data-controller-focus='true'] {
+  border-color: #ffffff;
+  background: linear-gradient(180deg, #ffad42, #f26716) !important;
+  box-shadow: 0 0 0 3px rgba(255, 211, 79, 0.2), 0 15px 28px rgba(93, 32, 2, 0.42);
+}
+
+.dribble-main-menu-achievements-action .ui-button,
+.dribble-main-menu .dribble-main-menu-achievements-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-achievements-action .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-achievements-action .ui-button[data-controller-focus='true'] {
+  height: 56px;
+  min-height: 56px;
+  border-color: rgba(255, 211, 79, 0.5);
+  background: linear-gradient(180deg, rgba(58, 49, 23, 0.97), rgba(24, 28, 34, 0.97)) !important;
+  color: #fff2b2;
+  font-size: 22px;
+  text-shadow: none;
+  filter: none;
+}
+
+.dribble-main-menu-achievements-action .ui-button::before {
+  background: var(--bf-gold);
+}
+
+.dribble-main-menu-achievements-action .ui-button-label {
+  font-size: 22px;
+}
+
+.dribble-main-menu-utility {
+  grid-template-columns: 108px;
+  padding-left: 0;
+}
+
+.dribble-main-menu-exit-action,
+.dribble-main-menu-exit-action .ui-button,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button[data-controller-focus='true'] {
+  width: 108px;
+  height: 40px;
+  min-height: 40px;
+}
+
+.dribble-main-menu-exit-action .ui-button,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button[data-controller-focus='true'] {
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 95, 104, 0.45);
+  border-radius: 5px;
+  background: rgba(47, 18, 25, 0.92) !important;
+  color: #ffc5c8;
+  font-size: 17px;
+  filter: none;
+  transform: none;
+}
+
+.dribble-main-menu-exit-action .ui-button-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+}
+
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:hover,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button:focus-visible,
+.dribble-main-menu .dribble-main-menu-exit-action .ui-button[data-controller-focus='true'] {
+  border-color: var(--bf-danger);
+  background: rgba(89, 27, 35, 0.97) !important;
+  box-shadow: 0 0 0 2px rgba(255, 95, 104, 0.14);
+  transform: translateY(-1px);
+}
+
+.dribble-main-menu-mode-select,
+.dribble-main-menu-tutorial-select,
+.dribble-main-menu-how,
+.dribble-main-menu-settings,
+.dribble-main-menu-shop,
+.dribble-main-menu-reset,
+.dribble-main-menu-achievements,
+.dribble-language-entry-card,
+.dribble-name-entry-card {
+  border: 1px solid var(--bf-line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(16, 43, 69, 0.98), var(--bf-panel) 30%, rgba(5, 16, 30, 0.98)) !important;
+  box-shadow: inset 0 4px 0 var(--bf-orange), 0 22px 58px rgba(0, 0, 0, 0.5);
+  filter: none;
+}
+
+.dribble-main-menu-settings,
+.dribble-main-menu-shop,
+.dribble-main-menu-reset {
+  width: min(580px, calc(100vw - 34px));
+  padding: 50px 52px 82px;
+}
+
+.dribble-settings-tabs {
+  padding: 4px;
+  border: 1px solid rgba(102, 220, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(2, 12, 24, 0.58);
+}
+
+.dribble-settings-tabs button {
+  min-height: 35px;
+  border-radius: 4px;
+}
+
+.dribble-settings-tabs button[aria-selected='true'] {
+  background: rgba(102, 220, 255, 0.14);
+}
+
+.dribble-control-group,
+.dribble-credit-group,
+.dribble-shop-item,
+.dribble-wristband-customizer {
+  border: 1px solid rgba(102, 220, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(4, 17, 31, 0.58);
+}
+
+.dribble-shop-inventory {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+
+.dribble-shop-section-heading,
+.dribble-wristband-customizer {
+  grid-column: 1 / -1;
+}
+
+.dribble-shop-item {
+  grid-template-columns: 68px minmax(0, 1fr);
+  min-height: 136px;
+  align-content: center;
+}
+
+.dribble-shop-purchase .ui-button {
+  border-color: rgba(255, 211, 79, 0.7);
+  background: linear-gradient(180deg, #ff8f2c, #dc5416);
+}
+
+.dribble-shop-purchase .ui-button:hover,
+.dribble-shop-purchase .ui-button:focus-visible,
+.dribble-shop-purchase .ui-button[data-controller-focus='true'] {
+  border-color: #ffffff;
+  background: linear-gradient(180deg, #ffaa3d, #ed651a);
+  box-shadow: 0 0 0 2px rgba(255, 211, 79, 0.18);
+}
+
+.dribble-main-menu-setting input[type='range'] {
+  accent-color: var(--bf-gold);
+}
+
+.dribble-main-menu-toggle input:checked + i {
+  background: var(--bf-cyan);
+}
+
+@media (max-width: 760px) {
+  .dribble-main-menu-background::after {
+    background: linear-gradient(0deg, rgba(3, 10, 20, 0.82), rgba(3, 10, 20, 0.16) 72%);
+  }
+
+  .dribble-main-menu-content {
+    align-items: center;
+    width: calc(100% - 24px);
+    margin-left: 12px;
+    padding-top: 72px;
+  }
+
+  .dribble-main-menu[data-panel='home'] .dribble-main-menu-brand {
+    display: block;
+    width: min(310px, 82vw);
+    transform: none;
+  }
+
+  .dribble-main-menu-logo {
+    height: clamp(138px, 21vh, 188px);
+  }
+
+  .dribble-main-menu[data-panel='home'] .dribble-main-menu-home {
+    width: min(390px, 100%);
+    margin-top: -22px;
+  }
+
+  .dribble-main-menu-home .ui-button,
+  .dribble-main-menu .dribble-main-menu-home .ui-button:hover,
+  .dribble-main-menu .dribble-main-menu-home .ui-button:focus-visible {
+    height: 52px;
+    min-height: 52px;
+  }
+
+  .dribble-main-menu-play .ui-button,
+  .dribble-main-menu-play .ui-button.size-large,
+  .dribble-main-menu .dribble-main-menu-play .ui-button:hover,
+  .dribble-main-menu .dribble-main-menu-play .ui-button:focus-visible {
+    height: 68px;
+    min-height: 68px;
+    font-size: 32px !important;
+  }
+
+  .dribble-main-menu-play .ui-button-label {
+    font-size: 32px !important;
+  }
+
+  .dribble-main-menu-profile {
+    right: 8px;
+    max-width: calc(100vw - 16px);
+    transform: scale(0.78);
+    transform-origin: top right;
+  }
+
+  .dribble-profile-records {
+    display: none;
+  }
+
+  .dribble-main-menu-settings,
+  .dribble-main-menu-shop,
+  .dribble-main-menu-reset {
+    width: min(430px, 100%);
+    padding: 44px 30px 76px;
+  }
+
+  .dribble-shop-inventory {
+    grid-template-columns: 1fr;
+    padding-bottom: 72px;
+  }
+
+  .dribble-shop-section-heading,
+  .dribble-wristband-customizer {
+    grid-column: 1;
+  }
+}
+
+.dribble-main-menu[data-compact-landscape='true'][data-panel='home'] .dribble-main-menu-content {
+  width: min(420px, 48vw);
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-home {
+  gap: 6px;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-play,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-achievements-action {
+  margin-bottom: 0;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-home .ui-button,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-home > .dribble-main-menu-tutorial .ui-button,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-home > .dribble-main-menu-settings-action .ui-button,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-home > .dribble-main-menu-shop-action .ui-button {
+  height: 46px;
+  min-height: 46px;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-play .ui-button,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-play .ui-button.size-large {
+  height: 62px;
+  min-height: 62px;
+  font-size: 30px !important;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-play .ui-button-label {
+  font-size: 30px !important;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-achievements-action .ui-button,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-achievements-action .ui-button:hover,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-achievements-action .ui-button:focus-visible {
+  height: 44px;
+  min-height: 44px;
+  font-size: 19px;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-settings,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-shop,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-main-menu-reset {
+  width: min(760px, calc(100vw - 24px));
+  padding: 32px 42px 54px;
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-shop-inventory {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dribble-main-menu[data-compact-landscape='true'] .dribble-shop-section-heading,
+.dribble-main-menu[data-compact-landscape='true'] .dribble-wristband-customizer {
+  grid-column: 1 / -1;
 }

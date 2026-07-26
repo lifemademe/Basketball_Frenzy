@@ -17,18 +17,18 @@
   "packageManager": "pnpm@10.25.0",
   "type": "module",
   "dependencies": {
-    "three": "npm:@gnsx/three@0.184.20",
-    "@gnsx/genesys.js": "13.0.2-staging"
+    "three": "npm:@gnsx/three@0.185.14",
+    "@gnsx/genesys.js": "13.3.7-staging"
   },
   "pnpm": {
     "onlyBuiltDependencies": []
   },
   "devDependencies": {
-    "@types/node": "25.9.1",
-    "@types/three": "npm:@gnsx/three-types@0.184.11",
-    "@typescript-eslint/parser": "8.59.2",
-    "@typescript-eslint/utils": "8.59.2",
-    "@typescript-eslint/eslint-plugin": "8.59.2",
+    "@types/node": "25.9.3",
+    "@types/three": "npm:@gnsx/three-types@0.185.5",
+    "@typescript-eslint/parser": "8.61.0",
+    "@typescript-eslint/utils": "8.61.0",
+    "@typescript-eslint/eslint-plugin": "8.61.0",
     "adm-zip": "0.5.17",
     "ajv": "8.20.0",
     "esbuild": "0.28.0",
@@ -40,7 +40,7 @@
     "typescript": "5.9.3",
     "vite": "8.0.12",
     "vite-plugin-mkcert": "2.0.0",
-    "vite-plugin-node-polyfills": "0.26.0",
+    "vite-plugin-node-polyfills": "0.28.0",
     "@types/adm-zip": "0.5.8"
   },
   "name": "Basketball_frenzy",

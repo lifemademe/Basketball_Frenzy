@@ -357,8 +357,10 @@ export class DribblePowerShopHudButton extends ENGINE.BaseUIComponent<DribblePow
   private readonly updateAnchor = (): void => {
     if (!this.buttonElement || !this.scoreElement) return;
     const scoreRect = this.scoreElement.getBoundingClientRect();
+    if (scoreRect.width <= 0 || scoreRect.height <= 0) return;
     const viewportWidth = this.buttonElement.ownerDocument.defaultView?.innerWidth ?? window.innerWidth;
     this.buttonElement.style.right = `${Math.max(18, viewportWidth - scoreRect.left + 8)}px`;
+    this.buttonElement.style.top = `${Math.max(12, scoreRect.top)}px`;
   };
 
   protected override getAssetPaths(): { templatePath: string; stylesPath: string } {

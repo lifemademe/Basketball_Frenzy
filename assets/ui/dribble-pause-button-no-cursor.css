@@ -56,3 +56,22 @@
     transition: none;
   }
 }
+
+.dribble-pause-button {
+  border: 1px solid rgba(102, 220, 255, 0.34);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(12, 34, 55, 0.72), rgba(4, 15, 28, 0.62));
+  box-shadow: inset 0 3px 0 rgba(102, 220, 255, 0.42), 0 8px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.dribble-pause-button img {
+  width: 36px;
+  height: 31px;
+}
+
+.dribble-pause-button:hover,
+.dribble-pause-button:focus-visible {
+  border-color: #66dcff;
+  box-shadow: inset 0 3px 0 #66dcff, 0 0 0 2px rgba(102, 220, 255, 0.16), 0 10px 22px rgba(0, 0, 0, 0.3);
+}

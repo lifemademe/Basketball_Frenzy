@@ -1,6 +1,6 @@
 {
   "defaultScene": "./assets/default.genesys-scene",
-  "engineVersion": "13.0.2-staging",
+  "engineVersion": "13.3.7-staging",
   "assetCompiler": {
     "enabled": false,
     "compileOnPlay": false,
