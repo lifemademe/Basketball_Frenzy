@@ -1,6 +1,6 @@
 {
   "defaultScene": "./assets/default.genesys-scene",
-  "engineVersion": "13.3.7-staging",
+  "engineVersion": "13.3.8-staging",
   "assetCompiler": {
     "enabled": false,
     "compileOnPlay": false,
@@ -19,5 +19,5 @@
       "level": "medium"
     }
   },
-  "gameId": "bbc28e0f-59dd-4507-93b1-22d4148df250"
+  "gameId": "0b5b5815-469e-4dcc-96fc-652871f2c2be"
 }
